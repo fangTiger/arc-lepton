@@ -1,0 +1,27 @@
+name: test
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-ci-secret
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 00000000000000000000000000000000
+      NEXT_PUBLIC_ARC_CHAIN_ID: '9999'
+      NEXT_PUBLIC_ARC_RPC_URL: https://example.com/rpc
+      NEXT_PUBLIC_ARC_EXPLORER_URL: https://example.com/explorer
+      DATABASE_URL: postgres://stub
+      KV_REST_API_URL: https://example.com
+      KV_REST_API_TOKEN: stub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with: { version: 10.14.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test --run
+      - run: pnpm build
