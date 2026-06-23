@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arc Lepton — Auth Module · Visual v0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Background layers */
+    --bg-base:      #0A0B10;
+    --bg-surface:   #14161D;
+    --bg-elevated:  #1C1F28;
+    --bg-inset:     #060709;
+
+    /* Borders */
+    --border-subtle:   rgba(255,255,255,0.06);
+    --border-default:  rgba(255,255,255,0.10);
+    --border-emphasis: rgba(255,255,255,0.16);
+    --border-accent:   #4D7EFF;
+
+    /* Text */
+    --text-primary:   #F4F5F8;
+    --text-secondary: #A1A6B3;
+    --text-muted:     #6B7280;
+    --text-disabled:  #4B5563;
+
+    /* Accent */
+    --accent-arc:       #4D7EFF;
+    --accent-arc-hover: #6B92FF;
+    --accent-arc-glow:  rgba(77,126,255,0.25);
+
+    /* Semantic */
+    --success: #10B981;
+    --danger:  #F75A5A;
+    --warning: #F5A623;
+    --live:    #00D9FF;
+
+    /* Spacing scale */
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px;
+    --space-9: 48px; --space-10: 64px; --space-11: 80px; --space-12: 96px;
+
+    /* Radius */
+    --radius-xs: 6px; --radius-sm: 10px; --radius-md: 14px;
+    --radius-lg: 20px; --radius-pill: 9999px;
+
+    /* Shadow */
+    --shadow-e1: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --shadow-e3: 0 12px 48px rgba(0,0,0,0.6);
+    --glow-arc:  0 0 24px rgba(77,126,255,0.35);
+    --glow-live: 0 0 12px rgba(0,217,255,0.5);
+
+    /* Motion */
+    --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-snap:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast:    120ms;
+    --dur-base:    200ms;
+    --dur-slow:    320ms;
+    --dur-pulse:   1600ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg-base); color: var(--text-primary); }
+  body {
+    font-family: 'Geist', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at top, rgba(77,126,255,0.06) 0%, transparent 50%),
+      var(--bg-base);
+  }
+
+  /* Canvas wrapper */
+  .canvas {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: var(--space-9) var(--space-7);
+  }
+  .canvas-header { margin-bottom: var(--space-9); }
+  .canvas-header h1 {
+    font-size: 1.5rem; font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+  .canvas-header p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: var(--space-2);
+  }
+  .canvas-meta {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .canvas-meta::before {
+    content: ''; width: 6px; height: 6px; border-radius: var(--radius-pill);
+    background: var(--live); box-shadow: var(--glow-live);
+    animation: pulse var(--dur-pulse) linear infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.55; transform: scale(1.25); }
+  }
+
+  /* View frame (artboard) */
+  .view { margin-bottom: var(--space-10); }
+  .view-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+    display: flex; align-items: center; gap: var(--space-3);
+  }
+  .view-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--border-subtle);
+  }
+  .frame {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+  }
+  .frame-note {
+    position: absolute;
+    top: var(--space-3); right: var(--space-4);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.625rem;
+    color: var(--text-disabled);
+    z-index: 5;
+  }
+
+  /* ─── Reusable elements ─────────────────────────── */
+
+  /* Logo placeholder */
+  .logo {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    border-radius: var(--radius-xs);
+    background: linear-gradient(135deg, var(--accent-arc) 0%, #2E5BFF 100%);
+    box-shadow: var(--glow-arc);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: ''; position: absolute; inset: 6px;
+    border: 1.5px solid rgba(255,255,255,0.85);
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+  .logo-text { font-size: 1rem; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-5);
+    height: 40px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--dur-base) var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent-arc);
+    color: white;
+  }
+  .btn-primary:hover {
+    background: var(--accent-arc-hover);
+    box-shadow: var(--glow-arc);
+  }
+  .btn-primary-lg { height: 48px; padding: 0 var(--space-6); font-size: 0.9375rem; width: 100%; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-default);
+  }
+  .btn-ghost:hover {
+    background: var(--bg-surface);
+    border-color: var(--border-emphasis);
+  }
+
+  .btn-pill {
+    border-radius: var(--radius-pill);
+    height: 36px; padding: 0 var(--space-4);
+    font-size: 0.8125rem;
+  }
+
+  .btn-danger-outline {
+    background: rgba(247,90,90,0.08);
+    color: var(--danger);
+    border-color: rgba(247,90,90,0.32);
+  }
+
+  /* Live pulse dot */
+  .live-dot {
+    width: 6px; height: 6px; border-radius: var(--radius-pill);
+    background: var(--live);
+    box-shadow: var(--glow-live);
+    animation: pulse var(--dur-pulse) linear infinite;
+  }
+
+  /* Mono text */
+  .mono {
+    font-family: 'Geist Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Icon placeholder */
+  .icon-ph {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    border: 1px dashed var(--border-emphasis);
+    color: var(--text-muted);
+    font-size: 9px;
+    font-family: 'Geist Mono', monospace;
+    flex-shrink: 0;
+  }
+  .icon-ph-lg { width: 32px; height: 32px; font-size: 11px; border-radius: var(--radius-xs); }
+
+  /* ─── View 1: /login page ───────────────────────── */
+  .login-stage {
+    min-height: 640px;
+    padding: var(--space-9);
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(ellipse at center top, rgba(77,126,255,0.08) 0%, transparent 60%),
+      var(--bg-base);
+    position: relative;
+  }
+  /* subtle grid backdrop */
+  .login-stage::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .login-topbar {
+    position: absolute;
+    top: var(--space-5); left: var(--space-7); right: var(--space-7);
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 2;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-e3);
+    position: relative;
+    z-index: 2;
+  }
+  .login-eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-arc);
+    margin-bottom: var(--space-3);
+  }
+  .login-card h2 {
+    font-size: 1.625rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-bottom: var(--space-3);
+  }
+  .login-card .desc {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-7);
+  }
+  .login-divider {
+    display: flex; align-items: center; gap: var(--space-3);
+    margin: var(--space-5) 0;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-disabled);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .login-divider::before, .login-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-subtle);
+  }
+  .login-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+    padding: var(--space-4); margin-top: var(--space-5);
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+  .stat-item .stat-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 1.125rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+  .stat-item .stat-label {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .login-footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--space-5);
+    line-height: 1.6;
+  }
+  .login-footer a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ─── View 2: Header button states ──────────────── */
+  .header-list { display: flex; flex-direction: column; }
+  .header-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: var(--space-5);
+    align-items: center;
+    padding: var(--space-5) var(--space-7);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .header-row:last-child { border-bottom: none; }
+  .header-row .state-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mock-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-5);
+    height: 60px;
+  }
+  .nav-links {
+    display: flex; gap: var(--space-5);
+    font-size: 0.8125rem; color: var(--text-secondary);
+  }
+  .nav-links span { padding: var(--space-2) 0; }
+
+  /* Wallet button variants */
+  .wallet-btn {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    background: var(--accent-arc);
+    color: white;
+    padding: 0 var(--space-4);
+    height: 36px;
+    border-radius: var(--radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border: none;
+  }
+  .wallet-btn-loading {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    padding: 0 var(--space-4);
+  }
+  .wallet-btn-wrong {
+    background: rgba(247,90,90,0.08);
+    border: 1px solid rgba(247,90,90,0.32);
+    color: var(--danger);
+  }
+  .wallet-btn-connected {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    height: auto;
+    gap: var(--space-3);
+  }
+  .wallet-btn-connected .balance {
+    font-family: 'Geist Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    padding-right: var(--space-2);
+    border-right: 1px solid var(--border-subtle);
+  }
+  .wallet-btn-connected .addr-chip {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    background: var(--bg-base);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem;
+  }
+  .spinner {
+    width: 12px; height: 12px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-top-color: var(--text-primary);
+    border-radius: var(--radius-pill);
+    animation: spin 800ms linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .chevron { color: var(--text-muted); font-size: 10px; }
+
+  /* ─── View 3: NetworkGuard banner ───────────────── */
+  .banner-stage { padding: var(--space-5) var(--space-7); }
+  .net-banner {
+    display: flex; align-items: center; gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: linear-gradient(180deg, rgba(247,90,90,0.08) 0%, rgba(247,90,90,0.04) 100%);
+    border: 1px solid rgba(247,90,90,0.24);
+    border-radius: var(--radius-md);
+  }
+  .net-banner .net-icon {
+    width: 36px; height: 36px;
+    background: rgba(247,90,90,0.16);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--danger);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .net-banner .net-content { flex: 1; }
+  .net-banner .net-title {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  .net-banner .net-sub {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    margin-top: 2px;
+  }
+  .net-banner .net-sub .mono { color: var(--text-muted); }
+
+  /* warning variant */
+  .net-banner-warn {
+    background: linear-gradient(180deg, rgba(245,166,35,0.07) 0%, rgba(245,166,35,0.03) 100%);
+    border-color: rgba(245,166,35,0.24);
+  }
+  .net-banner-warn .net-icon { background: rgba(245,166,35,0.16); color: var(--warning); }
+
+  /* ─── View 4: AuthGate placeholder ──────────────── */
+  .gate-stage { padding: var(--space-9); display: flex; justify-content: center; }
+  .gate-card {
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-emphasis);
+    border-radius: var(--radius-lg);
+    padding: var(--space-9) var(--space-7);
+    text-align: center;
+    max-width: 480px;
+    width: 100%;
+  }
+  .gate-lock {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    margin: 0 auto var(--space-5);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+  }
+  .gate-card h3 {
+    font-size: 1.25rem; font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-2);
+  }
+  .gate-card p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-6);
+  }
+
+  /* ─── Tweaks / placeholder marker ───────────────── */
+  .placeholder-note {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: rgba(245,166,35,0.05);
+    border: 1px dashed rgba(245,166,35,0.32);
+    border-radius: var(--radius-sm);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--warning);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+
+  <header class="canvas-header">
+    <h1>Auth Module — Visual v0</h1>
+    <p>4 个核心视图汇总；目的是验证基调与方向，不是 final 视觉。</p>
+    <div class="canvas-meta">v0 · 2026-06-23 · low fidelity</div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- VIEW 1: /login page                              -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="view">
+    <div class="view-label">View 1 · /login 页面（独立登录路由）</div>
+    <div class="frame">
+      <span class="frame-note">1280×640 桌面</span>
+      <div class="login-stage">
+
+        <div class="login-topbar">
+          <div class="logo">
+            <span class="logo-mark"></span>
+            <span class="logo-text">Arc Lepton</span>
+          </div>
+          <button class="btn btn-ghost btn-pill">
+            <span class="icon-ph">i</span>
+            Docs
+          </button>
+        </div>
+
+        <div class="login-card">
+          <div class="login-eyebrow">▸ Connect to start</div>
+          <h2>给你的 Agent<br>一笔预算去做研究</h2>
+          <p class="desc">用钱包登录，Agent 即可在你设定的 USDC 预算内自主调用数据源、生成研究报告。</p>
+
+          <button class="btn btn-primary btn-primary-lg">
+            <span class="icon-ph" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);color:white">W</span>
+            Connect Wallet
+          </button>
+
+          <div class="login-divider">Trusted by</div>
+
+          <div class="login-stats">
+            <div class="stat-item">
+              <div class="stat-num">1,247</div>
+              <div class="stat-label">researches done</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">$3.42</div>
+              <div class="stat-label">USDC spent on-chain</div>
+            </div>
+          </div>
+
+          <div class="login-footer">
+            We don't store your private key — only your public address.<br>
+            By connecting you agree to our <a href="#">Terms</a>.
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="placeholder-note">
+      [placeholder] logo-mark 是占位（应替换为正式 logo SVG）；统计数字是 mock；icon "W" 是钱包图标占位（v1 替换为真 icon 库）
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- VIEW 2: Header button 4 states                   -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="view">
+    <div class="view-label">View 2 · Header 钱包按钮 · 4 状态</div>
+    <div class="frame">
+      <span class="frame-note">Header bar @ 实际尺寸</span>
+      <div class="header-list">
+
+        <!-- State 1: Default -->
+        <div class="header-row">
+          <div class="state-label">[1] DEFAULT 未连接</div>
+          <div class="mock-header">
+            <div style="display:flex;align-items:center;gap:var(--space-7)">
+              <div class="logo">
+                <span class="logo-mark" style="width:22px;height:22px"></span>
+                <span class="logo-text" style="font-size:0.875rem">Arc Lepton</span>
+              </div>
+              <div class="nav-links">
+                <span>Research</span><span>History</span><span>Docs</span>
+              </div>
+            </div>
+            <button class="wallet-btn">
+              <span class="icon-ph" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);color:white;width:14px;height:14px;font-size:8px">W</span>
+              Connect Wallet
+            </button>
+          </div>
+        </div>
+
+        <!-- State 2: Connecting -->
+        <div class="header-row">
+          <div class="state-label">[2] CONNECTING 签名等待</div>
+          <div class="mock-header">
+            <div style="display:flex;align-items:center;gap:var(--space-7)">
+              <div class="logo">
+                <span class="logo-mark" style="width:22px;height:22px"></span>
+                <span class="logo-text" style="font-size:0.875rem">Arc Lepton</span>
+              </div>
+              <div class="nav-links">
+                <span>Research</span><span>History</span><span>Docs</span>
+              </div>
+            </div>
+            <button class="wallet-btn wallet-btn-loading">
+              <span class="spinner"></span>
+              Waiting for signature…
+            </button>
+          </div>
+        </div>
+
+        <!-- State 3: Wrong Network -->
+        <div class="header-row">
+          <div class="state-label">[3] WRONG NETWORK</div>
+          <div class="mock-header">
+            <div style="display:flex;align-items:center;gap:var(--space-7)">
+              <div class="logo">
+                <span class="logo-mark" style="width:22px;height:22px"></span>
+                <span class="logo-text" style="font-size:0.875rem">Arc Lepton</span>
+              </div>
+              <div class="nav-links">
+                <span>Research</span><span>History</span><span>Docs</span>
+              </div>
+            </div>
+            <button class="wallet-btn wallet-btn-wrong">
+              <span class="icon-ph" style="border-color:rgba(247,90,90,0.4);color:var(--danger);width:14px;height:14px;font-size:8px">!</span>
+              Wrong Network
+              <span class="chevron">▾</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- State 4: Connected -->
+        <div class="header-row">
+          <div class="state-label">[4] CONNECTED 已登录</div>
+          <div class="mock-header">
+            <div style="display:flex;align-items:center;gap:var(--space-7)">
+              <div class="logo">
+                <span class="logo-mark" style="width:22px;height:22px"></span>
+                <span class="logo-text" style="font-size:0.875rem">Arc Lepton</span>
+              </div>
+              <div class="nav-links">
+                <span>Research</span><span>History</span><span>Docs</span>
+              </div>
+            </div>
+            <button class="wallet-btn wallet-btn-connected">
+              <span class="balance mono">$5.234 USDC</span>
+              <span class="addr-chip">
+                <span class="live-dot"></span>
+                0xAb…C1d3
+                <span class="chevron">▾</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- VIEW 3: NetworkGuard banner                      -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="view">
+    <div class="view-label">View 3 · NetworkGuard Banner（横跨 Header 下方）</div>
+
+    <!-- danger style (wrong network) -->
+    <div class="frame" style="margin-bottom:var(--space-4)">
+      <span class="frame-note">[danger] wrong chain</span>
+      <div class="banner-stage">
+        <div class="net-banner">
+          <div class="net-icon">!</div>
+          <div class="net-content">
+            <div class="net-title">钱包当前不在 Arc Testnet</div>
+            <div class="net-sub">检测到 <span class="mono">Ethereum Mainnet (chainId: 1)</span> · 切换网络后才能签名登录</div>
+          </div>
+          <button class="btn btn-primary">Switch to Arc Testnet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- warning style (need switch) -->
+    <div class="frame">
+      <span class="frame-note">[warn] add-chain prompt</span>
+      <div class="banner-stage">
+        <div class="net-banner net-banner-warn">
+          <div class="net-icon">?</div>
+          <div class="net-content">
+            <div class="net-title">钱包尚未配置 Arc Testnet</div>
+            <div class="net-sub">点击下方按钮 · 自动向你的钱包推送 RPC 配置（一次性）</div>
+          </div>
+          <button class="btn btn-ghost">Add to Wallet</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- VIEW 4: AuthGate placeholder                     -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="view">
+    <div class="view-label">View 4 · AuthGate 占位（组件包裹未登录子树）</div>
+    <div class="frame">
+      <span class="frame-note">用于 dashboard 等受保护区域</span>
+      <div class="gate-stage">
+        <div class="gate-card">
+          <div class="gate-lock">[lock]</div>
+          <h3>登录后查看</h3>
+          <p>连接你的钱包以解锁研究历史、Agent 配置与 USDC 余额面板。</p>
+          <button class="btn btn-primary" style="margin:0 auto">
+            <span class="icon-ph" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);color:white">W</span>
+            Connect Wallet
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:var(--space-10);padding-top:var(--space-6);border-top:1px solid var(--border-subtle);color:var(--text-muted);font-size:0.8125rem;text-align:center">
+    Arc Lepton · Auth Module v0 · Geist + Arc Blue · 4 views
+  </footer>
+
+</div>
+
+</body>
+</html>

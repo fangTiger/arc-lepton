@@ -1,0 +1,50 @@
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+contracts/lib/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# Phase 16+ seed 钱包池本地文件
+contracts/.env.seeds
+
+# 日志
+log/
+*.log
+
+# AI Lens local cache
+cache/lens.json
+
+# 系统
+.DS_Store
+
+.claude
+.codex
+.opencode
+.playwright-cli
+.pnpm-store
+.graphifyignore
+.mcp.json
+AGENTS.md
+CLAUDE.md
+opencode.json

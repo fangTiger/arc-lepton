@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arc Lepton — Auth Module · Visual v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base:      #0A0B10;
+    --bg-surface:   #14161D;
+    --bg-elevated:  #1C1F28;
+    --bg-inset:     #060709;
+
+    --border-subtle:   rgba(255,255,255,0.06);
+    --border-default:  rgba(255,255,255,0.10);
+    --border-emphasis: rgba(255,255,255,0.16);
+
+    --text-primary:   #F4F5F8;
+    --text-secondary: #A1A6B3;
+    --text-muted:     #6B7280;
+    --text-disabled:  #4B5563;
+
+    --accent-arc:       #4D7EFF;
+    --accent-arc-hover: #6B92FF;
+    --accent-arc-glow:  rgba(77,126,255,0.35);
+
+    --success: #10B981;
+    --danger:  #F75A5A;
+    --warning: #F5A623;
+    --live:    #00D9FF;
+    --live-glow: rgba(0,217,255,0.5);
+
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px;
+    --space-9: 48px; --space-10: 64px; --space-11: 80px;
+
+    --radius-xs: 6px; --radius-sm: 10px; --radius-md: 14px;
+    --radius-lg: 20px; --radius-pill: 9999px;
+
+    --shadow-e1: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --shadow-e3: 0 16px 64px rgba(0,0,0,0.7), 0 0 0 1px var(--border-emphasis);
+    --glow-arc:  0 0 32px rgba(77,126,255,0.4);
+    --glow-live: 0 0 12px var(--live-glow);
+
+    --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-snap:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast:    120ms;
+    --dur-base:    200ms;
+    --dur-slow:    320ms;
+    --dur-pulse:   1600ms;
+  }
+
+  /* Tweak: accent color overrides applied via [data-accent] */
+  [data-accent="cyan"] {
+    --accent-arc:       #00D9FF;
+    --accent-arc-hover: #4FE4FF;
+    --accent-arc-glow:  rgba(0,217,255,0.4);
+    --glow-arc:         0 0 32px rgba(0,217,255,0.45);
+  }
+  [data-accent="green"] {
+    --accent-arc:       #10B981;
+    --accent-arc-hover: #34D399;
+    --accent-arc-glow:  rgba(16,185,129,0.4);
+    --glow-arc:         0 0 32px rgba(16,185,129,0.4);
+  }
+  /* Tweak: pulse off */
+  [data-pulse="off"] .live-dot,
+  [data-pulse="off"] .canvas-meta::before { animation: none !important; }
+  /* Tweak: density */
+  [data-density="compact"] { font-size: 14px; }
+  [data-density="compact"] .login-card { padding: var(--space-6); }
+  [data-density="compact"] .gate-card { padding: var(--space-7) var(--space-6); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg-base); color: var(--text-primary); }
+  body {
+    font-family: 'Geist', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 80% 60% at top, rgba(77,126,255,0.05) 0%, transparent 50%),
+      var(--bg-base);
+  }
+  button { font-family: inherit; }
+  svg { display: block; }
+
+  /* ─── Canvas ───────────────────────────────────── */
+  .canvas {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: var(--space-9) var(--space-7) var(--space-11);
+  }
+  .canvas-header { margin-bottom: var(--space-9); }
+  .canvas-header h1 {
+    font-size: 1.625rem; font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .canvas-header p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-top: var(--space-2);
+  }
+  .canvas-meta {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .canvas-meta::before {
+    content: ''; width: 6px; height: 6px; border-radius: var(--radius-pill);
+    background: var(--live); box-shadow: var(--glow-live);
+    animation: pulse var(--dur-pulse) linear infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.55; transform: scale(1.3); }
+  }
+  @keyframes float-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* View frame */
+  .view { margin-bottom: var(--space-10); }
+  .view-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+    display: flex; align-items: center; gap: var(--space-3);
+  }
+  .view-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--border-subtle);
+  }
+  .frame {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+  }
+  .frame-note {
+    position: absolute;
+    top: var(--space-3); right: var(--space-4);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.625rem;
+    color: var(--text-disabled);
+    z-index: 5;
+  }
+  .views-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+  }
+  @media (max-width: 920px) { .views-row { grid-template-columns: 1fr; } }
+
+  /* ─── Logo (SVG mark + wordmark) ──────────────── */
+  .logo {
+    display: inline-flex; align-items: center; gap: var(--space-3);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    color: var(--accent-arc);
+    filter: drop-shadow(0 0 8px var(--accent-arc-glow));
+    transition: filter var(--dur-base) var(--ease-out);
+  }
+  .logo:hover .logo-mark { filter: drop-shadow(0 0 16px var(--accent-arc-glow)); }
+  .logo-text { font-size: 1rem; }
+  .logo-text-sm { font-size: 0.875rem; }
+
+  /* ─── Buttons ─────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-5);
+    height: 40px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--dur-base) var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--accent-arc); color: white;
+  }
+  .btn-primary:hover {
+    background: var(--accent-arc-hover);
+    box-shadow: var(--glow-arc);
+  }
+  .btn-primary-lg { height: 48px; padding: 0 var(--space-6); font-size: 0.9375rem; width: 100%; }
+  .btn-primary-lg svg { transition: transform var(--dur-base) var(--ease-out); }
+  .btn-primary-lg:hover svg { transform: translateX(2px); }
+
+  .btn-ghost {
+    background: transparent; color: var(--text-primary);
+    border-color: var(--border-default);
+  }
+  .btn-ghost:hover { background: var(--bg-surface); border-color: var(--border-emphasis); }
+
+  .btn-pill { border-radius: var(--radius-pill); height: 36px; padding: 0 var(--space-4); font-size: 0.8125rem; }
+  .btn-sm { height: 32px; padding: 0 var(--space-3); font-size: 0.8125rem; }
+
+  /* ─── Live pulse ─────────────────────────────── */
+  .live-dot {
+    width: 6px; height: 6px; border-radius: var(--radius-pill);
+    background: var(--live); box-shadow: var(--glow-live);
+    animation: pulse var(--dur-pulse) linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* ─── Mono ───────────────────────────────────── */
+  .mono { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  /* ─── Spinner ────────────────────────────────── */
+  .spinner {
+    width: 13px; height: 13px;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-top-color: currentColor;
+    border-radius: var(--radius-pill);
+    animation: spin 800ms linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══ VIEW 1: /login page ═══════════════════════ */
+  .login-stage {
+    min-height: 680px;
+    padding: var(--space-9);
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(ellipse 60% 50% at center top, rgba(77,126,255,0.10) 0%, transparent 60%),
+      var(--bg-base);
+    position: relative;
+  }
+  .login-stage::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 70% 70% at center, black 20%, transparent 75%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .login-topbar {
+    position: absolute;
+    top: var(--space-5); left: var(--space-7); right: var(--space-7);
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 2;
+  }
+  .login-card {
+    width: 100%; max-width: 420px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-e3);
+    position: relative; z-index: 2;
+    animation: float-in var(--dur-slow) var(--ease-out) both;
+  }
+  .login-eyebrow {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-arc);
+    margin-bottom: var(--space-3);
+  }
+  .login-eyebrow::before {
+    content: ''; width: 16px; height: 1px; background: currentColor;
+  }
+  .login-card h2 {
+    font-size: 1.625rem; font-weight: 600;
+    line-height: 1.2; letter-spacing: -0.015em;
+    margin-bottom: var(--space-3);
+    text-wrap: pretty;
+  }
+  .login-card .desc {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-7);
+    text-wrap: pretty;
+  }
+  .login-divider {
+    display: flex; align-items: center; gap: var(--space-3);
+    margin: var(--space-5) 0;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-disabled);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .login-divider::before, .login-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-subtle);
+  }
+  .login-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+  .stat-item .stat-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 1.125rem; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-item .stat-label {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .login-footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--space-5);
+    line-height: 1.6;
+  }
+  .login-footer a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ═══ VIEW 2: Wallet picker MODAL ═══════════════ */
+  .modal-stage {
+    min-height: 680px; padding: var(--space-9);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-base);
+    position: relative;
+  }
+  .modal-stage::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    z-index: 1;
+  }
+  /* dim login background visible behind modal */
+  .modal-bg-mock {
+    position: absolute; inset: 0; opacity: 0.25;
+    background:
+      radial-gradient(ellipse 60% 50% at center top, rgba(77,126,255,0.10) 0%, transparent 60%),
+      var(--bg-base);
+  }
+  .modal-bg-mock::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+  .wallet-modal {
+    width: 100%; max-width: 380px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e3);
+    position: relative; z-index: 2;
+    animation: float-in var(--dur-slow) var(--ease-out) both;
+    overflow: hidden;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: var(--space-5) var(--space-6) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .modal-head h3 { font-size: 1rem; font-weight: 600; }
+  .modal-close {
+    width: 28px; height: 28px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all var(--dur-fast) var(--ease-out);
+  }
+  .modal-close:hover { border-color: var(--border-emphasis); color: var(--text-primary); }
+  .modal-body { padding: var(--space-4) var(--space-3); }
+  .wallet-option {
+    display: flex; align-items: center; gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-out);
+    width: 100%; border: none; background: transparent;
+    color: inherit; font: inherit; text-align: left;
+  }
+  .wallet-option:hover { background: var(--bg-surface); }
+  .wallet-option-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .wallet-option-name {
+    flex: 1; font-size: 0.9375rem; font-weight: 500;
+  }
+  .wallet-option-badge {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    padding: 2px var(--space-2);
+    background: var(--bg-surface);
+    border-radius: var(--radius-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .modal-foot {
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .modal-foot a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ═══ VIEW 3: Header button states ══════════════ */
+  .header-list { display: flex; flex-direction: column; }
+  .header-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: var(--space-5);
+    align-items: center;
+    padding: var(--space-5) var(--space-7);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .header-row:last-child { border-bottom: none; }
+  .header-row .state-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .mock-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-5);
+    height: 60px;
+  }
+  .mock-header-left {
+    display: flex; align-items: center; gap: var(--space-7);
+  }
+  .nav-links { display: flex; gap: var(--space-5); font-size: 0.8125rem; color: var(--text-secondary); }
+  .nav-links span { padding: var(--space-2) 0; cursor: pointer; transition: color var(--dur-fast); }
+  .nav-links span:hover { color: var(--text-primary); }
+
+  .wallet-btn {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    background: var(--accent-arc);
+    color: white;
+    padding: 0 var(--space-4);
+    height: 36px;
+    border-radius: var(--radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border: none; cursor: pointer;
+    transition: all var(--dur-base) var(--ease-out);
+  }
+  .wallet-btn:hover:not(:disabled) { background: var(--accent-arc-hover); box-shadow: var(--glow-arc); }
+  .wallet-btn-loading {
+    background: var(--bg-elevated); color: var(--text-secondary);
+    border: 1px solid var(--border-default); padding: 0 var(--space-4);
+  }
+  .wallet-btn-loading:hover { background: var(--bg-elevated); box-shadow: none; }
+  .wallet-btn-wrong {
+    background: rgba(247,90,90,0.08); border: 1px solid rgba(247,90,90,0.32); color: var(--danger);
+  }
+  .wallet-btn-wrong:hover { background: rgba(247,90,90,0.12); box-shadow: 0 0 16px rgba(247,90,90,0.2); }
+  .wallet-btn-connected {
+    background: var(--bg-elevated); border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    height: 36px; gap: var(--space-3);
+  }
+  .wallet-btn-connected:hover { background: var(--bg-elevated); box-shadow: var(--shadow-e2); border-color: var(--border-emphasis); }
+  .wallet-btn-connected .balance {
+    font-family: 'Geist Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    padding-right: var(--space-2);
+    border-right: 1px solid var(--border-subtle);
+  }
+  .wallet-btn-connected .addr-chip {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    background: var(--bg-base);
+    padding: 5px var(--space-3);
+    border-radius: var(--radius-pill);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem;
+  }
+  .chevron { color: var(--text-muted); }
+
+  /* ═══ VIEW 4: Connected dropdown ════════════════ */
+  .dropdown-stage { padding: var(--space-7) var(--space-7) var(--space-11); position: relative; min-height: 360px; }
+  .dropdown-trigger {
+    display: flex; justify-content: flex-end;
+  }
+  .dropdown-menu {
+    position: absolute; top: 76px; right: 60px;
+    width: 280px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-e3);
+    overflow: hidden;
+    animation: float-in var(--dur-base) var(--ease-out) both;
+  }
+  .dropdown-head {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .dropdown-addr {
+    display: flex; align-items: center; gap: var(--space-2);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+  }
+  .dropdown-balance {
+    font-family: 'Geist Mono', monospace;
+    font-size: 1.375rem; font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .dropdown-balance .unit { color: var(--text-muted); font-size: 0.8125rem; margin-left: var(--space-2); }
+  .dropdown-chain {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: rgba(77,126,255,0.10);
+    border: 1px solid rgba(77,126,255,0.24);
+    border-radius: var(--radius-pill);
+    font-size: 0.6875rem;
+    color: var(--accent-arc);
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .dropdown-body { padding: var(--space-2); }
+  .dropdown-item {
+    display: flex; align-items: center; gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-3);
+    background: transparent; border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: left; cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: background var(--dur-fast);
+  }
+  .dropdown-item:hover { background: var(--bg-surface); }
+  .dropdown-item.danger { color: var(--danger); }
+  .dropdown-item.danger:hover { background: rgba(247,90,90,0.06); }
+  .dropdown-icon { color: var(--text-muted); flex-shrink: 0; }
+  .dropdown-item.danger .dropdown-icon { color: var(--danger); opacity: 0.8; }
+  .dropdown-divider { height: 1px; background: var(--border-subtle); margin: var(--space-1) 0; }
+
+  /* ═══ VIEW 5: NetworkGuard banners ══════════════ */
+  .banner-stage { padding: var(--space-5) var(--space-7); }
+  .net-banner {
+    display: flex; align-items: center; gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: linear-gradient(180deg, rgba(247,90,90,0.08) 0%, rgba(247,90,90,0.04) 100%);
+    border: 1px solid rgba(247,90,90,0.24);
+    border-radius: var(--radius-md);
+  }
+  .net-banner .net-icon {
+    width: 36px; height: 36px;
+    background: rgba(247,90,90,0.16);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--danger);
+    flex-shrink: 0;
+  }
+  .net-banner .net-content { flex: 1; min-width: 0; }
+  .net-banner .net-title { color: var(--text-primary); font-weight: 500; font-size: 0.875rem; }
+  .net-banner .net-sub { color: var(--text-secondary); font-size: 0.8125rem; margin-top: 2px; }
+  .net-banner .net-sub .mono { color: var(--text-muted); }
+  .net-banner-warn {
+    background: linear-gradient(180deg, rgba(245,166,35,0.07) 0%, rgba(245,166,35,0.03) 100%);
+    border-color: rgba(245,166,35,0.24);
+  }
+  .net-banner-warn .net-icon { background: rgba(245,166,35,0.16); color: var(--warning); }
+
+  /* ═══ VIEW 6: AuthGate ═══════════════════════════ */
+  .gate-stage { padding: var(--space-9); display: flex; justify-content: center; }
+  .gate-card {
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-emphasis);
+    border-radius: var(--radius-lg);
+    padding: var(--space-9) var(--space-7);
+    text-align: center;
+    max-width: 480px; width: 100%;
+  }
+  .gate-lock {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    margin: 0 auto var(--space-5);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+  }
+  .gate-card h3 {
+    font-size: 1.25rem; font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-2);
+  }
+  .gate-card p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-6);
+    text-wrap: pretty;
+  }
+
+  /* ═══ VIEW 7: Toasts ═════════════════════════════ */
+  .toast-stage {
+    min-height: 320px;
+    padding: var(--space-7);
+    background: var(--bg-base);
+    position: relative;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    gap: var(--space-4);
+    flex-direction: column;
+  }
+  .toast-stage::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.4;
+    background-image:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .toast {
+    display: flex; align-items: flex-start; gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-e2);
+    min-width: 320px; max-width: 380px;
+    position: relative; z-index: 2;
+    animation: float-in var(--dur-slow) var(--ease-out) both;
+  }
+  .toast-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .toast-icon-pending { background: rgba(77,126,255,0.12); color: var(--accent-arc); }
+  .toast-icon-error { background: rgba(247,90,90,0.12); color: var(--danger); }
+  .toast-content { flex: 1; min-width: 0; }
+  .toast-title { font-weight: 500; font-size: 0.875rem; margin-bottom: 2px; }
+  .toast-sub { font-size: 0.8125rem; color: var(--text-secondary); }
+  .toast-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 0; flex-shrink: 0;
+    transition: color var(--dur-fast);
+  }
+  .toast-close:hover { color: var(--text-primary); }
+  .toast-border-pending { border-left: 2px solid var(--accent-arc); }
+  .toast-border-error { border-left: 2px solid var(--danger); }
+
+  /* ═══ Tweaks panel ═══════════════════════════════ */
+  .tweaks-toggle {
+    position: fixed; bottom: var(--space-5); right: var(--space-5);
+    width: 44px; height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-e2);
+    transition: all var(--dur-base) var(--ease-out);
+  }
+  .tweaks-toggle:hover { color: var(--text-primary); border-color: var(--border-emphasis); }
+  .tweaks-panel {
+    position: fixed; bottom: var(--space-5); right: var(--space-5);
+    width: 280px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-e3);
+    z-index: 101;
+    transform: translateY(8px); opacity: 0; pointer-events: none;
+    transition: all var(--dur-base) var(--ease-out);
+  }
+  .tweaks-panel.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+  .tweaks-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .tweaks-head h4 { font-size: 0.875rem; font-weight: 600; }
+  .tweaks-body { padding: var(--space-3) var(--space-5) var(--space-5); }
+  .tweak-group { margin-top: var(--space-4); }
+  .tweak-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-2);
+  }
+  .tweak-options { display: flex; gap: var(--space-2); }
+  .tweak-chip {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--dur-fast);
+    text-align: center;
+  }
+  .tweak-chip:hover { color: var(--text-primary); }
+  .tweak-chip.active {
+    background: rgba(77,126,255,0.10);
+    border-color: rgba(77,126,255,0.32);
+    color: var(--accent-arc);
+  }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+
+  <header class="canvas-header">
+    <h1>Auth Module — Visual v1</h1>
+    <p>v0 通过后的全保真稿。真 SVG 图标、新增 wallet modal / 已连接下拉 / toast 通知。右下角 Tweaks 可实时切换 accent 色 / pulse / 密度。</p>
+    <div class="canvas-meta">v1 · 2026-06-23 · full fidelity</div>
+  </header>
+
+  <!-- VIEW 1 + VIEW 2 side by side -->
+  <div class="views-row">
+
+    <!-- View 1: /login page -->
+    <section class="view" style="margin-bottom:0">
+      <div class="view-label">View 1 · /login 页面</div>
+      <div class="frame">
+        <span class="frame-note">desktop</span>
+        <div class="login-stage">
+          <div class="login-topbar">
+            <div class="logo">
+              <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
+                <path d="M14 3 A 11 11 0 1 1 3 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="22" cy="14" r="3" fill="currentColor"/>
+              </svg>
+              <span class="logo-text">Arc Lepton</span>
+            </div>
+            <button class="btn btn-ghost btn-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+              </svg>
+              Docs
+            </button>
+          </div>
+
+          <div class="login-card">
+            <div class="login-eyebrow">CONNECT TO START</div>
+            <h2>给你的 Agent<br>一笔预算去做研究</h2>
+            <p class="desc">用钱包登录，Agent 即可在你设定的 USDC 预算内自主调用数据源、生成研究报告。</p>
+
+            <button class="btn btn-primary btn-primary-lg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+              </svg>
+              Connect Wallet
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </button>
+
+            <div class="login-divider">Trusted by</div>
+
+            <div class="login-stats">
+              <div class="stat-item">
+                <div class="stat-num">1,247</div>
+                <div class="stat-label">researches done</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">$3.42</div>
+                <div class="stat-label">USDC spent on-chain</div>
+              </div>
+            </div>
+
+            <div class="login-footer">
+              We don't store your private key — only your public address.<br>
+              By connecting you agree to our <a href="#">Terms</a>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 2: Wallet picker modal -->
+    <section class="view" style="margin-bottom:0">
+      <div class="view-label">View 2 · 钱包选择 Modal（RainbowKit 风格）</div>
+      <div class="frame">
+        <span class="frame-note">overlay on /login</span>
+        <div class="modal-stage">
+          <div class="modal-bg-mock"></div>
+          <div class="wallet-modal">
+            <div class="modal-head">
+              <h3>Connect a Wallet</h3>
+              <button class="modal-close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div class="modal-body">
+              <button class="wallet-option">
+                <div class="wallet-option-icon" style="background:#F6851B14;color:#F6851B">MM</div>
+                <div class="wallet-option-name">MetaMask</div>
+                <span class="wallet-option-badge">installed</span>
+              </button>
+              <button class="wallet-option">
+                <div class="wallet-option-icon" style="background:#1E1E1E;color:#FFB000">Ra</div>
+                <div class="wallet-option-name">Rabby</div>
+                <span class="wallet-option-badge">installed</span>
+              </button>
+              <button class="wallet-option">
+                <div class="wallet-option-icon" style="background:#0052FF14;color:#0052FF">Cb</div>
+                <div class="wallet-option-name">Coinbase Wallet</div>
+              </button>
+              <button class="wallet-option">
+                <div class="wallet-option-icon" style="background:#3B99FC14;color:#3B99FC">WC</div>
+                <div class="wallet-option-name">WalletConnect</div>
+                <span class="wallet-option-badge">QR</span>
+              </button>
+              <button class="wallet-option">
+                <div class="wallet-option-icon" style="background:#7C3AED14;color:#A78BFA">OK</div>
+                <div class="wallet-option-name">OKX Wallet</div>
+              </button>
+            </div>
+            <div class="modal-foot">
+              New to wallets? <a href="#">Learn more</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- View 3: Header button states -->
+  <section class="view">
+    <div class="view-label">View 3 · Header 钱包按钮 · 4 状态</div>
+    <div class="frame">
+      <span class="frame-note">@ 实际尺寸</span>
+      <div class="header-list">
+
+        <div class="header-row">
+          <div class="state-label">[1] DEFAULT</div>
+          <div class="mock-header">
+            <div class="mock-header-left">
+              <div class="logo">
+                <svg class="logo-mark" style="width:22px;height:22px" viewBox="0 0 28 28" fill="none">
+                  <path d="M14 3 A 11 11 0 1 1 3 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="22" cy="14" r="3" fill="currentColor"/>
+                </svg>
+                <span class="logo-text-sm">Arc Lepton</span>
+              </div>
+              <div class="nav-links"><span>Research</span><span>History</span><span>Docs</span></div>
+            </div>
+            <button class="wallet-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+              </svg>
+              Connect Wallet
+            </button>
+          </div>
+        </div>
+
+        <div class="header-row">
+          <div class="state-label">[2] CONNECTING</div>
+          <div class="mock-header">
+            <div class="mock-header-left">
+              <div class="logo">
+                <svg class="logo-mark" style="width:22px;height:22px" viewBox="0 0 28 28" fill="none">
+                  <path d="M14 3 A 11 11 0 1 1 3 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="22" cy="14" r="3" fill="currentColor"/>
+                </svg>
+                <span class="logo-text-sm">Arc Lepton</span>
+              </div>
+              <div class="nav-links"><span>Research</span><span>History</span><span>Docs</span></div>
+            </div>
+            <button class="wallet-btn wallet-btn-loading">
+              <span class="spinner"></span>
+              Waiting for signature…
+            </button>
+          </div>
+        </div>
+
+        <div class="header-row">
+          <div class="state-label">[3] WRONG NETWORK</div>
+          <div class="mock-header">
+            <div class="mock-header-left">
+              <div class="logo">
+                <svg class="logo-mark" style="width:22px;height:22px" viewBox="0 0 28 28" fill="none">
+                  <path d="M14 3 A 11 11 0 1 1 3 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="22" cy="14" r="3" fill="currentColor"/>
+                </svg>
+                <span class="logo-text-sm">Arc Lepton</span>
+              </div>
+              <div class="nav-links"><span>Research</span><span>History</span><span>Docs</span></div>
+            </div>
+            <button class="wallet-btn wallet-btn-wrong">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 8v4M12 16h.01"/>
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+              </svg>
+              Wrong Network
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="header-row">
+          <div class="state-label">[4] CONNECTED</div>
+          <div class="mock-header">
+            <div class="mock-header-left">
+              <div class="logo">
+                <svg class="logo-mark" style="width:22px;height:22px" viewBox="0 0 28 28" fill="none">
+                  <path d="M14 3 A 11 11 0 1 1 3 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="22" cy="14" r="3" fill="currentColor"/>
+                </svg>
+                <span class="logo-text-sm">Arc Lepton</span>
+              </div>
+              <div class="nav-links"><span>Research</span><span>History</span><span>Docs</span></div>
+            </div>
+            <button class="wallet-btn wallet-btn-connected">
+              <span class="balance mono">$5.234 USDC</span>
+              <span class="addr-chip">
+                <span class="live-dot"></span>
+                0xAb…C1d3
+                <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- View 4: Connected dropdown + View 5: Banners -->
+  <div class="views-row">
+
+    <!-- View 4: Connected dropdown -->
+    <section class="view" style="margin-bottom:0">
+      <div class="view-label">View 4 · 已连接钱包 · 下拉菜单展开</div>
+      <div class="frame">
+        <span class="frame-note">on click</span>
+        <div class="dropdown-stage">
+          <div class="dropdown-trigger">
+            <button class="wallet-btn wallet-btn-connected">
+              <span class="balance mono">$5.234 USDC</span>
+              <span class="addr-chip">
+                <span class="live-dot"></span>
+                0xAb…C1d3
+                <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </button>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-head">
+              <div class="dropdown-addr">
+                <span class="live-dot"></span>
+                0xAb12…C1d3
+              </div>
+              <div class="dropdown-balance">5.234<span class="unit">USDC</span></div>
+              <div class="dropdown-chain">
+                <span style="width:6px;height:6px;border-radius:9999px;background:currentColor;display:inline-block"></span>
+                ARC TESTNET
+              </div>
+            </div>
+            <div class="dropdown-body">
+              <button class="dropdown-item">
+                <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                Copy address
+              </button>
+              <button class="dropdown-item">
+                <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="m15 3 6 6"/><path d="M10 14 21 3"/><path d="M15 3h6v6"/></svg>
+                View on Arc Explorer
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item danger">
+                <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 5: AuthGate -->
+    <section class="view" style="margin-bottom:0">
+      <div class="view-label">View 5 · AuthGate 占位</div>
+      <div class="frame">
+        <span class="frame-note">for protected areas</span>
+        <div class="gate-stage">
+          <div class="gate-card">
+            <div class="gate-lock">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h3>登录后查看</h3>
+            <p>连接你的钱包以解锁研究历史、Agent 配置与 USDC 余额面板。</p>
+            <button class="btn btn-primary" style="margin:0 auto">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+              </svg>
+              Connect Wallet
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- View 6: Banners -->
+  <section class="view">
+    <div class="view-label">View 6 · NetworkGuard Banner · 2 变体</div>
+
+    <div class="frame" style="margin-bottom:var(--space-4)">
+      <span class="frame-note">[danger] wrong chain</span>
+      <div class="banner-stage">
+        <div class="net-banner">
+          <div class="net-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8v4M12 16h.01"/>
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+            </svg>
+          </div>
+          <div class="net-content">
+            <div class="net-title">钱包当前不在 Arc Testnet</div>
+            <div class="net-sub">检测到 <span class="mono">Ethereum Mainnet (chainId: 1)</span> · 切换网络后才能签名登录</div>
+          </div>
+          <button class="btn btn-primary">Switch to Arc Testnet</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <span class="frame-note">[warn] add-chain</span>
+      <div class="banner-stage">
+        <div class="net-banner net-banner-warn">
+          <div class="net-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+            </svg>
+          </div>
+          <div class="net-content">
+            <div class="net-title">钱包尚未配置 Arc Testnet</div>
+            <div class="net-sub">点击下方按钮 · 自动向你的钱包推送 RPC 配置（一次性）</div>
+          </div>
+          <button class="btn btn-ghost">Add to Wallet</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- View 7: Toasts -->
+  <section class="view">
+    <div class="view-label">View 7 · Toast 通知 · 签名等待 + 错误</div>
+    <div class="frame">
+      <span class="frame-note">bottom-right · auto-dismiss</span>
+      <div class="toast-stage">
+
+        <div class="toast toast-border-pending">
+          <div class="toast-icon toast-icon-pending">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">等待你在钱包中签名</div>
+            <div class="toast-sub">这一步不上链、不消耗 Gas</div>
+          </div>
+          <button class="toast-close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="toast toast-border-error">
+          <div class="toast-icon toast-icon-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">签名已取消</div>
+            <div class="toast-sub">你在钱包中拒绝了签名请求</div>
+          </div>
+          <button class="toast-close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:var(--space-10);padding-top:var(--space-6);border-top:1px solid var(--border-subtle);color:var(--text-muted);font-size:0.8125rem;text-align:center">
+    Arc Lepton · Auth Module v1 · 7 views · Geist + Arc Blue · Tweaks panel ↘
+  </footer>
+
+</div>
+
+<!-- ─── Tweaks panel ─────────────────────────────── -->
+<button class="tweaks-toggle" id="tweaksToggle" title="Open Tweaks">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+</button>
+
+<div class="tweaks-panel" id="tweaksPanel">
+  <div class="tweaks-head">
+    <h4>Tweaks</h4>
+    <button class="modal-close" id="tweaksClose">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="tweaks-body">
+
+    <div class="tweak-group">
+      <div class="tweak-label">Accent</div>
+      <div class="tweak-options" data-tweak="accent">
+        <div class="tweak-chip active" data-value="arc">Arc Blue</div>
+        <div class="tweak-chip" data-value="cyan">Cyan</div>
+        <div class="tweak-chip" data-value="green">Green</div>
+      </div>
+    </div>
+
+    <div class="tweak-group">
+      <div class="tweak-label">Live Pulse</div>
+      <div class="tweak-options" data-tweak="pulse">
+        <div class="tweak-chip active" data-value="on">On</div>
+        <div class="tweak-chip" data-value="off">Off</div>
+      </div>
+    </div>
+
+    <div class="tweak-group">
+      <div class="tweak-label">Density</div>
+      <div class="tweak-options" data-tweak="density">
+        <div class="tweak-chip active" data-value="cozy">Cozy</div>
+        <div class="tweak-chip" data-value="compact">Compact</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const toggle = document.getElementById('tweaksToggle');
+  const panel  = document.getElementById('tweaksPanel');
+  const closeBtn = document.getElementById('tweaksClose');
+  const root = document.documentElement;
+
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('open');
+    toggle.style.display = panel.classList.contains('open') ? 'none' : 'flex';
+  });
+  closeBtn.addEventListener('click', () => {
+    panel.classList.remove('open');
+    toggle.style.display = 'flex';
+  });
+
+  document.querySelectorAll('.tweak-options').forEach(group => {
+    const key = group.dataset.tweak;
+    group.querySelectorAll('.tweak-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        group.querySelectorAll('.tweak-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        root.setAttribute('data-' + key, chip.dataset.value);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
