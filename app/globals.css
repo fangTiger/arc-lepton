@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #0A0B10;
+  color: #F4F5F8;
+  font-family: 'Geist', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
