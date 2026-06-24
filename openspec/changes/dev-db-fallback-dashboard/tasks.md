@@ -1,0 +1,8 @@
+- [x] 添加 users repo 内存 fallback 与生产 fail-fast 测试
+- [x] 调整 verify 路由测试为 mock `usersRepo.upsertOnLogin`
+- [x] 添加 dashboard 占位页渲染与退出测试
+- [x] 实现 `UsersRepo`、`MemoryUsersRepo`、`PgUsersRepo` 并在 `lib/db/index.ts` 选择实现
+- [x] 将 verify 路由改为调用 `usersRepo.upsertOnLogin`
+- [x] 实现 `/dashboard` 终端风占位页面
+- [x] 运行 typecheck、vitest、build、dev/curl 验证
+- [x] 更新 graphify 图谱并提交变更

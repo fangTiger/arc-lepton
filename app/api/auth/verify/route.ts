@@ -5,8 +5,7 @@ import { signSessionJwt } from '@/lib/auth/jwt'
 import { buildSessionCookie } from '@/lib/auth/session'
 import { verifySiweLogin } from '@/lib/auth/siwe'
 import { RATE_LIMIT_VERIFY } from '@/lib/constants'
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema/users'
+import { usersRepo } from '@/lib/db'
 import { kv } from '@/lib/kv'
 
 const BodySchema = z.object({
@@ -37,10 +36,7 @@ export async function POST(req: Request) {
   })
   if (!result.ok) return NextResponse.json({ error: 'INVALID_SIGNATURE' }, { status: 401 })
 
-  await db
-    .insert(users)
-    .values({ address: result.address })
-    .onConflictDoUpdate({ target: users.address, set: { lastLoginAt: new Date() } })
+  await usersRepo.upsertOnLogin(result.address)
 
   const jwt = await signSessionJwt(result.address)
   return NextResponse.json(

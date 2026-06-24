@@ -9,15 +9,8 @@ vi.mock('@/lib/kv', () => ({ kv: mockKv }))
 
 const upsertSpy = vi.fn()
 vi.mock('@/lib/db', () => ({
-  db: {
-    insert: () => ({
-      values: (v: unknown) => ({
-        onConflictDoUpdate: () => {
-          upsertSpy(v)
-          return Promise.resolve()
-        },
-      }),
-    }),
+  usersRepo: {
+    upsertOnLogin: upsertSpy,
   },
 }))
 
@@ -61,7 +54,7 @@ describe('POST /api/auth/verify', () => {
     const res = await postVerify(await buildValidBody())
     expect(res.status).toBe(200)
     expect(res.headers.get('Set-Cookie')).toContain('arc_session=')
-    expect(upsertSpy).toHaveBeenCalledTimes(1)
+    expect(upsertSpy).toHaveBeenCalledWith(testAccount.address.toLowerCase())
   })
 
   it('returns 401 on tampered message', async () => {
