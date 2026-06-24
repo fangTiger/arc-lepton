@@ -1,0 +1,8 @@
+- [x] 添加组件测试覆盖钱包已连接但未登录时不会自动触发 SIWE 登录
+- [x] 添加组件测试覆盖点击签名按钮才调用登录，失败后显示错误 toast 且不自动重试
+- [x] 实现钱包按钮手动签名状态机和终端风菜单
+- [x] 重做全局视觉 token、Tailwind 色彩、动画和 mono 字体
+- [x] 新增 TopBar 和 BottomBar，并接入根布局
+- [x] 重做首页、登录页和 NetworkGuard 为 Bloomberg Terminal 风格
+- [x] 运行 typecheck、vitest、build、dev server 和 curl 验证
+- [x] 更新 graphify 图谱并提交变更

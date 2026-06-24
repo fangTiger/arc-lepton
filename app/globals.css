@@ -4,18 +4,22 @@
 
 :root {
   color-scheme: dark;
-  --bg-base: #0A0B10;
-  --bg-surface: #14161D;
-  --bg-elevated: #1C1F28;
-  --bg-inset: #060709;
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --text-primary: #F4F5F8;
-  --text-secondary: #A1A6B3;
-  --text-muted: #6B7280;
-  --accent-arc: #4D7EFF;
-  --accent-arc-glow: rgba(77, 126, 255, 0.35);
-  --live: #00D9FF;
-  --live-glow: rgba(0, 217, 255, 0.5);
+  --bg-base: #000000;
+  --bg-panel: #0A0A0A;
+  --bg-cell: #111111;
+  --bg-hover: #1A1A1A;
+  --border: #2A2A2A;
+  --border-active: #FFB000;
+  --text-primary: #E5E5E5;
+  --text-secondary: #888888;
+  --text-muted: #555555;
+  --text-disabled: #333333;
+  --amber: #FFB000;
+  --amber-dim: #806000;
+  --green: #00FF7F;
+  --red: #FF3838;
+  --yellow: #FFEE00;
+  --cyan: #00D9FF;
 }
 
 html,
@@ -25,13 +29,25 @@ body {
 }
 
 body {
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Geist', -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Geist Mono', 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0;
+  -webkit-font-smoothing: none;
   text-rendering: geometricPrecision;
-  background:
-    radial-gradient(ellipse 80% 60% at top, rgba(77, 126, 255, 0.05) 0%, transparent 50%),
-    var(--bg-base);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: inherit;
 }
 
 button,
@@ -40,58 +56,61 @@ a {
 }
 
 button {
-  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 svg {
   display: block;
 }
 
+::selection {
+  background: var(--amber);
+  color: var(--bg-base);
+}
+
 @keyframes pulse {
   0%,
   100% {
     opacity: 1;
-    transform: scale(1);
   }
   50% {
-    opacity: 0.55;
-    transform: scale(1.3);
+    opacity: 0.35;
   }
 }
 
-@keyframes float-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
+@keyframes blink {
+  0%,
+  49% {
     opacity: 1;
-    transform: translateY(0);
   }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  50%,
+  100% {
+    opacity: 0.28;
   }
 }
 
 @layer utilities {
-  .grid-bg {
-    background-image:
-      linear-gradient(var(--border-subtle) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 70% 70% at center, black 20%, transparent 75%);
-    -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 20%, transparent 75%);
+  .scanline {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    opacity: 0.03;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.9) 0,
+      rgba(255, 255, 255, 0.9) 1px,
+      transparent 1px,
+      transparent 4px
+    );
   }
 
-  .glow-arc {
-    box-shadow: 0 0 32px var(--accent-arc-glow);
-  }
-
-  .glow-live {
-    box-shadow: 0 0 12px var(--live-glow);
+  .blink {
+    animation: blink 950ms steps(1, end) infinite;
   }
 
   .live-dot {
@@ -99,22 +118,34 @@ svg {
     height: 6px;
     flex-shrink: 0;
     border-radius: 9999px;
-    background: var(--live);
-    box-shadow: 0 0 12px var(--live-glow);
-    animation: pulse 1600ms linear infinite;
+    background: var(--cyan);
+    animation: pulse 1300ms steps(1, end) infinite;
   }
 
-  .float-in {
-    animation: float-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  .terminal-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--amber);
+    background: var(--bg-base);
+    color: var(--amber);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition:
+      background-color 100ms linear,
+      color 100ms linear,
+      border-color 100ms linear;
   }
 
-  .spinner {
-    width: 13px;
-    height: 13px;
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    border-top-color: currentColor;
-    border-radius: 9999px;
-    animation: spin 800ms linear infinite;
+  .terminal-button:hover {
+    background: var(--amber);
+    color: var(--bg-base);
+  }
+
+  .ascii-progress {
+    color: var(--amber);
+    white-space: nowrap;
   }
 }
 
