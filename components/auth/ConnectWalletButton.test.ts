@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ARC_CHAIN_ID } from '@/lib/constants'
 import { ConnectWalletButton } from './ConnectWalletButton'
 
 const mocks = vi.hoisted(() => ({
@@ -62,7 +63,7 @@ describe('ConnectWalletButton', () => {
       address: '0xAbCdEf000000000000000000000000000000C1d3',
       isConnected: true,
     }
-    mocks.chainId = 0
+    mocks.chainId = ARC_CHAIN_ID
     mocks.isAuthed = false
     mocks.userAddress = null
     mocks.isLoading = false
