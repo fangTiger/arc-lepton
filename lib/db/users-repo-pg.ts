@@ -1,6 +1,6 @@
 import { count, eq } from 'drizzle-orm'
 import type { VercelPgDatabase } from 'drizzle-orm/vercel-postgres'
-import * as schema from './schema/users'
+import * as schema from './schema'
 import { users } from './schema/users'
 import type { UsersRepo, UserRecord } from './users-repo'
 

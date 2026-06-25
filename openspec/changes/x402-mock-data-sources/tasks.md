@@ -1,0 +1,10 @@
+- [x] 添加 tx_log memory repo 的 RED 测试
+- [x] 添加 `withPayment` 未登录、已登录、handler 透传/headers 的 RED 测试
+- [x] 添加 5 个数据源 smoke RED 测试
+- [x] 添加 wallet tx-log/stats RED 测试
+- [x] 实现 tx_log schema、repo interface、memory repo、pg repo 和 db export
+- [x] 实现 `withPayment`
+- [x] 实现确定性 mock 数据生成器和 5 个数据源 route
+- [x] 实现 wallet tx-log/stats route
+- [x] 更新 Drizzle schema 配置和 OpenSpec 任务状态
+- [x] 运行 typecheck、vitest、build、dev/curl、graphify，并提交
