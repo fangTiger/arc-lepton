@@ -1,0 +1,11 @@
+- [x] 添加 DeepSeek dev fallback RED 测试
+- [x] 添加 research memory repo CRUD RED 测试
+- [x] 添加 research agent 完整流程和预算耗尽 RED 测试
+- [x] 添加 `/api/research/start` 鉴权与创建记录 RED 测试
+- [x] 安装 `openai` 并实现 DeepSeek client/mock client
+- [x] 实现 research schema、repo interface、memory repo、pg repo 和 db export
+- [x] 实现 agent event bus
+- [x] 实现 research agent tool loop、预算控制、SSE 事件输出和取消处理
+- [x] 实现 research start/stream/detail/cancel API
+- [x] 更新 Drizzle schema 配置
+- [x] 运行 typecheck、vitest、build、dev/curl、graphify，并提交

@@ -1,6 +1,9 @@
 import { drizzle } from 'drizzle-orm/vercel-postgres'
 import { sql } from '@vercel/postgres'
 import * as schema from './schema'
+import type { ResearchRepo } from './research-repo'
+import { MemoryResearchRepo } from './research-repo-memory'
+import { PgResearchRepo } from './research-repo-pg'
 import type { TxLogRepo } from './tx-log-repo'
 import { MemoryTxLogRepo } from './tx-log-repo-memory'
 import { PgTxLogRepo } from './tx-log-repo-pg'
@@ -10,12 +13,15 @@ import { PgUsersRepo } from './users-repo-pg'
 
 const usersMemoryFallbackMessage = '⚠ Using in-memory users repo (dev fallback). Data lost on restart.'
 const txLogMemoryFallbackMessage = '⚠ Using in-memory tx_log repo (dev fallback). Data lost on restart.'
+const researchMemoryFallbackMessage = '⚠ Using in-memory research repo (dev fallback). Data lost on restart.'
 
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: UsersRepo
   __arcLeptonTxLogRepo?: TxLogRepo
+  __arcLeptonResearchRepo?: ResearchRepo
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
+  __arcLeptonResearchRepoWarned?: boolean
 }
 
 function envValue(name: string) {
@@ -74,3 +80,20 @@ function createTxLogRepo(): TxLogRepo {
 }
 
 export const txLogRepo: TxLogRepo = createTxLogRepo()
+
+function createResearchRepo(): ResearchRepo {
+  if (hasDbEnv()) return new PgResearchRepo(db)
+
+  if (process.env.NODE_ENV === 'production' && !isNextProductionBuild()) {
+    throw new Error('DB env required in production')
+  }
+
+  if (!memoryRepoGlobal.__arcLeptonResearchRepoWarned) {
+    console.warn(researchMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonResearchRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonResearchRepo ??= new MemoryResearchRepo()
+  return memoryRepoGlobal.__arcLeptonResearchRepo
+}
+
+export const researchRepo: ResearchRepo = createResearchRepo()
