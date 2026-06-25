@@ -57,5 +57,8 @@ describe('useSiweLogin', () => {
     expect(mocks.signMessageAsync).toHaveBeenCalledWith({
       message: expect.stringContaining('Nonce: PreheatedNonce01'),
     })
+    expect(mocks.signMessageAsync).toHaveBeenCalledWith({
+      message: expect.stringContaining('Sign in to SIGNAL/LEDGER.'),
+    })
   })
 })

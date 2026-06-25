@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PRODUCT_NAME } from '@/lib/brand'
 import { ARC_CHAIN_ID } from '@/lib/constants'
 
 function formatUtcTime(date: Date) {
@@ -32,7 +33,7 @@ export function TopBar() {
     <div className="fixed left-0 right-0 top-0 z-[100] flex h-8 items-center overflow-hidden border-b border-border bg-bg-base px-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-amber md:px-4">
       <div className="flex min-w-max items-center gap-2">
         <a href="/" className="text-amber transition-colors hover:text-cyan">
-          SIGNAL/LEDGER
+          {PRODUCT_NAME}
         </a>
         <span className="text-text-muted">·</span>
         <span>TIME: {time}</span>

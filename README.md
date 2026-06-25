@@ -1,13 +1,15 @@
-# Arc Lepton
+# SIGNAL/LEDGER
 
-AI 交易研究员 - Lepton Hackathon 提交。
+AI 交易研究终端 - Agent 在固定 USDC 预算内自主调用数据源并生成交易研究报告。
+
+推荐 Vercel 项目 slug：`signal-ledger`，默认域名可使用 `https://signal-ledger.vercel.app/`（如果该 slug 未被占用）。
 
 ## 本地启动
 
 1. 复制环境变量
    ```bash
    cp .env.example .env.local
-   # 填入：JWT_SECRET (32字节)、WalletConnect projectId、Arc testnet RPC、Vercel Postgres + KV
+   # 填入：JWT_SECRET (32字节)、WalletConnect projectId、Arc testnet RPC、Vercel Postgres + KV、DeepSeek API
    ```
 
 2. 安装依赖 + 推 schema 到 DB

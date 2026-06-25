@@ -2,11 +2,12 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { BottomBar } from '@/components/BottomBar'
 import { TopBar } from '@/components/TopBar'
+import { PRODUCT_DESCRIPTION, PRODUCT_TITLE } from '@/lib/brand'
 import { Providers } from '@/providers/Providers'
 
 export const metadata: Metadata = {
-  title: 'Signal Ledger',
-  description: 'AI trading research terminal where agents spend USDC within a fixed budget.',
+  title: PRODUCT_TITLE,
+  description: PRODUCT_DESCRIPTION,
   icons: {
     icon: '/icon.svg',
   },

@@ -1,3 +1,5 @@
+import { SIWE_STATEMENT } from '@/lib/brand'
+
 export function buildSiweMessage(opts: {
   domain: string
   address: string
@@ -11,7 +13,7 @@ export function buildSiweMessage(opts: {
     `${opts.domain} wants you to sign in with your Ethereum account:`,
     opts.address,
     '',
-    'Sign in to Arc Lepton.',
+    SIWE_STATEMENT,
     '',
     `URI: ${opts.uri}`,
     `Version: 1`,

@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '@/lib/brand'
 import { getDeepSeekClient, DEEPSEEK_MODEL } from '@/lib/llm/deepseek'
 import { researchRepo, txLogRepo } from '@/lib/db'
 import {
@@ -115,7 +116,7 @@ export const RESEARCH_TOOLS: ToolDefinition[] = Object.entries(localTools).map((
 }))
 
 function systemPrompt(budgetUsdc: string) {
-  return `You are the Arc Lepton research agent. The user will give you a crypto trading research topic.
+  return `You are the ${PRODUCT_NAME} research agent. The user will give you a crypto trading research topic.
 Your budget is ${budgetUsdc} USDC, and each data-source call charges against that budget.
 
 Available tools:

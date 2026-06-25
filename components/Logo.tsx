@@ -1,3 +1,5 @@
+import { PRODUCT_NAME } from '@/lib/brand'
+
 type LogoProps = {
   className?: string
   compact?: boolean
@@ -11,7 +13,7 @@ export function Logo({ className = '', compact = false }: LogoProps) {
         compact ? 'text-xs' : 'text-sm'
       } ${className}`}
     >
-      SIGNAL/LEDGER
+      {PRODUCT_NAME}
     </a>
   )
 }

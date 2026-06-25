@@ -138,6 +138,16 @@ describe('runResearchAgent', () => {
       spentUsdc: '0.0002',
       reportMd: '# PEPE Research Report\nAction: wait for confirmation.',
     })
+    expect(mockState.client.chat.completions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'system',
+            content: expect.stringContaining('You are the SIGNAL/LEDGER research agent.'),
+          }),
+        ]),
+      }),
+    )
   })
 
   it('stops tool execution when remaining budget is below the cheapest call', async () => {

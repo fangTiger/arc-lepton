@@ -1,5 +1,6 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { defineChain } from 'viem'
+import { PRODUCT_NAME, WALLETCONNECT_FALLBACK_PROJECT_ID } from './brand'
 import { ARC_CHAIN_ID, ARC_RPC_URL } from './constants'
 
 export const arcTestnet = defineChain({
@@ -17,8 +18,8 @@ export const arcTestnet = defineChain({
 })
 
 export const wagmiConfig = getDefaultConfig({
-  appName: 'Arc Lepton',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'arc-lepton-dev',
+  appName: PRODUCT_NAME,
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? WALLETCONNECT_FALLBACK_PROJECT_ID,
   chains: [arcTestnet],
   ssr: true,
 })

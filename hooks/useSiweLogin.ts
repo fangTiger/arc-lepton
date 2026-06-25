@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi'
+import { SIWE_STATEMENT } from '@/lib/brand'
 import { APP_HOST, APP_URL, ARC_CHAIN_ID } from '@/lib/constants'
 import { useInvalidateSession } from './useUser'
 
@@ -62,7 +63,7 @@ export function useSiweLogin() {
         `${APP_HOST} wants you to sign in with your Ethereum account:`,
         address,
         '',
-        'Sign in to Arc Lepton.',
+        SIWE_STATEMENT,
         '',
         `URI: ${APP_URL}`,
         `Version: 1`,
