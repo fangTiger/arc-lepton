@@ -1,16 +1,17 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConnectWalletButton } from '@/components/auth/ConnectWalletButton'
 import { NetworkGuard } from '@/components/auth/NetworkGuard'
 import { Logo } from '@/components/Logo'
 
-const terminalStats = [
-  { label: 'RESEARCHES DONE', value: '1,247', tone: 'text-text-primary' },
-  { label: 'TOTAL USDC SPENT', value: '$3.42', tone: 'text-green' },
-  { label: 'ACTIVE AGENTS', value: '008', tone: 'text-cyan' },
-  { label: 'ARC BLOCK', value: '#1,247,891', tone: 'text-amber' },
-]
+type GlobalStats = {
+  totalResearches: number
+  totalCallsAcrossAllUsers: number
+  totalUsdcSpent: string
+  activeAgents: number
+}
 
 const marketRows = [
   ['NEWS API', 'ONLINE', '12MS', 'text-green'],
@@ -30,6 +31,34 @@ function DataCell({ label, value, tone = 'text-text-primary' }: { label: string;
 
 export default function HomePage() {
   const router = useRouter()
+  const [stats, setStats] = useState<GlobalStats>({
+    totalResearches: 0,
+    totalCallsAcrossAllUsers: 0,
+    totalUsdcSpent: '0',
+    activeAgents: 0,
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      const res = await fetch('/api/stats/global', { cache: 'no-store' })
+      if (!res.ok || cancelled) return
+      setStats(await res.json())
+    }
+    load().catch(() => {})
+    const timer = window.setInterval(() => load().catch(() => {}), 1000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  const terminalStats = [
+    { label: 'RESEARCHES DONE', value: stats.totalResearches.toLocaleString('en-US'), tone: 'text-text-primary' },
+    { label: 'TOTAL USDC SPENT', value: `$${stats.totalUsdcSpent}`, tone: 'text-green' },
+    { label: 'TOTAL CALLS', value: stats.totalCallsAcrossAllUsers.toLocaleString('en-US'), tone: 'text-cyan' },
+    { label: 'ACTIVE AGENTS', value: String(stats.activeAgents).padStart(3, '0'), tone: 'text-amber' },
+  ]
 
   return (
     <main className="min-h-screen bg-bg-base pt-8 pb-8 text-text-primary">
@@ -62,7 +91,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8 flex flex-col gap-2 sm:flex-row">
-            <button onClick={() => router.push('/login')} className="terminal-button h-11 px-5 text-xs">
+            <button onClick={() => router.push('/research')} className="terminal-button h-11 px-5 text-xs">
               [START RESEARCH ▸]
             </button>
             <a href="/docs" className="terminal-button h-11 border-border px-5 text-xs text-text-secondary hover:border-amber">

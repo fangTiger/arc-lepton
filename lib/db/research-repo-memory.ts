@@ -62,4 +62,12 @@ export class MemoryResearchRepo implements ResearchRepo {
       .slice(0, limit)
       .map((record) => ({ ...record }))
   }
+
+  async countAll(): Promise<number> {
+    return this.records.size
+  }
+
+  async countRunning(): Promise<number> {
+    return [...this.records.values()].filter((record) => record.status === 'running').length
+  }
 }

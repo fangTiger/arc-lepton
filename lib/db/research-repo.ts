@@ -20,4 +20,6 @@ export interface ResearchRepo {
   appendSpent(id: string, deltaUsdc: string): Promise<void>
   setReport(id: string, reportMd: string): Promise<void>
   listByAddress(address: string, limit?: number): Promise<Research[]>
+  countAll(): Promise<number>
+  countRunning(): Promise<number>
 }

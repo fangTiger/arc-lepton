@@ -1,0 +1,10 @@
+- [x] 添加 research list/global stats API 的 RED 测试
+- [x] 安装 `react-markdown` 和 `remark-gfm`
+- [x] 实现只读 research list 与 global stats API
+- [x] 实现 shared markdown/formatting utilities
+- [x] 实现 `/research` 创建与 Live SSE 页面
+- [x] 实现 AgentLogStream、TxFeed、BudgetMeter 组件
+- [x] 实现 `/research/[id]` 报告详情页
+- [x] 重做 `/dashboard` 接真实数据
+- [x] 首页 stats 改为 `/api/stats/global` 轮询
+- [x] 运行 typecheck、vitest、build、curl、Playwright/browser smoke、graphify，并提交

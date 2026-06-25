@@ -45,6 +45,31 @@ vi.mock('@/hooks/useSiweLogin', () => ({
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/wallet/stats')) {
+        return Response.json({ totalSpentUsdc: '0.0012', totalCalls: 5, lastResearchAt: '2026-06-25T00:00:18.000Z' })
+      }
+      if (url.includes('/api/research')) {
+        return Response.json({
+          researches: [
+            {
+              id: 'ab12c3d4-0000-0000-0000-000000000000',
+              address: mocks.userAddress.toLowerCase(),
+              topic: 'PEPE 现在能进吗',
+              budgetUsdc: '0.01',
+              spentUsdc: '0.0012',
+              status: 'completed',
+              reportMd: '# Report',
+              errorMessage: null,
+              startedAt: '2026-06-25T00:00:00.000Z',
+              completedAt: '2026-06-25T00:00:18.000Z',
+            },
+          ],
+        })
+      }
+      return Response.json({})
+    }))
     mocks.logout.mockResolvedValue(undefined)
     mocks.account = {
       address: '0xAbCdEf000000000000000000000000000000C1d3',
@@ -62,16 +87,22 @@ describe('DashboardPage', () => {
     expect(screen.getByText('0xAbCd..C1d3')).toBeInTheDocument()
     expect(screen.getByText('ARC-TESTNET')).toBeInTheDocument()
     expect(screen.getByText('5.235 USDC')).toBeInTheDocument()
-    expect(screen.getByText('NO RESEARCH YET. CLICK [START NEW RESEARCH] ABOVE.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /\[▸ START NEW RESEARCH →\]/i })).toHaveAttribute('href', '/research')
   })
 
-  it('logs out and keeps start research on-page', async () => {
+  it('loads stats and research history', async () => {
     render(createElement(DashboardPage))
 
-    fireEvent.click(screen.getByRole('button', { name: /\[ ▸ START NEW RESEARCH \]/i }))
-    expect(screen.getByText('[INFO] Research engine coming online. (Phase 2)')).toBeInTheDocument()
+    expect(await screen.findByText('PEPE 现在能进吗')).toBeInTheDocument()
+    expect(screen.getByText('0.0012 USDC')).toBeInTheDocument()
+    expect(screen.getByText('● DONE')).toBeInTheDocument()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: /\[ DISCONNECT \]/i }))
+  it('logs out', async () => {
+    render(createElement(DashboardPage))
+
+    await screen.findByText('PEPE 现在能进吗')
+    fireEvent.click(screen.getByRole('button', { name: /\[DISCONNECT\]/i }))
     await waitFor(() => expect(mocks.logout).toHaveBeenCalledTimes(1))
   })
 })

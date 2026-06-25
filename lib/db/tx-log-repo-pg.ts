@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { desc, eq, sql } from 'drizzle-orm'
+import { count, desc, eq, sql } from 'drizzle-orm'
 import type { VercelPgDatabase } from 'drizzle-orm/vercel-postgres'
 import * as schema from './schema'
 import { txLog } from './schema/tx-log'
@@ -41,6 +41,16 @@ export class PgTxLogRepo implements TxLogRepo {
       .from(txLog)
       .where(eq(txLog.address, address))
 
+    return normalizeDecimalString(row?.value ?? '0')
+  }
+
+  async count(): Promise<number> {
+    const [row] = await this.database.select({ value: count() }).from(txLog)
+    return Number(row?.value ?? 0)
+  }
+
+  async totalSpent(): Promise<string> {
+    const [row] = await this.database.select({ value: sql<string>`coalesce(sum(${txLog.amount}), 0)` }).from(txLog)
     return normalizeDecimalString(row?.value ?? '0')
   }
 }

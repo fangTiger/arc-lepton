@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { count, desc, eq, sql } from 'drizzle-orm'
 import type { VercelPgDatabase } from 'drizzle-orm/vercel-postgres'
 import * as schema from './schema'
 import { research } from './schema/research'
@@ -49,5 +49,15 @@ export class PgResearchRepo implements ResearchRepo {
       .where(eq(research.address, address))
       .orderBy(desc(research.startedAt))
       .limit(limit)
+  }
+
+  async countAll(): Promise<number> {
+    const [row] = await this.database.select({ value: count() }).from(research)
+    return Number(row?.value ?? 0)
+  }
+
+  async countRunning(): Promise<number> {
+    const [row] = await this.database.select({ value: count() }).from(research).where(eq(research.status, 'running'))
+    return Number(row?.value ?? 0)
   }
 }

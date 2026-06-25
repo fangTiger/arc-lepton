@@ -40,4 +40,13 @@ export class MemoryTxLogRepo implements TxLogRepo {
 
     return unitsToDecimal(total)
   }
+
+  async count(): Promise<number> {
+    return this.entries.size
+  }
+
+  async totalSpent(): Promise<string> {
+    const total = [...this.entries.values()].reduce((sum, entry) => sum + decimalToUnits(entry.amount), 0n)
+    return unitsToDecimal(total)
+  }
 }

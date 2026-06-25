@@ -11,6 +11,8 @@ export interface TxLogRepo {
   record(entry: { address: string; source: string; amount: string }): Promise<{ id: string; txHash: string; createdAt: Date }>
   listByAddress(address: string, limit?: number): Promise<TxLogEntry[]>
   totalSpentByAddress(address: string): Promise<string>
+  count(): Promise<number>
+  totalSpent(): Promise<string>
 }
 
 const DECIMAL_SCALE = 8n
