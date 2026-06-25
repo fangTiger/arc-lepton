@@ -430,7 +430,7 @@
       "label": "GET()",
       "file_type": "code",
       "source_file": "app/api/stats/global/route.ts",
-      "source_location": "L4",
+      "source_location": "L6",
       "id": "route_get",
       "community": 0,
       "norm_label": "get()"
@@ -1887,7 +1887,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/api/stats/global/route.ts",
-      "source_location": "L4",
+      "source_location": "L6",
       "weight": 1.0,
       "_src": "app_api_stats_global_route_ts",
       "_tgt": "route_get",

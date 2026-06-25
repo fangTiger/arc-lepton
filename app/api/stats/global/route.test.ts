@@ -34,6 +34,12 @@ vi.mock('@/lib/rate-limit/research-quota', () => ({
 }))
 
 describe('GET /api/stats/global', () => {
+  it('opts out of build-time prerendering', async () => {
+    const route = await import('./route')
+
+    expect(route.dynamic).toBe('force-dynamic')
+  })
+
   it('returns public aggregate stats', async () => {
     const { GET } = await import('./route')
 
