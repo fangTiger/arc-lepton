@@ -9,6 +9,23 @@ export interface KvClient {
   expire(key: string, seconds: number): Promise<number>
 }
 
+type GlobalWithMemoryKv = typeof globalThis & {
+  __arcLeptonMemoryKv?: MemoryKv
+  __arcLeptonMemoryKvWarned?: boolean
+}
+
+function getMemoryKv(): MemoryKv {
+  const globalForKv = globalThis as GlobalWithMemoryKv
+  globalForKv.__arcLeptonMemoryKv ??= new MemoryKv()
+
+  if (!globalForKv.__arcLeptonMemoryKvWarned) {
+    console.warn('⚠ Using in-memory KV (dev fallback)，restart needed after env added')
+    globalForKv.__arcLeptonMemoryKvWarned = true
+  }
+
+  return globalForKv.__arcLeptonMemoryKv
+}
+
 function createKvClient(): KvClient {
   const url = process.env.KV_REST_API_URL
   const token = process.env.KV_REST_API_TOKEN
@@ -19,8 +36,7 @@ function createKvClient(): KvClient {
   }
 
   if (process.env.NODE_ENV !== 'production' || isNextProductionBuild) {
-    console.warn('⚠ Using in-memory KV (dev fallback)，restart needed after env added')
-    return new MemoryKv()
+    return getMemoryKv()
   }
 
   throw new Error('KV_REST_API_URL and KV_REST_API_TOKEN are required in production')

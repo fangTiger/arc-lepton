@@ -1,9 +1,16 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi'
 import { APP_HOST, APP_URL, ARC_CHAIN_ID } from '@/lib/constants'
 import { useInvalidateSession } from './useUser'
+
+const PRELOADED_NONCE_MAX_AGE_MS = 4 * 60 * 1000
+
+type PreloadedNonce = {
+  nonce: string
+  fetchedAt: number
+}
 
 export function useSiweLogin() {
   const { address } = useAccount()
@@ -12,15 +19,43 @@ export function useSiweLogin() {
   const invalidate = useInvalidateSession()
   const [isLoading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const noncePromiseRef = useRef<Promise<PreloadedNonce> | null>(null)
+
+  const fetchNonce = useCallback(async (): Promise<PreloadedNonce> => {
+    const nonceRes = await fetch('/api/auth/nonce', { cache: 'no-store' })
+    if (!nonceRes.ok) throw new Error('Failed to fetch nonce')
+    const { nonce } = await nonceRes.json()
+    return { nonce, fetchedAt: Date.now() }
+  }, [])
+
+  const preloadNonce = useCallback(() => {
+    noncePromiseRef.current ??= fetchNonce().catch((e) => {
+      noncePromiseRef.current = null
+      throw e
+    })
+    return noncePromiseRef.current.then(() => undefined)
+  }, [fetchNonce])
+
+  const takeNonce = useCallback(async () => {
+    const preloaded = noncePromiseRef.current
+    noncePromiseRef.current = null
+
+    if (preloaded) {
+      const value = await preloaded
+      if (Date.now() - value.fetchedAt <= PRELOADED_NONCE_MAX_AGE_MS) {
+        return value.nonce
+      }
+    }
+
+    return (await fetchNonce()).nonce
+  }, [fetchNonce])
 
   const login = useCallback(async () => {
     if (!address) throw new Error('Wallet not connected')
     setError(null)
     setLoading(true)
     try {
-      const nonceRes = await fetch('/api/auth/nonce')
-      if (!nonceRes.ok) throw new Error('Failed to fetch nonce')
-      const { nonce } = await nonceRes.json()
+      const nonce = await takeNonce()
 
       const issuedAt = new Date().toISOString()
       const message = [
@@ -53,7 +88,7 @@ export function useSiweLogin() {
     } finally {
       setLoading(false)
     }
-  }, [address, signMessageAsync, invalidate])
+  }, [address, signMessageAsync, invalidate, takeNonce])
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -61,5 +96,5 @@ export function useSiweLogin() {
     await invalidate()
   }, [disconnectAsync, invalidate])
 
-  return { login, logout, isLoading, error }
+  return { login, logout, preloadNonce, isLoading, error }
 }

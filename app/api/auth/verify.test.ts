@@ -64,6 +64,33 @@ describe('POST /api/auth/verify', () => {
     expect(res.status).toBe(401)
   })
 
+  it('logs dev diagnostics on SIWE validation failure without leaking details to the client', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const body = await buildValidBody()
+    body.message = body.message.replace('Chain ID: 9999', 'Chain ID: 1')
+
+    const res = await postVerify(body)
+    const json = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(json).toEqual({ error: 'INVALID_SIGNATURE' })
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[auth.verify] SIWE validation failed',
+      expect.objectContaining({
+        reason: 'chain_mismatch',
+        parsed: expect.objectContaining({
+          domain: 'localhost:3000',
+          chainId: 1,
+        }),
+        expected: expect.objectContaining({
+          appHost: 'localhost:3000',
+          arcChainId: 9999,
+        }),
+      }),
+    )
+    errorSpy.mockRestore()
+  })
+
   it('returns 401 when nonce already consumed', async () => {
     const body = await buildValidBody()
     expect((await postVerify(body)).status).toBe(200)

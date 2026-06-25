@@ -11,6 +11,11 @@ type ConnectWalletButtonProps = {
   variant?: 'pill' | 'cta'
 }
 
+type SignatureToast = {
+  message: string
+  tone: 'warning' | 'error'
+}
+
 function shortAddress(address: string) {
   return `${address.slice(0, 4)}..${address.slice(-4)}`
 }
@@ -29,21 +34,21 @@ function toWagmiAddress(value: string | undefined): `0x${string}` | undefined {
   return value?.startsWith('0x') ? (value as `0x${string}`) : undefined
 }
 
-function signatureErrorMessage(error: unknown) {
+function signatureErrorMessage(error: unknown): SignatureToast {
   const message = error instanceof Error ? error.message.toLowerCase() : ''
   if (message.includes('reject') || message.includes('cancel') || message.includes('denied')) {
-    return '[ERR] Signature cancelled'
+    return { message: '[WARN] Signature cancelled', tone: 'warning' }
   }
-  return '[ERR] Login failed'
+  return { message: '[ERR] Login failed. 请再试一次', tone: 'error' }
 }
 
 export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonProps) {
   const { address: walletAddress, isConnected } = useAccount()
   const chainId = useChainId()
   const { isAuthed, address } = useUser()
-  const { login, logout, isLoading } = useSiweLogin()
+  const { login, logout, preloadNonce, isLoading } = useSiweLogin()
   const [isMenuOpen, setMenuOpen] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [signatureToast, setSignatureToast] = useState<SignatureToast | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const connectedAddress = address ?? walletAddress
   const balanceAddress = toWagmiAddress(connectedAddress)
@@ -58,8 +63,15 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
   const balanceText = useMemo(() => formatBalance(balance.data?.formatted), [balance.data?.formatted])
 
   useEffect(() => {
-    if (!isConnected || isAuthed) setErrorMessage(null)
+    if (!isConnected || isAuthed) setSignatureToast(null)
   }, [isConnected, isAuthed])
+
+  useEffect(() => {
+    if (signatureToast?.tone !== 'error') return
+
+    const timer = window.setTimeout(() => setSignatureToast(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [signatureToast])
 
   useEffect(() => {
     if (!isMenuOpen) return
@@ -83,12 +95,16 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
   }, [isMenuOpen])
 
   async function handleSignIn() {
-    setErrorMessage(null)
+    setSignatureToast(null)
     try {
       await login()
     } catch (error) {
-      setErrorMessage(signatureErrorMessage(error))
+      setSignatureToast(signatureErrorMessage(error))
     }
+  }
+
+  function warmAuthNonce() {
+    preloadNonce().catch(() => {})
   }
 
   const sizeClass = isCta ? 'h-12 w-full px-4 text-sm' : 'h-9 px-3 text-xs'
@@ -99,12 +115,14 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
       {({ openChainModal, openConnectModal, mounted }) => {
         if (!mounted) return null
 
-        const toast = errorMessage ? (
+        const toast = signatureToast ? (
           <div
             role="alert"
-            className="fixed right-3 top-9 z-[90] border border-red bg-bg-base px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-red md:right-5"
+            className={`fixed right-3 top-9 z-[90] border bg-bg-base px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] md:right-5 ${
+              signatureToast.tone === 'warning' ? 'border-amber text-amber' : 'border-red text-red'
+            }`}
           >
-            {errorMessage}
+            {signatureToast.message}
           </div>
         ) : null
 
@@ -156,6 +174,8 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
               {toast}
               <button
                 type="button"
+                onFocus={warmAuthNonce}
+                onPointerDown={warmAuthNonce}
                 onClick={handleSignIn}
                 className={`${terminalButtonClass} blink border-amber bg-amber text-bg-base hover:bg-bg-base hover:text-amber`}
               >
