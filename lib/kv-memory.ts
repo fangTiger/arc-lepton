@@ -44,6 +44,19 @@ export class MemoryKv implements KvClient {
     return next
   }
 
+  async decr(key: string): Promise<number> {
+    const current = Number.parseInt((await this.get(key)) ?? '0', 10)
+    const next = current - 1
+    const existing = this.store.get(key)
+
+    this.store.set(key, {
+      value: String(next),
+      expiresAt: existing?.expiresAt ?? null,
+    })
+
+    return next
+  }
+
   async expire(key: string, seconds: number): Promise<number> {
     const item = this.store.get(key)
     if (!item) return 0

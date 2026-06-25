@@ -14,6 +14,11 @@ type WalletStats = {
   lastResearchAt: string | null
 }
 
+type QuotaStatus = {
+  wallet: { used: number; limit: number; remaining: number; resetAt: string }
+  global: { used: number; limit: number; remaining: number; resetAt: string }
+}
+
 function shortAddress(address: string | null | undefined) {
   if (!address) return 'N/A'
   return `${address.slice(0, 6)}..${address.slice(-4)}`
@@ -51,6 +56,7 @@ export default function DashboardPage() {
   const { address: sessionAddress } = useUser()
   const { logout } = useSiweLogin()
   const [stats, setStats] = useState<WalletStats | null>(null)
+  const [quota, setQuota] = useState<QuotaStatus | null>(null)
   const [researches, setResearches] = useState<ResearchRecord[]>([])
   const activeAddress = sessionAddress ?? walletAddress ?? null
   const balanceAddress = toWagmiAddress(activeAddress)
@@ -64,12 +70,14 @@ export default function DashboardPage() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const [statsRes, researchRes] = await Promise.all([
+      const [statsRes, researchRes, quotaRes] = await Promise.all([
         fetch('/api/wallet/stats', { credentials: 'include' }),
         fetch('/api/research?limit=50', { credentials: 'include' }),
+        fetch('/api/quota', { credentials: 'include', cache: 'no-store' }),
       ])
       if (cancelled) return
       if (statsRes.ok) setStats(await statsRes.json())
+      if (quotaRes.ok) setQuota(await quotaRes.json())
       if (researchRes.ok) {
         const body = await researchRes.json() as { researches: ResearchRecord[] }
         setResearches(body.researches)
@@ -91,7 +99,7 @@ export default function DashboardPage() {
       <section className="mx-auto w-full max-w-[1180px] space-y-5">
         <div className="font-mono text-sm font-bold uppercase tracking-[0.05em] text-amber">&gt; AUTHENTICATED</div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr_minmax(220px,260px)]">
           <section className="border border-border bg-bg-panel">
             <div className="border-b border-amber bg-bg-base px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">
               ACCOUNT
@@ -122,6 +130,16 @@ export default function DashboardPage() {
               <a href="/research" className="terminal-button h-10 px-4 text-xs">
                 [▸ START NEW RESEARCH →]
               </a>
+            </div>
+          </section>
+
+          <section className="border border-border bg-bg-panel">
+            <div className="border-b border-amber bg-bg-base px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">
+              DAILY QUOTA
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <FieldRow label="WALLET" value={quota ? `${quota.wallet.used}/${quota.wallet.limit}` : '...'} />
+              <FieldRow label="GLOBAL" value={quota ? `${quota.global.used}/${quota.global.limit}` : '...'} />
             </div>
           </section>
         </div>

@@ -9,6 +9,18 @@ import type { AgentEvent, ResearchRecord } from '@/components/research/types'
 
 type TimedEvent = AgentEvent & { receivedAt?: string }
 
+type QuotaBucket = {
+  used: number
+  limit: number
+  remaining: number
+  resetAt: string
+}
+
+type QuotaStatus = {
+  wallet: QuotaBucket
+  global: QuotaBucket
+}
+
 const quickPrompts = [
   'SHOULD I BUY PEPE',
   'BTC PRICE PREDICTION',
@@ -27,11 +39,80 @@ function formatBudget(value: number) {
   return value.toFixed(4)
 }
 
+function quotaBar(bucket: QuotaBucket) {
+  const width = 10
+  const ratio = bucket.limit > 0 ? bucket.used / bucket.limit : 1
+  const filled = Math.min(width, Math.max(0, Math.round(ratio * width)))
+  return `${'█'.repeat(filled)}${'░'.repeat(width - filled)}`
+}
+
+function quotaTone(bucket: QuotaBucket) {
+  const ratio = bucket.limit > 0 ? bucket.used / bucket.limit : 1
+  if (ratio >= 1) return 'text-red'
+  if (ratio >= 0.8) return 'text-yellow'
+  return 'text-amber'
+}
+
+function resetIn(resetAt: string) {
+  const ms = Math.max(0, Date.parse(resetAt) - Date.now())
+  const hours = Math.floor(ms / 3_600_000)
+  const minutes = Math.floor((ms % 3_600_000) / 60_000)
+  return `${hours}h ${minutes}m`
+}
+
+function quotaExceededReason(quota: QuotaStatus | null) {
+  if (!quota) return null
+  if (quota.wallet.remaining <= 0) return 'Wallet daily quota reached'
+  if (quota.global.remaining <= 0) return 'Global daily quota reached'
+  return null
+}
+
+function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
+  if (!quota) {
+    return (
+      <div className="border border-border bg-bg-base p-3 font-mono text-[11px] uppercase tracking-[0.05em] text-text-muted">
+        DAILY QUOTA: LOADING...
+      </div>
+    )
+  }
+
+  return (
+    <div className="border border-border bg-bg-base p-3 font-mono text-[11px] uppercase tracking-[0.05em]">
+      <div className="mb-2 font-bold text-amber">DAILY QUOTA</div>
+      <div className="grid gap-2 md:grid-cols-2">
+        <div className={quotaTone(quota.wallet)}>
+          WALLET: <span className="tabular-nums">{quotaBar(quota.wallet)} {quota.wallet.used}/{quota.wallet.limit}</span>
+        </div>
+        <div className={quotaTone(quota.global)}>
+          GLOBAL: <span className="tabular-nums">{quotaBar(quota.global)} {quota.global.used}/{quota.global.limit}</span>
+        </div>
+      </div>
+      <div className="mt-2 text-text-secondary">RESETS IN: {resetIn(quota.wallet.resetAt)}</div>
+      <div className="my-2 border-t border-border" />
+      <div className="normal-case tracking-normal text-text-muted">Rate limits will be relaxed after mainnet launch.</div>
+    </div>
+  )
+}
+
 function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) => void }) {
   const [topic, setTopic] = useState('PEPE 现在能进吗？')
   const [budget, setBudget] = useState('0.0100')
   const [error, setError] = useState<string | null>(null)
+  const [quota, setQuota] = useState<QuotaStatus | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
+  const quotaReason = quotaExceededReason(quota)
+
+  const loadQuota = useCallback(async () => {
+    const res = await fetch('/api/quota', { credentials: 'include', cache: 'no-store' })
+    if (!res.ok) return
+    setQuota(await res.json() as QuotaStatus)
+  }, [])
+
+  useEffect(() => {
+    loadQuota().catch(() => {})
+    const timer = window.setInterval(() => loadQuota().catch(() => {}), 30_000)
+    return () => window.clearInterval(timer)
+  }, [loadQuota])
 
   async function submit() {
     setError(null)
@@ -43,6 +124,12 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic, budgetUsdc: budget }),
       })
+      if (res.status === 429) {
+        const body = await res.json() as { quota?: QuotaStatus }
+        if (body.quota) setQuota(body.quota)
+        const resetAt = body.quota?.wallet.resetAt ?? quota?.wallet.resetAt ?? new Date().toISOString()
+        throw new Error(`Quota exceeded. Resets in ${resetIn(resetAt)}.`)
+      }
       if (!res.ok) throw new Error(`START_FAILED_${res.status}`)
       const body = await res.json() as { researchId: string }
       onStarted(body.researchId, budget)
@@ -113,13 +200,16 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
           </div>
         </div>
 
+        <QuotaPanel quota={quota} />
+
         <button
           type="button"
           onClick={submit}
-          disabled={isSubmitting || !topic.trim()}
-          className="terminal-button h-12 w-full bg-amber px-4 text-sm text-bg-base hover:bg-bg-base hover:text-amber disabled:border-border disabled:bg-bg-cell disabled:text-text-muted"
+          disabled={isSubmitting || !topic.trim() || Boolean(quotaReason)}
+          title={quotaReason ? `${quotaReason}. Resets in ${resetIn(quota?.wallet.resetAt ?? new Date().toISOString())}.` : undefined}
+          className="terminal-button h-12 w-full bg-amber px-4 text-sm text-bg-base hover:bg-bg-base hover:text-amber disabled:border-red disabled:bg-bg-cell disabled:text-red"
         >
-          {isSubmitting ? '[ STARTING... ]' : '[ ▸ START RESEARCH ]'}
+          {quotaReason ? '[ QUOTA EXCEEDED ]' : isSubmitting ? '[ STARTING... ]' : '[ ▸ START RESEARCH ]'}
         </button>
         {error ? <div className="font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-red">[ERR] {error}</div> : null}
       </div>

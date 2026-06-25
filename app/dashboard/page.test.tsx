@@ -68,6 +68,12 @@ describe('DashboardPage', () => {
           ],
         })
       }
+      if (url.includes('/api/quota')) {
+        return Response.json({
+          wallet: { used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
+          global: { used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+        })
+      }
       return Response.json({})
     }))
     mocks.logout.mockResolvedValue(undefined)
@@ -96,6 +102,9 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('PEPE 现在能进吗')).toBeInTheDocument()
     expect(screen.getByText('0.0012 USDC')).toBeInTheDocument()
     expect(screen.getByText('● DONE')).toBeInTheDocument()
+    expect(screen.getByText('DAILY QUOTA')).toBeInTheDocument()
+    expect(screen.getByText('4/10')).toBeInTheDocument()
+    expect(screen.getByText('67/100')).toBeInTheDocument()
   })
 
   it('logs out', async () => {

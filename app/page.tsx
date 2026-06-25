@@ -11,6 +11,12 @@ type GlobalStats = {
   totalCallsAcrossAllUsers: number
   totalUsdcSpent: string
   activeAgents: number
+  dailyResearchQuota?: {
+    used: number
+    limit: number
+    remaining: number
+    resetAt: string
+  }
 }
 
 const marketRows = [
@@ -36,6 +42,7 @@ export default function HomePage() {
     totalCallsAcrossAllUsers: 0,
     totalUsdcSpent: '0',
     activeAgents: 0,
+    dailyResearchQuota: { used: 0, limit: 100, remaining: 100, resetAt: '' },
   })
 
   useEffect(() => {
@@ -57,7 +64,11 @@ export default function HomePage() {
     { label: 'RESEARCHES DONE', value: stats.totalResearches.toLocaleString('en-US'), tone: 'text-text-primary' },
     { label: 'TOTAL USDC SPENT', value: `$${stats.totalUsdcSpent}`, tone: 'text-green' },
     { label: 'TOTAL CALLS', value: stats.totalCallsAcrossAllUsers.toLocaleString('en-US'), tone: 'text-cyan' },
-    { label: 'ACTIVE AGENTS', value: String(stats.activeAgents).padStart(3, '0'), tone: 'text-amber' },
+    {
+      label: 'TODAY QUOTA',
+      value: `${stats.dailyResearchQuota?.used ?? 0}/${stats.dailyResearchQuota?.limit ?? 100}`,
+      tone: 'text-amber',
+    },
   ]
 
   return (
@@ -144,6 +155,7 @@ export default function HomePage() {
             <div className="mt-3 space-y-1 font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
               <div>&gt; AGENT/007 QUOTED NEWS API: 0.000024 USDC</div>
               <div>&gt; WHALE TRACE DELTA: +12.42M USDC</div>
+              <div>&gt; {stats.dailyResearchQuota?.used ?? 0}/{stats.dailyResearchQuota?.limit ?? 100} RESEARCHES USED TODAY</div>
               <div>&gt; RESEARCH PACKET SEALED: BLOCK #1,247,891</div>
               <div className="text-amber">&gt; READY FOR WALLET AUTH_</div>
             </div>

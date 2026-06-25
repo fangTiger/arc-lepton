@@ -1,0 +1,6 @@
+- [x] 实现 KV 配额模块和 UTC reset 逻辑
+- [x] 在研究创建 API 中消费配额并处理 429
+- [x] 新增登录态配额查询 API
+- [x] 在研究创建页、dashboard 和首页展示配额状态
+- [x] 增加配额模块、API、UI 回归测试
+- [x] 完成 typecheck、vitest、build、curl 冷启动/配额验证

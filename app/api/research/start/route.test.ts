@@ -32,6 +32,10 @@ const mockState = vi.hoisted(() => {
     runAgentInBackground(id: string) {
       backgrounds.push(id)
     },
+    quota: {
+      consumeQuota: vi.fn(),
+      getQuotaStatus: vi.fn(),
+    },
   }
 })
 
@@ -43,12 +47,23 @@ vi.mock('@/lib/agent/research-agent', () => ({
   runAgentInBackground: mockState.runAgentInBackground,
 }))
 
+vi.mock('@/lib/rate-limit/research-quota', () => ({
+  consumeQuota: mockState.quota.consumeQuota,
+  getQuotaStatus: mockState.quota.getQuotaStatus,
+}))
+
 beforeAll(() => {
   process.env.JWT_SECRET = 'test-secret-test-secret-test-secret-32b'
 })
 
 beforeEach(() => {
   mockState.reset()
+  vi.clearAllMocks()
+  mockState.quota.consumeQuota.mockResolvedValue({ ok: true })
+  mockState.quota.getQuotaStatus.mockResolvedValue({
+    wallet: { used: 10, limit: 10, remaining: 0, resetAt: '2026-06-26T00:00:00.000Z' },
+    global: { used: 20, limit: 100, remaining: 80, resetAt: '2026-06-26T00:00:00.000Z' },
+  })
 })
 
 async function authedRequest(body: unknown) {
@@ -97,5 +112,24 @@ describe('POST /api/research/start', () => {
       status: 'running',
     })
     expect(mockState.backgrounds).toEqual(['research-1'])
+  })
+
+  it('returns 429 and does not create research when quota is exceeded', async () => {
+    mockState.quota.consumeQuota.mockResolvedValueOnce({ ok: false, reason: 'WALLET_LIMIT' })
+    const { POST } = await import('./route')
+
+    const res = await POST(await authedRequest({ topic: 'PEPE 现在能进吗', budgetUsdc: '0.01' }))
+    const body = await res.json()
+
+    expect(res.status).toBe(429)
+    expect(body).toEqual({
+      error: 'WALLET_LIMIT',
+      quota: {
+        wallet: { used: 10, limit: 10, remaining: 0, resetAt: '2026-06-26T00:00:00.000Z' },
+        global: { used: 20, limit: 100, remaining: 80, resetAt: '2026-06-26T00:00:00.000Z' },
+      },
+    })
+    expect(mockState.records).toHaveLength(0)
+    expect(mockState.backgrounds).toHaveLength(0)
   })
 })

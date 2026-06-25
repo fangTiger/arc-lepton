@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/middleware'
 import { researchRepo } from '@/lib/db'
 import { runAgentInBackground } from '@/lib/agent/research-agent'
+import { consumeQuota, getQuotaStatus } from '@/lib/rate-limit/research-quota'
 
 const startSchema = z.object({
   topic: z.string().trim().min(1).max(200),
@@ -20,6 +21,14 @@ export async function POST(req: Request) {
     const { address } = await requireAuth(req)
     const body = startSchema.safeParse(await req.json().catch(() => null))
     if (!body.success) return Response.json({ error: 'INVALID_BODY' }, { status: 400 })
+
+    const quota = await consumeQuota(address)
+    if (!quota.ok) {
+      return Response.json(
+        { error: quota.reason, quota: await getQuotaStatus(address) },
+        { status: 429 },
+      )
+    }
 
     const research = await researchRepo.create({
       address,

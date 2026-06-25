@@ -1,11 +1,13 @@
 import { researchRepo, txLogRepo } from '@/lib/db'
+import { getGlobalQuotaStatus } from '@/lib/rate-limit/research-quota'
 
 export async function GET() {
-  const [totalResearches, activeAgents, totalCallsAcrossAllUsers, totalUsdcSpent] = await Promise.all([
+  const [totalResearches, activeAgents, totalCallsAcrossAllUsers, totalUsdcSpent, dailyResearchQuota] = await Promise.all([
     researchRepo.countAll(),
     researchRepo.countRunning(),
     txLogRepo.count(),
     txLogRepo.totalSpent(),
+    getGlobalQuotaStatus(),
   ])
 
   return Response.json({
@@ -13,5 +15,6 @@ export async function GET() {
     totalCallsAcrossAllUsers,
     totalUsdcSpent,
     activeAgents,
+    dailyResearchQuota,
   })
 }
