@@ -27,9 +27,15 @@ function getMemoryKv(): MemoryKv {
   return globalForKv.__arcLeptonMemoryKv
 }
 
+function envValue(name: string) {
+  const value = process.env[name]?.trim()
+  if (!value || value === 'undefined') return ''
+  return value
+}
+
 function createKvClient(): KvClient {
-  const url = process.env.KV_REST_API_URL
-  const token = process.env.KV_REST_API_TOKEN
+  const url = envValue('KV_REST_API_URL') || envValue('UPSTASH_REDIS_REST_URL')
+  const token = envValue('KV_REST_API_TOKEN') || envValue('UPSTASH_REDIS_REST_TOKEN')
   const isNextProductionBuild = process.env.NEXT_PHASE === 'phase-production-build'
 
   if (url && token) {
@@ -40,7 +46,9 @@ function createKvClient(): KvClient {
     return getMemoryKv()
   }
 
-  throw new Error('KV_REST_API_URL and KV_REST_API_TOKEN are required in production')
+  throw new Error(
+    'KV_REST_API_URL/KV_REST_API_TOKEN or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN are required in production',
+  )
 }
 
 export const kv = createKvClient()

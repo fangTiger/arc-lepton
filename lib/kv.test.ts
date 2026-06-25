@@ -1,8 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const redisMock = vi.hoisted(() => ({
+  constructor: vi.fn(),
+}))
+
+vi.mock('@upstash/redis', () => ({
+  Redis: class Redis {
+    constructor(opts: { url: string; token: string }) {
+      redisMock.constructor(opts)
+    }
+  },
+}))
+
 describe('kv dev fallback', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.resetModules()
+    redisMock.constructor.mockClear()
   })
 
   it('reuses the same in-memory store across module reloads', async () => {
@@ -18,5 +32,21 @@ describe('kv dev fallback', () => {
     const second = await import('./kv')
 
     expect(await second.kv.get('siwe:nonce:cold-start')).toBe('1')
+  })
+
+  it('uses Upstash env aliases in production when KV env names are absent', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://upstash.example.com')
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'upstash-token')
+    vi.resetModules()
+
+    await import('./kv')
+
+    expect(redisMock.constructor).toHaveBeenCalledWith({
+      url: 'https://upstash.example.com',
+      token: 'upstash-token',
+    })
   })
 })
