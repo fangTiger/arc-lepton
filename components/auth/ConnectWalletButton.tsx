@@ -16,6 +16,9 @@ type SignatureToast = {
   tone: 'warning' | 'error'
 }
 
+const ACCOUNT_MENU_HEIGHT = 260
+const BOTTOM_BAR_SAFE_SPACE = 40
+
 function shortAddress(address: string) {
   return `${address.slice(0, 4)}..${address.slice(-4)}`
 }
@@ -39,7 +42,7 @@ function signatureErrorMessage(error: unknown): SignatureToast {
   if (message.includes('reject') || message.includes('cancel') || message.includes('denied')) {
     return { message: '[WARN] Signature cancelled', tone: 'warning' }
   }
-  return { message: '[ERR] Login failed. 请再试一次', tone: 'error' }
+  return { message: '[ERR] Login failed. Please try again.', tone: 'error' }
 }
 
 export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonProps) {
@@ -48,6 +51,7 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
   const { isAuthed, address } = useUser()
   const { login, logout, preloadNonce, isLoading } = useSiweLogin()
   const [isMenuOpen, setMenuOpen] = useState(false)
+  const [menuPlacement, setMenuPlacement] = useState<'up' | 'down'>('down')
   const [signatureToast, setSignatureToast] = useState<SignatureToast | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const connectedAddress = address ?? walletAddress
@@ -105,6 +109,18 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
 
   function warmAuthNonce() {
     preloadNonce().catch(() => {})
+  }
+
+  function toggleAccountMenu() {
+    if (isMenuOpen) {
+      setMenuOpen(false)
+      return
+    }
+
+    const rect = rootRef.current?.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - (rect?.bottom ?? 0) - BOTTOM_BAR_SAFE_SPACE
+    setMenuPlacement(spaceBelow < ACCOUNT_MENU_HEIGHT ? 'up' : 'down')
+    setMenuOpen(true)
   }
 
   const sizeClass = isCta ? 'h-12 w-full px-4 text-sm' : 'h-9 px-3 text-xs'
@@ -195,7 +211,7 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
               <div ref={rootRef} className="relative inline-flex">
                 <button
                   type="button"
-                  onClick={() => setMenuOpen((open) => !open)}
+                  onClick={toggleAccountMenu}
                   className={`${terminalButtonClass} border-border bg-bg-panel text-text-primary hover:border-amber hover:text-amber`}
                   aria-expanded={isMenuOpen}
                   aria-haspopup="menu"
@@ -208,7 +224,9 @@ export function ConnectWalletButton({ variant = 'pill' }: ConnectWalletButtonPro
 
                 {isMenuOpen ? (
                   <div
-                    className="absolute right-0 top-[calc(100%+4px)] z-50 w-[280px] border border-border bg-bg-panel font-mono text-xs uppercase tracking-[0.05em] text-text-primary"
+                    className={`absolute right-0 z-[120] w-[280px] border border-border bg-bg-panel font-mono text-xs uppercase tracking-[0.05em] text-text-primary ${
+                      menuPlacement === 'up' ? 'bottom-[calc(100%+4px)]' : 'top-[calc(100%+4px)]'
+                    }`}
                     role="menu"
                   >
                     <div className="border-b border-border px-3 py-3">

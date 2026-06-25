@@ -24,12 +24,12 @@ function toolCall(id: string, name: string, token = 'PEPE'): MockToolCall {
 
 async function* mockReportStream() {
   const chunks = [
-    '# PEPE 研究报告\n\n',
-    '## 简要结论\nPEPE 当前更适合观望，等待链上流向和 K 线确认。\n\n',
-    '## 关键发现\n- 情绪与社交热度有分歧，短线波动可能加大。\n',
-    '- 鲸鱼流向和新闻面需要结合仓位管理。\n\n',
-    '## 风险提示\nMeme token 流动性和情绪反转风险较高。\n\n',
-    '## 操作建议\n观望。\n',
+    '# PEPE Research Report\n\n',
+    '## Concise Conclusion\nPEPE is better suited for watchlist mode until on-chain flow and 4h structure confirm direction.\n\n',
+    '## Key Findings\n- Sentiment and social heat diverge, which can amplify short-term volatility.\n',
+    '- Whale flow and headlines should be paired with strict position sizing.\n\n',
+    '## Risk Notes\nMeme token liquidity and sentiment reversal risk remain elevated.\n\n',
+    '## Action Guidance\nWait for confirmation.\n',
   ]
 
   for (const content of chunks) {
@@ -53,7 +53,7 @@ function createMockDeepSeekClient() {
                 {
                   message: {
                     role: 'assistant',
-                    content: '先用低成本数据源建立基础判断。',
+                    content: 'Start with low-cost data sources to build a baseline.',
                     tool_calls: [
                       toolCall('mock-call-1', 'sentiment'),
                       toolCall('mock-call-2', 'twitter_signals'),
@@ -70,7 +70,7 @@ function createMockDeepSeekClient() {
                 {
                   message: {
                     role: 'assistant',
-                    content: '补充链上、新闻和技术面。',
+                    content: 'Add on-chain, news, and technical context.',
                     tool_calls: [
                       toolCall('mock-call-3', 'whale_watch'),
                       toolCall('mock-call-4', 'news'),
@@ -87,7 +87,7 @@ function createMockDeepSeekClient() {
               {
                 message: {
                   role: 'assistant',
-                  content: '数据已足够，可以生成报告。',
+                  content: 'The data is sufficient to generate the report.',
                 },
               },
             ],

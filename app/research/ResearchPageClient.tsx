@@ -6,6 +6,7 @@ import { AgentLogStream } from '@/components/research/AgentLogStream'
 import { BudgetMeter } from '@/components/research/BudgetMeter'
 import { TxFeed } from '@/components/research/TxFeed'
 import type { AgentEvent, ResearchRecord } from '@/components/research/types'
+import { utcTime } from '@/components/research/types'
 
 type TimedEvent = AgentEvent & { receivedAt?: string }
 
@@ -22,11 +23,20 @@ type QuotaStatus = {
 }
 
 const quickPrompts = [
-  'SHOULD I BUY PEPE',
+  'SHOULD I BUY PEPE?',
   'BTC PRICE PREDICTION',
   'SOL ECOSYSTEM HEALTH',
   'MEME COIN MOMENTUM',
 ]
+
+const defaultTopics = [
+  'SHOULD I BUY PEPE?',
+  'BTC PRICE PREDICTION',
+  'SOL ECOSYSTEM HEALTH',
+  'MEME COIN MOMENTUM',
+]
+
+const TOPIC_ROTATE_MS = 4_500
 
 function estimatedCalls(budget: string) {
   const numeric = Number(budget)
@@ -67,6 +77,24 @@ function quotaExceededReason(quota: QuotaStatus | null) {
   return null
 }
 
+function persistedEvent(record: ResearchRecord): TimedEvent | null {
+  const receivedAt = record.completedAt ? utcTime(new Date(record.completedAt)) : utcTime()
+  if (record.status === 'completed' && record.reportMd) {
+    return {
+      type: 'final',
+      reportMd: record.reportMd,
+      totalSpentUsdc: record.spentUsdc,
+      totalCalls: 0,
+      receivedAt,
+    }
+  }
+  if ((record.status === 'failed' || record.status === 'cancelled') && record.errorMessage) {
+    return { type: 'error', message: record.errorMessage, receivedAt }
+  }
+  if (record.status === 'cancelled') return { type: 'error', message: 'Research cancelled', receivedAt }
+  return null
+}
+
 function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
   if (!quota) {
     return (
@@ -95,7 +123,10 @@ function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
 }
 
 function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) => void }) {
-  const [topic, setTopic] = useState('PEPE 现在能进吗？')
+  const router = useRouter()
+  const [topicIndex, setTopicIndex] = useState(0)
+  const [topic, setTopic] = useState(defaultTopics[0])
+  const [hasEditedTopic, setHasEditedTopic] = useState(false)
   const [budget, setBudget] = useState('0.0100')
   const [error, setError] = useState<string | null>(null)
   const [quota, setQuota] = useState<QuotaStatus | null>(null)
@@ -114,6 +145,18 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
     return () => window.clearInterval(timer)
   }, [loadQuota])
 
+  useEffect(() => {
+    if (hasEditedTopic) return
+    const timer = window.setInterval(() => {
+      setTopicIndex((current) => (current + 1) % defaultTopics.length)
+    }, TOPIC_ROTATE_MS)
+    return () => window.clearInterval(timer)
+  }, [hasEditedTopic])
+
+  useEffect(() => {
+    if (!hasEditedTopic) setTopic(defaultTopics[topicIndex])
+  }, [hasEditedTopic, topicIndex])
+
   async function submit() {
     setError(null)
     setSubmitting(true)
@@ -129,6 +172,10 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
         if (body.quota) setQuota(body.quota)
         const resetAt = body.quota?.wallet.resetAt ?? quota?.wallet.resetAt ?? new Date().toISOString()
         throw new Error(`Quota exceeded. Resets in ${resetIn(resetAt)}.`)
+      }
+      if (res.status === 401) {
+        router.replace('/login?redirect=%2Fresearch')
+        throw new Error('Authentication expired. Please sign in again.')
       }
       if (!res.ok) throw new Error(`START_FAILED_${res.status}`)
       const body = await res.json() as { researchId: string }
@@ -150,8 +197,11 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
           <span className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">TOPIC</span>
           <textarea
             value={topic}
-            onChange={(event) => setTopic(event.target.value)}
-            placeholder="_ PEPE 现在能进吗？"
+            onChange={(event) => {
+              setHasEditedTopic(true)
+              setTopic(event.target.value)
+            }}
+            placeholder={`_ ${defaultTopics[topicIndex]}`}
             rows={3}
             className="w-full resize-none border border-amber bg-bg-base px-3 py-3 font-mono text-sm text-text-primary outline-none placeholder:text-amber-dim focus:bg-bg-cell"
           />
@@ -164,7 +214,10 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
               <button
                 key={prompt}
                 type="button"
-                onClick={() => setTopic(prompt)}
+                onClick={() => {
+                  setHasEditedTopic(true)
+                  setTopic(prompt)
+                }}
                 className="border border-border bg-bg-base px-3 py-2 text-left font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-text-secondary hover:border-amber hover:text-amber"
               >
                 [{prompt}]
@@ -239,7 +292,16 @@ function LiveResearch({
     fetch(`/api/research/${researchId}`, { credentials: 'include' })
       .then((res) => res.ok ? res.json() : null)
       .then((body) => {
-        if (!cancelled && body?.research) setResearch(body.research)
+        if (!cancelled && body?.research) {
+          const record = body.research as ResearchRecord
+          setResearch(record)
+          const restored = persistedEvent(record)
+          if (restored) {
+            setEvents((current) => (
+              current.some((event) => event.type === 'final' || event.type === 'error') ? current : [restored]
+            ))
+          }
+        }
       })
       .catch(() => {})
     return () => {
@@ -299,6 +361,11 @@ export function ResearchPageClient() {
 
   return (
     <main className="min-h-screen bg-bg-base px-3 pb-12 pt-12 text-text-primary md:px-6">
+      <div className="mx-auto mb-3 flex w-full max-w-[1480px] justify-end">
+        <a href="/dashboard" className="terminal-button h-9 px-3 text-[11px]">
+          [VIEW HISTORY]
+        </a>
+      </div>
       {researchId ? <LiveResearch researchId={researchId} initialBudget={lastBudget} /> : <ResearchForm onStarted={handleStarted} />}
     </main>
   )

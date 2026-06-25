@@ -67,31 +67,31 @@ const localTools = {
   whale_watch: {
     source: 'whale-watch',
     amount: '0.0002',
-    description: '查询某个代币最近的鲸鱼大额转账 (>$1M USD)。每次调用 $0.0002 USDC。',
+    description: 'Fetch recent whale transfers above $1M USD for a token. Each call costs $0.0002 USDC.',
     buildData: buildWhaleWatchData,
   },
   sentiment: {
     source: 'sentiment',
     amount: '0.0001',
-    description: '查询某个代币的综合市场情绪。每次调用 $0.0001 USDC。',
+    description: 'Fetch blended market sentiment for a token. Each call costs $0.0001 USDC.',
     buildData: buildSentimentData,
   },
   news: {
     source: 'news',
     amount: '0.0003',
-    description: '查询某个代币相关新闻头条。每次调用 $0.0003 USDC。',
+    description: 'Fetch recent market news headlines for a token. Each call costs $0.0003 USDC.',
     buildData: buildNewsData,
   },
   twitter_signals: {
     source: 'twitter-signals',
     amount: '0.0001',
-    description: '查询某个代币的 Twitter 信号。每次调用 $0.0001 USDC。',
+    description: 'Fetch Twitter signal snapshots for a token. Each call costs $0.0001 USDC.',
     buildData: buildTwitterSignalsData,
   },
   kline_pattern: {
     source: 'kline-pattern',
     amount: '0.0005',
-    description: '查询某个代币的 4h K 线形态。每次调用 $0.0005 USDC。',
+    description: 'Fetch the 4h candlestick pattern for a token. Each call costs $0.0005 USDC.',
     buildData: buildKlinePatternData,
   },
 } satisfies Record<string, LocalTool>
@@ -115,23 +115,23 @@ export const RESEARCH_TOOLS: ToolDefinition[] = Object.entries(localTools).map((
 }))
 
 function systemPrompt(budgetUsdc: string) {
-  return `你是 Arc Lepton 的研究 Agent。用户会给你一个加密交易研究主题。
-你的预算是 ${budgetUsdc} USDC，每次调用数据源会扣费。
+  return `You are the Arc Lepton research agent. The user will give you a crypto trading research topic.
+Your budget is ${budgetUsdc} USDC, and each data-source call charges against that budget.
 
-可用工具：
-- whale_watch: $0.0002 — 鲸鱼大额转账
-- sentiment: $0.0001 — 综合情绪
-- news: $0.0003 — 新闻头条
-- twitter_signals: $0.0001 — Twitter 信号
-- kline_pattern: $0.0005 — K 线形态
+Available tools:
+- whale_watch: $0.0002 — whale transfers
+- sentiment: $0.0001 — blended sentiment
+- news: $0.0003 — news headlines
+- twitter_signals: $0.0001 — Twitter signals
+- kline_pattern: $0.0005 — 4h candlestick pattern
 
-策略：
-1. 先调便宜的（sentiment、twitter_signals）建立基本印象
-2. 必要时调贵的（news、kline_pattern）做深入分析
-3. 同一数据源不要重复调用
-4. 在预算内尽量获取多角度信息
+Strategy:
+1. Start with cheap tools, especially sentiment and twitter_signals, to establish a baseline.
+2. Use higher-cost tools such as news and kline_pattern only when they improve the answer.
+3. Do not call the same data source repeatedly.
+4. Stay within budget while collecting multiple angles.
 
-最后输出 Markdown 格式的研究报告，包含：简要结论、关键发现、风险提示、操作建议、数据引用。`
+Return a Markdown research report with: concise conclusion, key findings, risks, action guidance, and data citations.`
 }
 
 function parseToolArgs(raw: string): { token: string } {
@@ -188,7 +188,7 @@ async function* streamReport(client: ReturnType<typeof getDeepSeekClient>, messa
       ...messages,
       {
         role: 'user',
-        content: '请基于以上工具结果生成最终 Markdown 研究报告，并列出本次调用的数据源和 tx_hash。',
+        content: 'Generate the final Markdown research report from the tool results above, and list the data sources and tx_hash values used in this run.',
       },
     ],
     stream: true,

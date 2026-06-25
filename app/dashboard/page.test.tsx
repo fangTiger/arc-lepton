@@ -56,7 +56,7 @@ describe('DashboardPage', () => {
             {
               id: 'ab12c3d4-0000-0000-0000-000000000000',
               address: mocks.userAddress.toLowerCase(),
-              topic: 'PEPE 现在能进吗',
+              topic: 'SHOULD I BUY PEPE?',
               budgetUsdc: '0.01',
               spentUsdc: '0.0012',
               status: 'completed',
@@ -99,7 +99,7 @@ describe('DashboardPage', () => {
   it('loads stats and research history', async () => {
     render(createElement(DashboardPage))
 
-    expect(await screen.findByText('PEPE 现在能进吗')).toBeInTheDocument()
+    expect(await screen.findByText('SHOULD I BUY PEPE?')).toBeInTheDocument()
     expect(screen.getByText('0.0012 USDC')).toBeInTheDocument()
     expect(screen.getByText('● DONE')).toBeInTheDocument()
     expect(screen.getByText('DAILY QUOTA')).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('DashboardPage', () => {
   it('logs out', async () => {
     render(createElement(DashboardPage))
 
-    await screen.findByText('PEPE 现在能进吗')
+    await screen.findByText('SHOULD I BUY PEPE?')
     fireEvent.click(screen.getByRole('button', { name: /\[DISCONNECT\]/i }))
     await waitFor(() => expect(mocks.logout).toHaveBeenCalledTimes(1))
   })

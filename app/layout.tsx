@@ -5,8 +5,8 @@ import { TopBar } from '@/components/TopBar'
 import { Providers } from '@/providers/Providers'
 
 export const metadata: Metadata = {
-  title: 'Arc Lepton',
-  description: 'AI 交易研究员 · 让 Agent 在 USDC 预算内自主研究',
+  title: 'Signal Ledger',
+  description: 'AI trading research terminal where agents spend USDC within a fixed budget.',
   icons: {
     icon: '/icon.svg',
   },
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

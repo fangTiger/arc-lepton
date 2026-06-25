@@ -13,14 +13,14 @@ describe('MemoryResearchRepo', () => {
 
     const research = await repo.create({
       address: '0xabc',
-      topic: 'PEPE 现在能进吗',
+      topic: 'SHOULD I BUY PEPE?',
       budgetUsdc: '0.01',
     })
 
     expect(research).toMatchObject({
       id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       address: '0xabc',
-      topic: 'PEPE 现在能进吗',
+      topic: 'SHOULD I BUY PEPE?',
       budgetUsdc: '0.01',
       spentUsdc: '0',
       status: 'running',

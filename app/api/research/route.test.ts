@@ -6,7 +6,7 @@ const mockStore = vi.hoisted(() => {
     {
       id: 'research-1',
       address: '0xabcdef000000000000000000000000000000c1d3',
-      topic: 'PEPE 现在能进吗',
+      topic: 'SHOULD I BUY PEPE?',
       budgetUsdc: '0.01',
       spentUsdc: '0.0012',
       status: 'completed',
@@ -77,7 +77,7 @@ describe('GET /api/research', () => {
     expect(body.researches).toEqual([
       expect.objectContaining({
         id: 'research-1',
-        topic: 'PEPE 现在能进吗',
+        topic: 'SHOULD I BUY PEPE?',
         status: 'completed',
         spentUsdc: '0.0012',
         startedAt: '2026-06-25T00:00:00.000Z',

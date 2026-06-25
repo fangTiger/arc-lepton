@@ -5,12 +5,13 @@ type LogoProps = {
 
 export function Logo({ className = '', compact = false }: LogoProps) {
   return (
-    <div
-      className={`inline-flex items-center font-mono font-bold uppercase tracking-[0.05em] text-amber ${
+    <a
+      href="/"
+      className={`inline-flex items-center font-mono font-bold uppercase tracking-[0.05em] text-amber transition-colors hover:text-cyan ${
         compact ? 'text-xs' : 'text-sm'
       } ${className}`}
     >
-      ARC│LEPTON
-    </div>
+      SIGNAL/LEDGER
+    </a>
   )
 }

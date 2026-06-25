@@ -111,6 +111,8 @@ export function ResearchDetailClient({ id }: { id: string }) {
                 </table>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" onClick={() => router.push(`/research?id=${id}`)} className="terminal-button h-9 px-3 text-[11px]">[← BACK TO SESSION]</button>
+                <button type="button" onClick={() => router.push('/dashboard')} className="terminal-button h-9 px-3 text-[11px]">[VIEW HISTORY]</button>
                 <button type="button" onClick={share} className="terminal-button h-9 px-3 text-[11px]">[SHARE LINK]</button>
                 <button type="button" onClick={() => router.push(`/research?topic=${encodeURIComponent(detail.research.topic)}`)} className="terminal-button h-9 px-3 text-[11px]">[↻ RUN AGAIN]</button>
               </div>

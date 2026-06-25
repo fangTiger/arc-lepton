@@ -31,7 +31,9 @@ export function TopBar() {
   return (
     <div className="fixed left-0 right-0 top-0 z-[100] flex h-8 items-center overflow-hidden border-b border-border bg-bg-base px-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-amber md:px-4">
       <div className="flex min-w-max items-center gap-2">
-        <span className="text-amber">ARC│LEPTON</span>
+        <a href="/" className="text-amber transition-colors hover:text-cyan">
+          SIGNAL/LEDGER
+        </a>
         <span className="text-text-muted">·</span>
         <span>TIME: {time}</span>
         <span className="text-text-muted">·</span>

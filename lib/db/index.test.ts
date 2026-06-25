@@ -10,8 +10,10 @@ const originalEnv = {
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: unknown
   __arcLeptonTxLogRepo?: unknown
+  __arcLeptonResearchRepo?: unknown
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
+  __arcLeptonResearchRepoWarned?: boolean
 }
 const mutableEnv = process.env as Record<string, string | undefined>
 
@@ -28,8 +30,10 @@ function restoreEnv(name: keyof typeof originalEnv) {
 function clearMemoryRepoGlobals() {
   delete memoryRepoGlobal.__arcLeptonUsersRepo
   delete memoryRepoGlobal.__arcLeptonTxLogRepo
+  delete memoryRepoGlobal.__arcLeptonResearchRepo
   delete memoryRepoGlobal.__arcLeptonUsersRepoWarned
   delete memoryRepoGlobal.__arcLeptonTxLogRepoWarned
+  delete memoryRepoGlobal.__arcLeptonResearchRepoWarned
 }
 
 describe('db dev fallback repos', () => {
@@ -65,5 +69,19 @@ describe('db dev fallback repos', () => {
     const second = await import('./index')
 
     expect(await second.txLogRepo.totalSpentByAddress('0xabc')).toBe('0.0001')
+  })
+
+  it('does not load postgres packages when dev fallback repos are active', async () => {
+    vi.doMock('drizzle-orm/vercel-postgres', () => {
+      throw new Error('postgres driver should not load without DB env')
+    })
+    vi.doMock('@vercel/postgres', () => {
+      throw new Error('vercel postgres should not load without DB env')
+    })
+
+    const mod = await import('./index')
+
+    expect(await mod.researchRepo.countAll()).toBe(0)
+    expect(await mod.txLogRepo.count()).toBe(0)
   })
 })

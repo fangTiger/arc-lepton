@@ -85,7 +85,7 @@ export default function HomePage() {
 ██╔══██║██╔══██╗██║
 ██║  ██║██║  ██║╚██████╗
 ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝
-     LEPTON RESEARCH TERMINAL`}
+     SIGNAL LEDGER TERMINAL`}
           </pre>
 
           <div className="mt-6 max-w-[720px]">
@@ -105,18 +105,17 @@ export default function HomePage() {
             <button onClick={() => router.push('/research')} className="terminal-button h-11 px-5 text-xs">
               [START RESEARCH ▸]
             </button>
-            <a href="/docs" className="terminal-button h-11 border-border px-5 text-xs text-text-secondary hover:border-amber">
-              [VIEW DOCS]
-            </a>
             <ConnectWalletButton />
           </div>
 
           <div className="mt-8 border border-border bg-bg-panel p-3">
             <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.05em]">
-              <span className="text-amber">EXECUTION LOAD</span>
-              <span className="text-text-muted">73%</span>
+              <span className="text-amber">ACTIVE AGENTS</span>
+              <span className="text-cyan tabular-nums">{stats.activeAgents.toLocaleString('en-US')}</span>
             </div>
-            <div className="ascii-progress text-sm">████████████▓▓▓▒▒░░ 73%</div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
+              RUNNING RESEARCH JOBS RIGHT NOW
+            </div>
           </div>
         </div>
 

@@ -100,14 +100,14 @@ describe('POST /api/research/start', () => {
   it('creates a running research record and starts the background agent', async () => {
     const { POST } = await import('./route')
 
-    const res = await POST(await authedRequest({ topic: 'PEPE 现在能进吗', budgetUsdc: '0.01' }))
+    const res = await POST(await authedRequest({ topic: 'SHOULD I BUY PEPE?', budgetUsdc: '0.01' }))
     const body = await res.json()
 
     expect(res.status).toBe(200)
     expect(body).toEqual({ researchId: 'research-1', status: 'running' })
     expect(mockState.records[0]).toMatchObject({
       address: '0xabcdef000000000000000000000000000000c1d3',
-      topic: 'PEPE 现在能进吗',
+      topic: 'SHOULD I BUY PEPE?',
       budgetUsdc: '0.01',
       status: 'running',
     })
@@ -118,7 +118,7 @@ describe('POST /api/research/start', () => {
     mockState.quota.consumeQuota.mockResolvedValueOnce({ ok: false, reason: 'WALLET_LIMIT' })
     const { POST } = await import('./route')
 
-    const res = await POST(await authedRequest({ topic: 'PEPE 现在能进吗', budgetUsdc: '0.01' }))
+    const res = await POST(await authedRequest({ topic: 'SHOULD I BUY PEPE?', budgetUsdc: '0.01' }))
     const body = await res.json()
 
     expect(res.status).toBe(429)

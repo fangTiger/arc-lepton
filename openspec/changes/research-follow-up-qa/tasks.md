@@ -1,0 +1,7 @@
+- [ ] 设计 follow-up 数据模型和 repo 接口，覆盖内存 fallback 与 Postgres 实现
+- [ ] 增加 `/api/research/[id]/follow-ups` 列表与创建接口的失败测试
+- [ ] 实现 follow-up API 的鉴权、归属校验、预算校验和错误处理
+- [ ] 扩展 research agent，让追加问题带上原始报告和历史 Q&A 上下文
+- [ ] 在 `/research/[id]` 增加 follow-up thread、输入框、提交状态、错误状态和空状态
+- [ ] 保证所有用户可见文案为英文
+- [ ] 运行 typecheck、vitest、浏览器 smoke 和 graphify rebuild

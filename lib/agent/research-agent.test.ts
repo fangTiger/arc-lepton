@@ -18,8 +18,8 @@ const mockState = vi.hoisted(() => {
   }
 
   async function* reportStream() {
-    yield { choices: [{ delta: { content: '# PEPE 研究报告\n' } }] }
-    yield { choices: [{ delta: { content: '建议：观望。' } }] }
+    yield { choices: [{ delta: { content: '# PEPE Research Report\n' } }] }
+    yield { choices: [{ delta: { content: 'Action: wait for confirmation.' } }] }
   }
 
   const client = {
@@ -34,7 +34,7 @@ const mockState = vi.hoisted(() => {
                 {
                   message: {
                     role: 'assistant',
-                    content: '先看便宜信号。',
+                    content: 'Check low-cost signals first.',
                     tool_calls: [
                       makeToolCall('call-1', 'sentiment'),
                       makeToolCall('call-2', 'twitter_signals'),
@@ -44,7 +44,7 @@ const mockState = vi.hoisted(() => {
               ],
             }
           }
-          return { choices: [{ message: { role: 'assistant', content: '可以生成报告。' } }] }
+          return { choices: [{ message: { role: 'assistant', content: 'Ready to generate the report.' } }] }
         }),
       },
     },
@@ -110,7 +110,7 @@ async function collectEvents(budgetUsdc = '0.01') {
   for await (const event of runResearchAgent({
     researchId: 'research-1',
     address: '0xabc',
-    topic: 'PEPE 现在能进吗',
+    topic: 'SHOULD I BUY PEPE?',
     budgetUsdc,
   })) {
     events.push(event)
@@ -128,7 +128,7 @@ describe('runResearchAgent', () => {
     expect(events.filter((event) => event.type === 'report_chunk')).toHaveLength(2)
     expect(events.at(-1)).toMatchObject({
       type: 'final',
-      reportMd: '# PEPE 研究报告\n建议：观望。',
+      reportMd: '# PEPE Research Report\nAction: wait for confirmation.',
       totalSpentUsdc: '0.0002',
       totalCalls: 2,
     })
@@ -136,7 +136,7 @@ describe('runResearchAgent', () => {
     expect(mockState.researchRecords.get('research-1')).toMatchObject({
       status: 'completed',
       spentUsdc: '0.0002',
-      reportMd: '# PEPE 研究报告\n建议：观望。',
+      reportMd: '# PEPE Research Report\nAction: wait for confirmation.',
     })
   })
 

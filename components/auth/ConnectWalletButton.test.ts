@@ -110,7 +110,7 @@ describe('ConnectWalletButton', () => {
 
     expect(mocks.login).toHaveBeenCalledTimes(1)
     const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent('[ERR] Login failed. 请再试一次')
+    expect(alert).toHaveTextContent('[ERR] Login failed. Please try again.')
     expect(alert).toHaveClass('border-red')
 
     act(() => {
@@ -118,5 +118,35 @@ describe('ConnectWalletButton', () => {
     })
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('opens the authed wallet menu upward when the bottom bar would cover it', () => {
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      bottom: 680,
+      height: 36,
+      left: 900,
+      right: 1100,
+      top: 644,
+      width: 200,
+      x: 900,
+      y: 644,
+      toJSON: () => ({}),
+    })
+    const innerHeightSpy = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(720)
+    mocks.isAuthed = true
+    mocks.userAddress = '0xAbCdEf000000000000000000000000000000C1d3'
+
+    try {
+      render(createElement(ConnectWalletButton))
+
+      fireEvent.click(screen.getByRole('button', { name: /0xAb\.\.C1d3/i }))
+
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveClass('bottom-[calc(100%+4px)]')
+      expect(menu).toHaveClass('z-[120]')
+    } finally {
+      rectSpy.mockRestore()
+      innerHeightSpy.mockRestore()
+    }
   })
 })

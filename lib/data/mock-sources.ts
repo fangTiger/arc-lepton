@@ -116,7 +116,7 @@ export function buildTwitterSignalsData(token: string) {
     const sentiment = rand.float(-1, 1, 2)
     return {
       author: rand.pick(authors),
-      text: `$${token} 巨鲸 0x${rand.hex(4).toUpperCase()} 刚刚${sentiment < 0 ? '转入交易所' : '增持'} ${rand.float(0.8, 4.5, 1)}B 枚...`,
+      text: `$${token} whale 0x${rand.hex(4).toUpperCase()} just ${sentiment < 0 ? 'moved to exchange' : 'added'} ${rand.float(0.8, 4.5, 1)}B tokens...`,
       engagement: rand.int(900, 12_000),
       sentiment,
       postedAt: isoAt(index * 2 + rand.int(0, 2)),
