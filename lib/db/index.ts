@@ -155,10 +155,6 @@ class LazyPgResearchRepo implements ResearchRepo {
 function createUsersRepo(): UsersRepo {
   if (hasDbEnv()) return new LazyPgUsersRepo()
 
-  if (process.env.NODE_ENV === 'production' && !isNextProductionBuild()) {
-    throw new Error('DB env required in production')
-  }
-
   if (!memoryRepoGlobal.__arcLeptonUsersRepoWarned) {
     console.warn(usersMemoryFallbackMessage)
     memoryRepoGlobal.__arcLeptonUsersRepoWarned = true
@@ -172,10 +168,6 @@ export const usersRepo: UsersRepo = createUsersRepo()
 function createTxLogRepo(): TxLogRepo {
   if (hasDbEnv()) return new LazyPgTxLogRepo()
 
-  if (process.env.NODE_ENV === 'production' && !isNextProductionBuild()) {
-    throw new Error('DB env required in production')
-  }
-
   if (!memoryRepoGlobal.__arcLeptonTxLogRepoWarned) {
     console.warn(txLogMemoryFallbackMessage)
     memoryRepoGlobal.__arcLeptonTxLogRepoWarned = true
@@ -188,10 +180,6 @@ export const txLogRepo: TxLogRepo = createTxLogRepo()
 
 function createResearchRepo(): ResearchRepo {
   if (hasDbEnv()) return new LazyPgResearchRepo()
-
-  if (process.env.NODE_ENV === 'production' && !isNextProductionBuild()) {
-    throw new Error('DB env required in production')
-  }
 
   if (!memoryRepoGlobal.__arcLeptonResearchRepoWarned) {
     console.warn(researchMemoryFallbackMessage)

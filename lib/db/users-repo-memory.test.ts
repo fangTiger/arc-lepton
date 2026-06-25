@@ -78,10 +78,13 @@ describe('usersRepo selection', () => {
     expect(warn).toHaveBeenCalledWith(fallbackMessage)
   })
 
-  it('fails fast in production runtime when DB env is missing', async () => {
+  it('uses memory users repo in production when DB env is missing', async () => {
     clearDbEnv()
     vi.stubEnv('NODE_ENV', 'production')
 
-    await expect(import('./index')).rejects.toThrow('DB env required in production')
+    const { usersRepo } = await import('./index')
+
+    await usersRepo.upsertOnLogin('0xAbCdEf000000000000000000000000000000C1d3')
+    expect(await usersRepo.count()).toBe(1)
   })
 })

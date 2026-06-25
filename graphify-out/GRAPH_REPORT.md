@@ -1,11 +1,11 @@
 # Graph Report - arc-lepton  (2026-06-26)
 
 ## Corpus Check
-- 64 files · ~35,441 words
+- 65 files · ~35,589 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 150 nodes · 130 edges · 13 communities detected
+- 153 nodes · 132 edges · 13 communities detected
 - Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -22,7 +22,7 @@
 - [[_COMMUNITY_Community 9|Community 9]]
 - [[_COMMUNITY_Community 10|Community 10]]
 - [[_COMMUNITY_Community 11|Community 11]]
-- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `GET()` - 11 edges
@@ -56,19 +56,19 @@ Nodes (2): GET(), serializeResearch()
 
 ### Community 1 - "Community 1"
 Cohesion: 0.18
-Nodes (6): argsText(), eventLine(), utcTime(), persistedEvent(), extractPreview(), utcTime()
+Nodes (4): persistedEvent(), resetIn(), submit(), utcTime()
 
 ### Community 2 - "Community 2"
 Cohesion: 0.27
 Nodes (2): middleware(), MockKv
 
 ### Community 3 - "Community 3"
-Cohesion: 0.2
-Nodes (2): handleSignIn(), signatureErrorMessage()
+Cohesion: 0.22
+Nodes (4): argsText(), eventLine(), utcTime(), extractPreview()
 
 ### Community 4 - "Community 4"
-Cohesion: 0.22
-Nodes (2): resetIn(), submit()
+Cohesion: 0.2
+Nodes (2): handleSignIn(), signatureErrorMessage()
 
 ### Community 5 - "Community 5"
 Cohesion: 0.22
@@ -98,7 +98,7 @@ Nodes (2): formatBlock(), TopBar()
 Cohesion: 0.67
 Nodes (2): BudgetMeter(), decimal()
 
-### Community 13 - "Community 13"
+### Community 14 - "Community 14"
 Cohesion: 1.0
 Nodes (2): chainLabel(), NetworkGuard()
 
@@ -107,9 +107,7 @@ Nodes (2): chainLabel(), NetworkGuard()
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 2`** (12 nodes): `middleware()`, `middleware.ts`, `MockKv`, `._clear()`, `.decr()`, `.expire()`, `.get()`, `.getdel()`, `.incr()`, `._now()`, `.set()`, `mock-kv.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 3`** (11 nodes): `ConnectWalletButton.tsx`, `closeOnEscape()`, `closeOnOutsideClick()`, `formatBalance()`, `handleSignIn()`, `menuAddress()`, `shortAddress()`, `signatureErrorMessage()`, `toggleAccountMenu()`, `toWagmiAddress()`, `warmAuthNonce()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 4`** (10 nodes): `ResearchPageClient.tsx`, `cancel()`, `estimatedCalls()`, `formatBudget()`, `quotaBar()`, `quotaExceededReason()`, `QuotaPanel()`, `quotaTone()`, `resetIn()`, `submit()`
+- **Thin community `Community 4`** (11 nodes): `ConnectWalletButton.tsx`, `closeOnEscape()`, `closeOnOutsideClick()`, `formatBalance()`, `handleSignIn()`, `menuAddress()`, `shortAddress()`, `signatureErrorMessage()`, `toggleAccountMenu()`, `toWagmiAddress()`, `warmAuthNonce()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 5`** (9 nodes): `page.tsx`, `page.tsx`, `DataCell()`, `FieldRow()`, `formatBalance()`, `load()`, `shortAddress()`, `statusLabel()`, `toWagmiAddress()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -119,7 +117,7 @@ Nodes (2): chainLabel(), NetworkGuard()
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 11`** (4 nodes): `bar()`, `BudgetMeter()`, `decimal()`, `BudgetMeter.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 13`** (3 nodes): `NetworkGuard.tsx`, `chainLabel()`, `NetworkGuard()`
+- **Thin community `Community 14`** (3 nodes): `NetworkGuard.tsx`, `chainLabel()`, `NetworkGuard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -127,7 +125,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `POST()` connect `Community 6` to `Community 8`, `Community 2`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `persistedEvent()` connect `Community 1` to `Community 4`?**
+- **Why does `utcTime()` connect `Community 1` to `Community 3`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `POST()` (e.g. with `postVerify()` and `.get()`) actually correct?**
   _`POST()` has 2 INFERRED edges - model-reasoned connections that need verification._
