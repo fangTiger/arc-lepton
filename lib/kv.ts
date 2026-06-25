@@ -20,7 +20,7 @@ function getMemoryKv(): MemoryKv {
   globalForKv.__arcLeptonMemoryKv ??= new MemoryKv()
 
   if (!globalForKv.__arcLeptonMemoryKvWarned) {
-    console.warn('⚠ Using in-memory KV (dev fallback)，restart needed after env added')
+    console.warn('⚠ 使用内存 KV 兜底，实例重启后数据会丢失')
     globalForKv.__arcLeptonMemoryKvWarned = true
   }
 
@@ -36,19 +36,12 @@ function envValue(name: string) {
 function createKvClient(): KvClient {
   const url = envValue('KV_REST_API_URL') || envValue('UPSTASH_REDIS_REST_URL')
   const token = envValue('KV_REST_API_TOKEN') || envValue('UPSTASH_REDIS_REST_TOKEN')
-  const isNextProductionBuild = process.env.NEXT_PHASE === 'phase-production-build'
 
   if (url && token) {
     return new Redis({ url, token })
   }
 
-  if (process.env.NODE_ENV !== 'production' || isNextProductionBuild) {
-    return getMemoryKv()
-  }
-
-  throw new Error(
-    'KV_REST_API_URL/KV_REST_API_TOKEN or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN are required in production',
-  )
+  return getMemoryKv()
 }
 
 export const kv = createKvClient()

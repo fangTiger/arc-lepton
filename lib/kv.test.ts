@@ -49,4 +49,23 @@ describe('kv dev fallback', () => {
       token: 'upstash-token',
     })
   })
+
+  it('falls back to in-memory KV in production when Redis env vars are absent', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', '')
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', '')
+    vi.resetModules()
+
+    const first = await import('./kv')
+    ;(first.kv as { clear?: () => void }).clear?.()
+    await first.kv.set('siwe:nonce:production-memory', '1')
+
+    vi.resetModules()
+    const second = await import('./kv')
+
+    expect(redisMock.constructor).not.toHaveBeenCalled()
+    expect(await second.kv.get('siwe:nonce:production-memory')).toBe('1')
+  })
 })
