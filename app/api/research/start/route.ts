@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/middleware'
-import { researchRepo } from '@/lib/db'
-import { runAgentInBackground } from '@/lib/agent/research-agent'
+import { isProductionMemoryDbFallback, researchRepo } from '@/lib/db'
+import { signResearchRunToken } from '@/lib/agent/research-token'
 import { consumeQuota, getQuotaStatus } from '@/lib/rate-limit/research-quota'
 
 const startSchema = z.object({
@@ -35,9 +35,16 @@ export async function POST(req: Request) {
       topic: body.data.topic,
       budgetUsdc: body.data.budgetUsdc,
     })
+    const researchId = isProductionMemoryDbFallback()
+      ? await signResearchRunToken({
+          id: research.id,
+          address,
+          topic: research.topic,
+          budgetUsdc: research.budgetUsdc,
+        })
+      : research.id
 
-    void runAgentInBackground(research.id)
-    return Response.json({ researchId: research.id, status: 'running' })
+    return Response.json({ researchId, status: 'running' })
   } catch (error) {
     if (error instanceof Response) return error
     throw error

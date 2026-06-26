@@ -4,15 +4,12 @@ import { signSessionJwt } from '@/lib/auth/jwt'
 const mockState = vi.hoisted(() => {
   let counter = 0
   const records: Array<{ id: string; address: string; topic: string; budgetUsdc: string; status: string }> = []
-  const backgrounds: string[] = []
 
   return {
     records,
-    backgrounds,
     reset() {
       counter = 0
       records.length = 0
-      backgrounds.length = 0
     },
     researchRepo: {
       async create(input: { address: string; topic: string; budgetUsdc: string }) {
@@ -29,22 +26,17 @@ const mockState = vi.hoisted(() => {
         }
       },
     },
-    runAgentInBackground(id: string) {
-      backgrounds.push(id)
-    },
     quota: {
       consumeQuota: vi.fn(),
       getQuotaStatus: vi.fn(),
     },
+    isProductionMemoryDbFallback: vi.fn(),
   }
 })
 
 vi.mock('@/lib/db', () => ({
   researchRepo: mockState.researchRepo,
-}))
-
-vi.mock('@/lib/agent/research-agent', () => ({
-  runAgentInBackground: mockState.runAgentInBackground,
+  isProductionMemoryDbFallback: mockState.isProductionMemoryDbFallback,
 }))
 
 vi.mock('@/lib/rate-limit/research-quota', () => ({
@@ -59,6 +51,7 @@ beforeAll(() => {
 beforeEach(() => {
   mockState.reset()
   vi.clearAllMocks()
+  mockState.isProductionMemoryDbFallback.mockReturnValue(false)
   mockState.quota.consumeQuota.mockResolvedValue({ ok: true })
   mockState.quota.getQuotaStatus.mockResolvedValue({
     wallet: { used: 10, limit: 10, remaining: 0, resetAt: '2026-06-26T00:00:00.000Z' },
@@ -97,7 +90,7 @@ describe('POST /api/research/start', () => {
     expect(mockState.records).toHaveLength(0)
   })
 
-  it('creates a running research record and starts the background agent', async () => {
+  it('creates a running research record for the stream route to execute', async () => {
     const { POST } = await import('./route')
 
     const res = await POST(await authedRequest({ topic: 'SHOULD I BUY PEPE?', budgetUsdc: '0.01' }))
@@ -111,7 +104,19 @@ describe('POST /api/research/start', () => {
       budgetUsdc: '0.01',
       status: 'running',
     })
-    expect(mockState.backgrounds).toEqual(['research-1'])
+  })
+
+  it('returns a signed research id in production memory DB fallback', async () => {
+    mockState.isProductionMemoryDbFallback.mockReturnValue(true)
+    const { POST } = await import('./route')
+
+    const res = await POST(await authedRequest({ topic: 'SHOULD I BUY PEPE?', budgetUsdc: '0.01' }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.status).toBe('running')
+    expect(body.researchId).not.toBe('research-1')
+    expect(body.researchId).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
   })
 
   it('returns 429 and does not create research when quota is exceeded', async () => {
@@ -130,6 +135,5 @@ describe('POST /api/research/start', () => {
       },
     })
     expect(mockState.records).toHaveLength(0)
-    expect(mockState.backgrounds).toHaveLength(0)
   })
 })

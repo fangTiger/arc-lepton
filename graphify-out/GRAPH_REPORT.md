@@ -1,11 +1,11 @@
 # Graph Report - arc-lepton  (2026-06-26)
 
 ## Corpus Check
-- 65 files · ~35,589 words
+- 66 files · ~36,201 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 153 nodes · 132 edges · 13 communities detected
+- 154 nodes · 133 edges · 13 communities detected
 - Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -28,10 +28,10 @@
 1. `GET()` - 11 edges
 2. `MockKv` - 9 edges
 3. `POST()` - 7 edges
-4. `logSiweFailure()` - 4 edges
-5. `eventLine()` - 4 edges
-6. `middleware()` - 3 edges
-7. `authedRequest()` - 3 edges
+4. `authedRequest()` - 4 edges
+5. `logSiweFailure()` - 4 edges
+6. `eventLine()` - 4 edges
+7. `middleware()` - 3 edges
 8. `serializeResearch()` - 3 edges
 9. `buildValidBody()` - 3 edges
 10. `parseSiweDiagnostics()` - 3 edges
@@ -87,7 +87,7 @@ Cohesion: 0.29
 Nodes (4): signTestMessage(), buildSiweMessage(), buildValidBody(), postVerify()
 
 ### Community 9 - "Community 9"
-Cohesion: 0.5
+Cohesion: 0.4
 Nodes (1): authedRequest()
 
 ### Community 10 - "Community 10"
@@ -111,7 +111,7 @@ Nodes (2): chainLabel(), NetworkGuard()
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 5`** (9 nodes): `page.tsx`, `page.tsx`, `DataCell()`, `FieldRow()`, `formatBalance()`, `load()`, `shortAddress()`, `statusLabel()`, `toWagmiAddress()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 9`** (4 nodes): `route.test.ts`, `route.test.ts`, `route.test.ts`, `authedRequest()`
+- **Thin community `Community 9`** (5 nodes): `route.test.ts`, `route.test.ts`, `route.test.ts`, `route.test.ts`, `authedRequest()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 10`** (4 nodes): `TopBar.tsx`, `formatBlock()`, `formatUtcTime()`, `TopBar()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -124,8 +124,8 @@ Nodes (2): chainLabel(), NetworkGuard()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `POST()` connect `Community 6` to `Community 8`, `Community 2`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Why does `utcTime()` connect `Community 1` to `Community 3`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `POST()` (e.g. with `postVerify()` and `.get()`) actually correct?**
   _`POST()` has 2 INFERRED edges - model-reasoned connections that need verification._

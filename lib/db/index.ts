@@ -35,6 +35,10 @@ function hasDbEnv() {
   return Boolean(envValue('DATABASE_URL') || envValue('POSTGRES_URL'))
 }
 
+export function isProductionMemoryDbFallback() {
+  return process.env.NODE_ENV === 'production' && !hasDbEnv() && !isNextProductionBuild()
+}
+
 function isNextProductionBuild() {
   return process.env.NEXT_PHASE === 'phase-production-build'
 }

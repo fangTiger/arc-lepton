@@ -490,6 +490,15 @@
       "norm_label": "route.ts"
     },
     {
+      "label": "route.test.ts",
+      "file_type": "code",
+      "source_file": "app/api/research/[id]/stream/route.test.ts",
+      "source_location": "L1",
+      "id": "app_api_research_id_stream_route_test_ts",
+      "community": 9,
+      "norm_label": "route.test.ts"
+    },
+    {
       "label": "route.ts",
       "file_type": "code",
       "source_file": "app/api/research/[id]/stream/route.ts",
@@ -502,7 +511,7 @@
       "label": "sse()",
       "file_type": "code",
       "source_file": "app/api/research/[id]/stream/route.ts",
-      "source_location": "L15",
+      "source_location": "L20",
       "id": "route_sse",
       "community": 0,
       "norm_label": "sse()"
@@ -1746,12 +1755,24 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/api/research/start/route.test.ts",
-      "source_location": "L69",
+      "source_location": "L62",
       "weight": 1.0,
       "_src": "app_api_research_start_route_test_ts",
       "_tgt": "route_test_authedrequest",
       "source": "route_test_authedrequest",
       "target": "app_api_research_start_route_test_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/research/[id]/stream/route.test.ts",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_src": "app_api_research_id_stream_route_test_ts",
+      "_tgt": "route_test_authedrequest",
+      "source": "route_test_authedrequest",
+      "target": "app_api_research_id_stream_route_test_ts",
       "confidence_score": 1.0
     },
     {
@@ -1830,7 +1851,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/api/research/[id]/stream/route.ts",
-      "source_location": "L19",
+      "source_location": "L24",
       "weight": 1.0,
       "_src": "app_api_research_id_stream_route_ts",
       "_tgt": "route_get",
@@ -2022,7 +2043,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/api/research/[id]/stream/route.ts",
-      "source_location": "L15",
+      "source_location": "L20",
       "weight": 1.0,
       "_src": "app_api_research_id_stream_route_ts",
       "_tgt": "route_sse",
