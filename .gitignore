@@ -44,7 +44,10 @@ cache/lens.json
 .playwright-cli
 .pnpm-store
 .graphifyignore
+graphify-out/cache/
 .mcp.json
 AGENTS.md
 CLAUDE.md
 opencode.json
+.vercel
+.env*
