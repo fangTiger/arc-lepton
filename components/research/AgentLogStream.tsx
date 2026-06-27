@@ -33,7 +33,13 @@ export function AgentLogStream({
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [isUserPinned, setUserPinned] = useState(false)
-  const [connection, setConnection] = useState<'connecting' | 'online' | 'closed' | 'error'>('connecting')
+  const hasTerminalEvent = useMemo(
+    () => events.some((event) => event.type === 'final' || event.type === 'error'),
+    [events],
+  )
+  const [connection, setConnection] = useState<'connecting' | 'online' | 'closed' | 'error'>(
+    () => hasTerminalEvent ? 'closed' : 'connecting',
+  )
 
   const report = useMemo(() => {
     const final = [...events].reverse().find((event): event is Extract<TimedEvent, { type: 'final' }> => event.type === 'final')
@@ -42,6 +48,12 @@ export function AgentLogStream({
   }, [events])
 
   useEffect(() => {
+    if (hasTerminalEvent) {
+      setConnection('closed')
+      return
+    }
+
+    setConnection('connecting')
     const source = new EventSource(`/api/research/${researchId}/stream`, { withCredentials: true })
     source.onopen = () => setConnection('online')
     source.onerror = () => {
@@ -56,7 +68,7 @@ export function AgentLogStream({
       }
     })
     return () => source.close()
-  }, [onEvent, researchId])
+  }, [hasTerminalEvent, onEvent, researchId])
 
   useEffect(() => {
     const node = scrollerRef.current

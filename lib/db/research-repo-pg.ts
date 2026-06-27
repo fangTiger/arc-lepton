@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
 import type { VercelPgDatabase } from 'drizzle-orm/vercel-postgres'
 import * as schema from './schema'
 import { research } from './schema/research'
@@ -29,6 +29,38 @@ export class PgResearchRepo implements ResearchRepo {
         completedAt: status === 'running' ? null : new Date(),
       })
       .where(eq(research.id, id))
+  }
+
+  async updateStatusIfCurrent(
+    id: string,
+    expectedStatus: ResearchStatus,
+    status: ResearchStatus,
+    errorMessage?: string,
+  ): Promise<boolean> {
+    const rows = await this.database
+      .update(research)
+      .set({
+        status,
+        errorMessage: errorMessage ?? null,
+        completedAt: status === 'running' ? null : new Date(),
+      })
+      .where(and(eq(research.id, id), eq(research.status, expectedStatus)))
+      .returning({ id: research.id })
+    return rows.length > 0
+  }
+
+  async completeIfRunning(id: string, reportMd: string): Promise<boolean> {
+    const rows = await this.database
+      .update(research)
+      .set({
+        status: 'completed',
+        reportMd,
+        errorMessage: null,
+        completedAt: new Date(),
+      })
+      .where(and(eq(research.id, id), eq(research.status, 'running')))
+      .returning({ id: research.id })
+    return rows.length > 0
   }
 
   async appendSpent(id: string, deltaUsdc: string): Promise<void> {

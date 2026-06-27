@@ -1,8 +1,9 @@
 import type { ResearchRepo } from './research-repo'
 import type { Research, ResearchStatus } from './research-repo'
 import { MemoryResearchRepo } from './research-repo-memory'
-import type { TxLogRepo } from './tx-log-repo'
-import type { TxLogEntry } from './tx-log-repo'
+import type { ResearchFollowUp, ResearchFollowUpRepo } from './research-follow-up-repo'
+import { MemoryResearchFollowUpRepo } from './research-follow-up-repo-memory'
+import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogScopedEntry } from './tx-log-repo'
 import { MemoryTxLogRepo } from './tx-log-repo-memory'
 import type { UsersRepo } from './users-repo'
 import type { UserRecord } from './users-repo'
@@ -11,18 +12,22 @@ import { MemoryUsersRepo } from './users-repo-memory'
 const usersMemoryFallbackMessage = '⚠ Using in-memory users repo (dev fallback). Data lost on restart.'
 const txLogMemoryFallbackMessage = '⚠ Using in-memory tx_log repo (dev fallback). Data lost on restart.'
 const researchMemoryFallbackMessage = '⚠ Using in-memory research repo (dev fallback). Data lost on restart.'
+const researchFollowUpMemoryFallbackMessage = '⚠ Using in-memory research_follow_up repo (dev fallback). Data lost on restart.'
 
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: UsersRepo
   __arcLeptonTxLogRepo?: TxLogRepo
   __arcLeptonResearchRepo?: ResearchRepo
+  __arcLeptonResearchFollowUpRepo?: ResearchFollowUpRepo
   __arcLeptonPgDb?: Promise<unknown>
   __arcLeptonPgUsersRepo?: Promise<UsersRepo>
   __arcLeptonPgTxLogRepo?: Promise<TxLogRepo>
   __arcLeptonPgResearchRepo?: Promise<ResearchRepo>
+  __arcLeptonPgResearchFollowUpRepo?: Promise<ResearchFollowUpRepo>
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
   __arcLeptonResearchRepoWarned?: boolean
+  __arcLeptonResearchFollowUpRepoWarned?: boolean
 }
 
 function envValue(name: string) {
@@ -93,12 +98,28 @@ class LazyPgTxLogRepo implements TxLogRepo {
     return memoryRepoGlobal.__arcLeptonPgTxLogRepo
   }
 
-  async record(entry: { address: string; source: string; amount: string }): Promise<{ id: string; txHash: string; createdAt: Date }> {
+  async record(entry: TxLogRecordInput): Promise<TxLogEntry> {
     return (await this.getRepo()).record(entry)
+  }
+
+  async claimRequest(input: TxLogClaimInput): Promise<TxLogClaimResult> {
+    return (await this.getRepo()).claimRequest(input)
+  }
+
+  async updateReceipt(id: string, patch: TxLogReceiptPatch): Promise<TxLogEntry> {
+    return (await this.getRepo()).updateReceipt(id, patch)
+  }
+
+  async findByRequestId(address: string, requestId: string): Promise<TxLogScopedEntry | null> {
+    return (await this.getRepo()).findByRequestId(address, requestId)
   }
 
   async listByAddress(address: string, limit = 50): Promise<TxLogEntry[]> {
     return (await this.getRepo()).listByAddress(address, limit)
+  }
+
+  async listByResearchId(address: string, researchId: string, limit = 50): Promise<TxLogEntry[]> {
+    return (await this.getRepo()).listByResearchId(address, researchId, limit)
   }
 
   async totalSpentByAddress(address: string): Promise<string> {
@@ -135,6 +156,19 @@ class LazyPgResearchRepo implements ResearchRepo {
     return (await this.getRepo()).updateStatus(id, status, errorMessage)
   }
 
+  async updateStatusIfCurrent(
+    id: string,
+    expectedStatus: ResearchStatus,
+    status: ResearchStatus,
+    errorMessage?: string,
+  ): Promise<boolean> {
+    return (await this.getRepo()).updateStatusIfCurrent(id, expectedStatus, status, errorMessage)
+  }
+
+  async completeIfRunning(id: string, reportMd: string): Promise<boolean> {
+    return (await this.getRepo()).completeIfRunning(id, reportMd)
+  }
+
   async appendSpent(id: string, deltaUsdc: string): Promise<void> {
     return (await this.getRepo()).appendSpent(id, deltaUsdc)
   }
@@ -153,6 +187,32 @@ class LazyPgResearchRepo implements ResearchRepo {
 
   async countRunning(): Promise<number> {
     return (await this.getRepo()).countRunning()
+  }
+}
+
+class LazyPgResearchFollowUpRepo implements ResearchFollowUpRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgResearchFollowUpRepo ??= (async () => {
+      const [{ PgResearchFollowUpRepo }, db] = await Promise.all([import('./research-follow-up-repo-pg'), getPgDb()])
+      return new PgResearchFollowUpRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgResearchFollowUpRepo
+  }
+
+  async create(input: { researchId: string; address: string; question: string }): Promise<ResearchFollowUp> {
+    return (await this.getRepo()).create(input)
+  }
+
+  async listByResearchId(address: string, researchId: string, limit = 50): Promise<ResearchFollowUp[]> {
+    return (await this.getRepo()).listByResearchId(address, researchId, limit)
+  }
+
+  async complete(id: string, input: { answerMd: string; spentUsdc: string }): Promise<ResearchFollowUp | null> {
+    return (await this.getRepo()).complete(id, input)
+  }
+
+  async fail(id: string, errorMessage: string): Promise<ResearchFollowUp | null> {
+    return (await this.getRepo()).fail(id, errorMessage)
   }
 }
 
@@ -194,3 +254,16 @@ function createResearchRepo(): ResearchRepo {
 }
 
 export const researchRepo: ResearchRepo = createResearchRepo()
+
+function createResearchFollowUpRepo(): ResearchFollowUpRepo {
+  if (hasDbEnv()) return new LazyPgResearchFollowUpRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonResearchFollowUpRepoWarned) {
+    console.warn(researchFollowUpMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonResearchFollowUpRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonResearchFollowUpRepo ??= new MemoryResearchFollowUpRepo()
+  return memoryRepoGlobal.__arcLeptonResearchFollowUpRepo
+}
+
+export const researchFollowUpRepo: ResearchFollowUpRepo = createResearchFollowUpRepo()

@@ -15,7 +15,7 @@ function serializeResearch(research: NonNullable<Awaited<ReturnType<typeof resea
   }
 }
 
-function serializeTxLog(entry: Awaited<ReturnType<typeof txLogRepo.listByAddress>>[number]) {
+function serializeTxLog(entry: Awaited<ReturnType<typeof txLogRepo.listByResearchId>>[number]) {
   return {
     ...entry,
     createdAt: entry.createdAt.toISOString(),
@@ -29,10 +29,7 @@ export async function GET(req: Request, { params }: RouteContext) {
     if (!research) return Response.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (research.address !== address) return Response.json({ error: 'FORBIDDEN' }, { status: 403 })
 
-    const upperBound = research.completedAt?.getTime() ?? Date.now()
-    const txLog = (await txLogRepo.listByAddress(address, 200))
-      .filter((entry) => entry.createdAt.getTime() >= research.startedAt.getTime() && entry.createdAt.getTime() <= upperBound)
-      .map(serializeTxLog)
+    const txLog = (await txLogRepo.listByResearchId(address, params.id, 200)).map(serializeTxLog)
 
     return Response.json({ research: serializeResearch(research), txLog })
   } catch (error) {

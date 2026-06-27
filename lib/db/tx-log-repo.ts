@@ -1,18 +1,104 @@
+export type TxStatus = 'mock' | 'pending' | 'confirmed' | 'failed'
+
+export const BILLABLE_TX_STATUSES = ['mock', 'confirmed'] as const
+
 export type TxLogEntry = {
   id: string
   address: string
   source: string
   amount: string
-  txHash: string
+  researchId: string | null
+  txHash: string | null
+  txStatus: TxStatus
+  chainId: number | null
+  blockNumber: string | null
+  requestId: string | null
+  errorMessage: string | null
   createdAt: Date
 }
 
+export type TxLogScopedEntry = TxLogEntry & {
+  requestId: string
+}
+
+export type TxLogRecordInput = {
+  address: string
+  source: string
+  amount: string
+  researchId?: string | null
+  txHash?: string | null
+  txStatus?: TxStatus
+  chainId?: number | null
+  blockNumber?: string | null
+  requestId?: string
+  errorMessage?: string | null
+}
+
+export type TxLogClaimInput = {
+  address: string
+  source: string
+  amount: string
+  requestId: string
+  researchId?: string | null
+}
+
+export type TxLogClaimResult =
+  | { status: 'claimed'; entry: TxLogScopedEntry }
+  | { status: 'existing'; entry: TxLogScopedEntry }
+  | { status: 'pending'; entry: TxLogScopedEntry }
+  | { status: 'failed'; entry: TxLogScopedEntry }
+
+export type TxLogReceiptPatch = {
+  txHash?: string | null
+  txStatus?: TxStatus
+  chainId?: number | null
+  blockNumber?: string | null
+  errorMessage?: string | null
+}
+
+export class PaymentIdempotencyConflictError extends Error {
+  readonly code = 'PAYMENT_IDEMPOTENCY_CONFLICT'
+  readonly requestId: string
+  readonly txLogEntry: TxLogScopedEntry
+
+  constructor(requestId: string, txLogEntry: TxLogScopedEntry) {
+    super('Idempotency key already belongs to another payment request')
+    this.name = 'PaymentIdempotencyConflictError'
+    this.requestId = requestId
+    this.txLogEntry = txLogEntry
+  }
+}
+
 export interface TxLogRepo {
-  record(entry: { address: string; source: string; amount: string }): Promise<{ id: string; txHash: string; createdAt: Date }>
+  record(entry: TxLogRecordInput): Promise<TxLogEntry>
+  claimRequest(input: TxLogClaimInput): Promise<TxLogClaimResult>
+  updateReceipt(id: string, patch: TxLogReceiptPatch): Promise<TxLogEntry>
+  findByRequestId(address: string, requestId: string): Promise<TxLogScopedEntry | null>
   listByAddress(address: string, limit?: number): Promise<TxLogEntry[]>
+  listByResearchId(address: string, researchId: string, limit?: number): Promise<TxLogEntry[]>
   totalSpentByAddress(address: string): Promise<string>
   count(): Promise<number>
   totalSpent(): Promise<string>
+}
+
+export function isBillableTxStatus(status: TxStatus) {
+  return BILLABLE_TX_STATUSES.includes(status as (typeof BILLABLE_TX_STATUSES)[number])
+}
+
+export function normalizeResearchId(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+export function sameRequestScope(
+  existing: Pick<TxLogEntry, 'source' | 'amount' | 'researchId'>,
+  input: Pick<TxLogClaimInput, 'source' | 'amount' | 'researchId'>,
+) {
+  return (
+    existing.source === input.source
+    && normalizeDecimalString(existing.amount) === normalizeDecimalString(input.amount)
+    && normalizeResearchId(existing.researchId) === normalizeResearchId(input.researchId)
+  )
 }
 
 const DECIMAL_SCALE = 8n

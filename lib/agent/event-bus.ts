@@ -9,6 +9,7 @@ type ResearchEventState = {
   events: AgentEvent[]
   subscribers: Set<Subscriber>
   done: boolean
+  runnerActive: boolean
   abortController: AbortController
   cleanupTimer?: ReturnType<typeof setTimeout>
 }
@@ -32,6 +33,7 @@ function getState(researchId: string) {
       events: [],
       subscribers: new Set(),
       done: false,
+      runnerActive: false,
       abortController: new AbortController(),
     }
     map.set(researchId, state)
@@ -47,15 +49,29 @@ function scheduleCleanup(researchId: string, state: ResearchEventState) {
   state.cleanupTimer.unref?.()
 }
 
+function isTerminalEvent(event: AgentEvent) {
+  return event.type === 'error' || event.type === 'final'
+}
+
 export function publishResearchEvent(researchId: string, event: AgentEvent) {
   const state = getState(researchId)
+  if (state.done || state.events.some(isTerminalEvent)) return false
   state.events.push(event)
   for (const subscriber of state.subscribers) subscriber.onEvent(event)
+  return true
+}
+
+export function claimResearchRunner(researchId: string) {
+  const state = getState(researchId)
+  if (state.done || state.runnerActive || state.events.some(isTerminalEvent)) return false
+  state.runnerActive = true
+  return true
 }
 
 export function markResearchDone(researchId: string) {
   const state = getState(researchId)
   state.done = true
+  state.runnerActive = false
   for (const subscriber of state.subscribers) subscriber.onDone?.()
   state.subscribers.clear()
   scheduleCleanup(researchId, state)

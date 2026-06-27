@@ -43,7 +43,7 @@ function createMockDeepSeekClient() {
   return {
     chat: {
       completions: {
-        async create(params: { stream?: boolean }) {
+        async create(params: { stream?: boolean }, _options?: { signal?: AbortSignal }) {
           if (params.stream) return mockReportStream()
 
           turn += 1

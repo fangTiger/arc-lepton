@@ -11,9 +11,11 @@ const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: unknown
   __arcLeptonTxLogRepo?: unknown
   __arcLeptonResearchRepo?: unknown
+  __arcLeptonResearchFollowUpRepo?: unknown
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
   __arcLeptonResearchRepoWarned?: boolean
+  __arcLeptonResearchFollowUpRepoWarned?: boolean
 }
 const mutableEnv = process.env as Record<string, string | undefined>
 
@@ -31,9 +33,11 @@ function clearMemoryRepoGlobals() {
   delete memoryRepoGlobal.__arcLeptonUsersRepo
   delete memoryRepoGlobal.__arcLeptonTxLogRepo
   delete memoryRepoGlobal.__arcLeptonResearchRepo
+  delete memoryRepoGlobal.__arcLeptonResearchFollowUpRepo
   delete memoryRepoGlobal.__arcLeptonUsersRepoWarned
   delete memoryRepoGlobal.__arcLeptonTxLogRepoWarned
   delete memoryRepoGlobal.__arcLeptonResearchRepoWarned
+  delete memoryRepoGlobal.__arcLeptonResearchFollowUpRepoWarned
 }
 
 describe('db dev fallback repos', () => {
@@ -83,5 +87,21 @@ describe('db dev fallback repos', () => {
 
     expect(await mod.researchRepo.countAll()).toBe(0)
     expect(await mod.txLogRepo.count()).toBe(0)
+  })
+
+  it('shares the in-memory research follow-up fallback across module reloads', async () => {
+    const first = await import('./index')
+    await first.researchFollowUpRepo.create({
+      researchId: 'research-1',
+      address: '0xabc',
+      question: 'What would invalidate the setup?',
+    })
+
+    vi.resetModules()
+    const second = await import('./index')
+    const items = await second.researchFollowUpRepo.listByResearchId('0xabc', 'research-1', 10)
+
+    expect(items).toHaveLength(1)
+    expect(items[0]?.question).toBe('What would invalidate the setup?')
   })
 })

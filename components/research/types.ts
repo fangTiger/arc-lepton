@@ -1,7 +1,22 @@
+export type TxStatus = 'mock' | 'pending' | 'confirmed' | 'failed'
+
 export type AgentEvent =
   | { type: 'thinking'; text: string }
   | { type: 'tool_call'; name: string; args: Record<string, unknown>; callId: string }
-  | { type: 'tool_result'; callId: string; name: string; payment: { amount: string; txHash: string }; dataPreview: string }
+  | {
+      type: 'tool_result'
+      callId: string
+      name: string
+      payment: {
+        amount: string
+        txHash: string | null
+        txStatus: TxStatus
+        chainId: number | null
+        blockNumber: string | null
+        requestId: string
+      }
+      dataPreview: string
+    }
   | { type: 'budget'; spentUsdc: string; remainingUsdc: string }
   | { type: 'report_chunk'; delta: string }
   | { type: 'final'; reportMd: string; totalSpentUsdc: string; totalCalls: number }
@@ -20,21 +35,49 @@ export type ResearchRecord = {
   completedAt: string | null
 }
 
+export type ResearchFollowUpRecord = {
+  id: string
+  researchId: string
+  address: string
+  question: string
+  answerMd: string | null
+  status: 'pending' | 'completed' | 'failed'
+  spentUsdc: string
+  errorMessage: string | null
+  createdAt: string
+  completedAt: string | null
+}
+
 export type TxLogRecord = {
   id: string
   address: string
   source: string
   amount: string
-  txHash: string
+  txHash: string | null
+  txStatus: TxStatus
+  chainId: number | null
+  blockNumber: string | null
+  requestId: string | null
+  errorMessage: string | null
   createdAt: string
 }
 
-export function shortHash(hash: string) {
+export function isBillablePaymentStatus(status: TxStatus) {
+  return status === 'mock' || status === 'confirmed'
+}
+
+export function shortHash(hash: string | null) {
+  if (!hash) return 'not broadcast'
   return `${hash.slice(0, 6)}...${hash.slice(-4)}`
 }
 
 export function shortId(id: string) {
   return id.replace(/-/g, '').slice(0, 8)
+}
+
+export function paymentStatusLabel(status: TxStatus) {
+  if (status === 'mock') return 'mock receipt'
+  return status
 }
 
 export function utcTime(value = new Date()) {

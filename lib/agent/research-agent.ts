@@ -1,6 +1,6 @@
 import { PRODUCT_NAME } from '@/lib/brand'
 import { getDeepSeekClient, DEEPSEEK_MODEL } from '@/lib/llm/deepseek'
-import { researchRepo, txLogRepo } from '@/lib/db'
+import { researchRepo } from '@/lib/db'
 import {
   buildKlinePatternData,
   buildNewsData,
@@ -9,7 +9,9 @@ import {
   buildWhaleWatchData,
 } from '@/lib/data/mock-sources'
 import { decimalToUnits, unitsToDecimal } from '@/lib/db/tx-log-repo'
+import { recordPaymentReceipt } from '@/lib/x402/payment-recorder'
 import {
+  claimResearchRunner,
   getResearchAbortController,
   markResearchDone,
   publishResearchEvent,
@@ -18,7 +20,20 @@ import {
 export type AgentEvent =
   | { type: 'thinking'; text: string }
   | { type: 'tool_call'; name: string; args: object; callId: string }
-  | { type: 'tool_result'; callId: string; name: string; payment: { amount: string; txHash: string }; dataPreview: string }
+  | {
+      type: 'tool_result'
+      callId: string
+      name: string
+      payment: {
+        amount: string
+        txHash: string | null
+        txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
+        chainId: number | null
+        blockNumber: string | null
+        requestId: string
+      }
+      dataPreview: string
+    }
   | { type: 'budget'; spentUsdc: string; remainingUsdc: string }
   | { type: 'report_chunk'; delta: string }
   | { type: 'final'; reportMd: string; totalSpentUsdc: string; totalCalls: number }
@@ -61,8 +76,28 @@ type LocalTool = {
   buildData: (token: string) => unknown
 }
 
+type CompletedToolResult = {
+  source: string
+  amount: string
+  txHash: string | null
+  txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
+  chainId: number | null
+  blockNumber: string | null
+  requestId: string
+  preview: string
+}
+
 const MIN_TOOL_AMOUNT = '0.0001'
 const MAX_TOOL_TURNS = 6
+const INVALID_REPORT_PATTERNS = [
+  /<\|\|dsml\|\|/i,
+  /\btool_calls\b/i,
+  /<\s*invoke\b/i,
+  /\binvoke\s+name\b/i,
+  /<\s*parameter\b/i,
+  /\bparameter\s+name\b/i,
+  /let me get some additional data/i,
+]
 
 const localTools = {
   whale_watch: {
@@ -145,6 +180,38 @@ function parseToolArgs(raw: string): { token: string } {
   }
 }
 
+function sortToolArgumentValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortToolArgumentValue)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entryValue]) => [key, sortToolArgumentValue(entryValue)]),
+    )
+  }
+  return value
+}
+
+function buildToolDedupMeta(call: ToolCall) {
+  try {
+    const parsed = JSON.parse(call.function.arguments) as Record<string, unknown>
+    const normalizedArgs = {
+      ...parsed,
+      token: parseToolArgs(call.function.arguments).token,
+    }
+    const normalizedArgsText = JSON.stringify(sortToolArgumentValue(normalizedArgs))
+    return {
+      argsKey: `${call.function.name}:${normalizedArgsText}`,
+      arguments: JSON.parse(normalizedArgsText) as Record<string, unknown>,
+    }
+  } catch {
+    return {
+      argsKey: `${call.function.name}:${call.function.arguments}`,
+      arguments: call.function.arguments,
+    }
+  }
+}
+
 function dataPreview(data: unknown) {
   return JSON.stringify(data).slice(0, 500)
 }
@@ -153,17 +220,44 @@ function remaining(budgetUnits: bigint, spentUnits: bigint) {
   return budgetUnits > spentUnits ? budgetUnits - spentUnits : 0n
 }
 
+function pushToolMessage(messages: ChatMessage[], call: ToolCall, content: Record<string, unknown>) {
+  messages.push({
+    role: 'tool',
+    tool_call_id: call.id,
+    name: call.function.name,
+    content: JSON.stringify(content),
+  })
+}
+
 function assertNotAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new Error('Research cancelled')
 }
 
-async function executeTool(address: string, call: ToolCall) {
+function requestOptions(signal?: AbortSignal) {
+  return signal ? ({ signal } as { signal: AbortSignal }) : undefined
+}
+
+function safeToolErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message.trim()
+  return 'Tool execution failed'
+}
+
+async function executeTool(address: string, researchId: string, call: ToolCall, signal?: AbortSignal) {
+  assertNotAborted(signal)
   const tool = localTools[call.function.name as keyof typeof localTools]
   if (!tool) return null
 
   const args = parseToolArgs(call.function.arguments)
   const data = tool.buildData(args.token)
-  const tx = await txLogRepo.record({ address, source: tool.source, amount: tool.amount })
+  const tx = await recordPaymentReceipt({
+    address,
+    source: tool.source,
+    amount: tool.amount,
+    requestId: call.id,
+    researchId,
+    signal,
+  })
+  assertNotAborted(signal)
 
   return {
     tool,
@@ -172,9 +266,34 @@ async function executeTool(address: string, call: ToolCall) {
     payment: {
       amount: tool.amount,
       txHash: tx.txHash,
+      txStatus: tx.txStatus,
+      chainId: tx.chainId,
+      blockNumber: tx.blockNumber,
+      requestId: tx.requestId,
       source: tool.source,
     },
   }
+}
+
+function finalReportPrompt() {
+  return `FINAL REPORT MODE.
+Use only the completed tool results already present in this conversation.
+Do not call any tools.
+Do not ask for additional data.
+Do not output tool syntax, DSML, XML, tool_calls, invoke, parameter, or tool execution JSON.
+If data is incomplete, say so in Limitations.
+Return Markdown only.
+
+Required sections:
+- Concise conclusion
+- Key findings
+- Risks
+- Action guidance
+- Completed data sources
+- Payment trace
+- Limitations
+
+List only completed data sources and tx_hash values from this run.`
 }
 
 function firstChoiceMessage(response: unknown): ChatMessage {
@@ -182,23 +301,90 @@ function firstChoiceMessage(response: unknown): ChatMessage {
   return choices[0]?.message ?? { role: 'assistant', content: null }
 }
 
-async function* streamReport(client: ReturnType<typeof getDeepSeekClient>, messages: ChatMessage[]) {
+async function* streamReport(
+  client: ReturnType<typeof getDeepSeekClient>,
+  messages: ChatMessage[],
+  signal?: AbortSignal,
+) {
+  assertNotAborted(signal)
   const stream = await client.chat.completions.create({
     model: DEEPSEEK_MODEL,
     messages: [
       ...messages,
       {
         role: 'user',
-        content: 'Generate the final Markdown research report from the tool results above, and list the data sources and tx_hash values used in this run.',
+        content: finalReportPrompt(),
       },
     ],
     stream: true,
-  } as never)
+  } as never, requestOptions(signal) as never)
+  assertNotAborted(signal)
 
   for await (const chunk of stream as AsyncIterable<{ choices?: Array<{ delta?: { content?: string | null } }> }>) {
+    assertNotAborted(signal)
     const delta = chunk.choices?.[0]?.delta?.content
     if (delta) yield delta
   }
+}
+
+function shouldReplaceReport(rawReportMd: string) {
+  const normalized = rawReportMd.trim()
+  if (!normalized) return true
+  return INVALID_REPORT_PATTERNS.some((pattern) => pattern.test(rawReportMd))
+}
+
+function buildFallbackReport(completedResults: CompletedToolResult[], totalSpentUsdc: string) {
+  const completedSources = completedResults.length
+    ? completedResults
+        .map((result) => `- ${result.source}: ${result.preview}`)
+        .join('\n')
+    : '- None. No tool results completed before finalization.'
+
+  const paymentTrace = completedResults.length
+    ? completedResults
+        .map((result) => {
+          const txHash = result.txHash ?? 'not available'
+          const chain = result.chainId === null ? 'n/a' : String(result.chainId)
+          const block = result.blockNumber ?? 'n/a'
+          return `- ${result.source} | amount ${result.amount} USDC | request ${result.requestId} | tx status ${result.txStatus} | tx_hash ${txHash} | chain ${chain} | block ${block}`
+        })
+        .join('\n')
+    : '- No payment receipts were recorded.'
+
+  return `# Research Report
+
+This report is based only on completed tool results collected before finalization. No additional tools were called during report generation.
+
+## Concise conclusion
+- A clean model-written final report was not available, so this fallback summarizes only verified completed tool outputs.
+
+## Key findings
+- Completed tool calls: ${completedResults.length}
+- Total spent: ${totalSpentUsdc} USDC
+
+## Risks
+- The discarded model output attempted to continue tool-style execution instead of producing a clean report.
+
+## Action guidance
+- Treat this summary as a verified fallback and wait for a fresh run if a richer narrative is needed.
+
+## Completed data sources
+${completedSources}
+
+## Payment trace
+${paymentTrace}
+
+## Limitations
+- This fallback uses only completed tool results and recorded payment receipts from this run.
+- It excludes any invalid execution-style text emitted during final report generation.
+- No extra data was fetched during finalization.`
+}
+
+function finalizeReport(rawReportMd: string, completedResults: CompletedToolResult[], totalSpentUsdc: string) {
+  if (shouldReplaceReport(rawReportMd)) {
+    return buildFallbackReport(completedResults, totalSpentUsdc)
+  }
+  return rawReportMd.trim()
 }
 
 export async function* runResearchAgent(opts: {
@@ -214,6 +400,7 @@ export async function* runResearchAgent(opts: {
   let spentUnits = 0n
   let totalCalls = 0
   let reportMd = ''
+  const completedResults: CompletedToolResult[] = []
   const usedTools = new Set<string>()
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt(opts.budgetUsdc) },
@@ -231,7 +418,8 @@ export async function* runResearchAgent(opts: {
         tools: RESEARCH_TOOLS,
         tool_choice: 'auto',
         stream: false,
-      } as never)
+      } as never, requestOptions(opts.signal) as never)
+      assertNotAborted(opts.signal)
       const message = firstChoiceMessage(response)
       messages.push(message)
 
@@ -240,24 +428,71 @@ export async function* runResearchAgent(opts: {
       if (message.content) yield { type: 'thinking', text: message.content }
 
       let executedInTurn = 0
+      let canExecuteMoreTools = true
       for (const call of toolCalls) {
         assertNotAborted(opts.signal)
         const tool = localTools[call.function.name as keyof typeof localTools]
-        if (!tool || usedTools.has(call.function.name)) continue
+        const dedupMeta = buildToolDedupMeta(call)
+        if (!tool) {
+          pushToolMessage(messages, call, {
+            status: 'error',
+            reason: 'unknown_tool',
+            name: call.function.name,
+          })
+          continue
+        }
+        if (usedTools.has(dedupMeta.argsKey)) {
+          pushToolMessage(messages, call, {
+            status: 'skipped',
+            reason: 'duplicate_tool',
+            name: call.function.name,
+            argsKey: dedupMeta.argsKey,
+            arguments: dedupMeta.arguments,
+          })
+          continue
+        }
         const toolAmountUnits = decimalToUnits(tool.amount)
-        if (spentUnits + toolAmountUnits > budgetUnits) break
+        if (!canExecuteMoreTools || spentUnits + toolAmountUnits > budgetUnits) {
+          canExecuteMoreTools = false
+          pushToolMessage(messages, call, {
+            status: 'skipped',
+            reason: 'budget_exceeded',
+            name: call.function.name,
+          })
+          continue
+        }
 
         const args = parseToolArgs(call.function.arguments)
         yield { type: 'tool_call', name: call.function.name, args, callId: call.id }
 
-        const result = await executeTool(opts.address, call)
-        if (!result) continue
+        let result
+        try {
+          result = await executeTool(opts.address, opts.researchId, call, opts.signal)
+        } catch (error) {
+          pushToolMessage(messages, call, {
+            status: 'error',
+            reason: 'execution_failed',
+            name: call.function.name,
+            message: safeToolErrorMessage(error),
+          })
+          throw error
+        }
+        if (!result) {
+          pushToolMessage(messages, call, {
+            status: 'error',
+            reason: 'execution_failed',
+            name: call.function.name,
+          })
+          continue
+        }
 
-        usedTools.add(call.function.name)
+        assertNotAborted(opts.signal)
+        await researchRepo.appendSpent(opts.researchId, result.tool.amount)
+        assertNotAborted(opts.signal)
+        usedTools.add(dedupMeta.argsKey)
         spentUnits += toolAmountUnits
         totalCalls += 1
         executedInTurn += 1
-        await researchRepo.appendSpent(opts.researchId, result.tool.amount)
 
         const toolResultEvent: AgentEvent = {
           type: 'tool_result',
@@ -266,6 +501,10 @@ export async function* runResearchAgent(opts: {
           payment: {
             amount: result.payment.amount,
             txHash: result.payment.txHash,
+            txStatus: result.payment.txStatus,
+            chainId: result.payment.chainId,
+            blockNumber: result.payment.blockNumber,
+            requestId: result.payment.requestId,
           },
           dataPreview: dataPreview(result.data),
         }
@@ -278,31 +517,50 @@ export async function* runResearchAgent(opts: {
           remainingUsdc,
         }
 
-        messages.push({
-          role: 'tool',
-          tool_call_id: call.id,
-          name: call.function.name,
-          content: JSON.stringify({
-            data: result.data,
-            payment: result.payment,
-          }),
+        completedResults.push({
+          source: result.tool.source,
+          amount: result.payment.amount,
+          txHash: result.payment.txHash,
+          txStatus: result.payment.txStatus,
+          chainId: result.payment.chainId,
+          blockNumber: result.payment.blockNumber,
+          requestId: result.payment.requestId,
+          preview: dataPreview(result.data).replace(/\s+/g, ' '),
         })
 
-        if (remaining(budgetUnits, spentUnits) < minToolUnits) break
+        pushToolMessage(messages, call, {
+          data: result.data,
+          payment: result.payment,
+        })
+
+        if (remaining(budgetUnits, spentUnits) < minToolUnits) canExecuteMoreTools = false
       }
 
       if (executedInTurn === 0 || remaining(budgetUnits, spentUnits) < minToolUnits) break
     }
 
     assertNotAborted(opts.signal)
-    for await (const delta of streamReport(client, messages)) {
+    const rawReportChunks: string[] = []
+    let reportStreamRejected = false
+    for await (const delta of streamReport(client, messages, opts.signal)) {
       assertNotAborted(opts.signal)
-      reportMd += delta
+      rawReportChunks.push(delta)
+      if (reportStreamRejected) continue
+      if (shouldReplaceReport(rawReportChunks.join(''))) {
+        reportStreamRejected = true
+        continue
+      }
       yield { type: 'report_chunk', delta }
     }
+    assertNotAborted(opts.signal)
+    const rawReportMd = rawReportChunks.join('')
+    reportMd = finalizeReport(rawReportMd, completedResults, unitsToDecimal(spentUnits))
+    if (reportStreamRejected || reportMd !== rawReportMd.trim()) {
+      yield { type: 'report_chunk', delta: reportMd }
+    }
 
-    await researchRepo.setReport(opts.researchId, reportMd)
-    await researchRepo.updateStatus(opts.researchId, 'completed')
+    const completed = await researchRepo.completeIfRunning(opts.researchId, reportMd)
+    if (!completed) return
     yield {
       type: 'final',
       reportMd,
@@ -311,10 +569,16 @@ export async function* runResearchAgent(opts: {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Research agent failed'
-    if (opts.signal?.aborted) {
-      await researchRepo.updateStatus(opts.researchId, 'cancelled', message)
-    } else {
-      await researchRepo.updateStatus(opts.researchId, 'failed', message)
+    const status = opts.signal?.aborted ? 'cancelled' : 'failed'
+    const updated = await researchRepo.updateStatusIfCurrent(opts.researchId, 'running', status, message)
+    if (!updated) {
+      if (opts.signal?.aborted) {
+        const latest = await researchRepo.findById(opts.researchId)
+        if (latest?.status === 'cancelled') {
+          yield { type: 'error', message: latest.errorMessage ?? message }
+        }
+      }
+      return
     }
     yield { type: 'error', message }
   }
@@ -328,15 +592,20 @@ export async function runAgentInBackground(researchId: string) {
     return
   }
 
+  if (!claimResearchRunner(researchId)) return
+
   const controller = getResearchAbortController(researchId)
-  for await (const event of runResearchAgent({
-    researchId,
-    address: research.address,
-    topic: research.topic,
-    budgetUsdc: research.budgetUsdc,
-    signal: controller.signal,
-  })) {
-    publishResearchEvent(researchId, event)
+  try {
+    for await (const event of runResearchAgent({
+      researchId,
+      address: research.address,
+      topic: research.topic,
+      budgetUsdc: research.budgetUsdc,
+      signal: controller.signal,
+    })) {
+      publishResearchEvent(researchId, event)
+    }
+  } finally {
+    markResearchDone(researchId)
   }
-  markResearchDone(researchId)
 }

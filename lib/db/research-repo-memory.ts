@@ -40,6 +40,38 @@ export class MemoryResearchRepo implements ResearchRepo {
     })
   }
 
+  async updateStatusIfCurrent(
+    id: string,
+    expectedStatus: ResearchStatus,
+    status: ResearchStatus,
+    errorMessage?: string,
+  ): Promise<boolean> {
+    const record = this.records.get(id)
+    if (!record || record.status !== expectedStatus) return false
+
+    this.records.set(id, {
+      ...record,
+      status,
+      errorMessage: errorMessage ?? (status === 'failed' ? record.errorMessage : null),
+      completedAt: status === 'running' ? null : new Date(),
+    })
+    return true
+  }
+
+  async completeIfRunning(id: string, reportMd: string): Promise<boolean> {
+    const record = this.records.get(id)
+    if (!record || record.status !== 'running') return false
+
+    this.records.set(id, {
+      ...record,
+      status: 'completed',
+      reportMd,
+      errorMessage: null,
+      completedAt: new Date(),
+    })
+    return true
+  }
+
   async appendSpent(id: string, deltaUsdc: string): Promise<void> {
     const record = this.records.get(id)
     if (!record) return

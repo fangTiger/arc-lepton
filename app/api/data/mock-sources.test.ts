@@ -3,7 +3,51 @@ import { signSessionJwt } from '@/lib/auth/jwt'
 
 const mockStore = vi.hoisted(() => {
   let counter = 0
-  const entries: Array<{ id: string; address: string; source: string; amount: string; txHash: string; createdAt: Date }> = []
+  const entries: Array<{
+    id: string
+    address: string
+    source: string
+    amount: string
+    researchId: string | null
+    txHash: string | null
+    txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
+    chainId: number | null
+    blockNumber: string | null
+    requestId: string | null
+    errorMessage: string | null
+    createdAt: Date
+  }> = []
+
+  function createEntry(entry: {
+    address: string
+    source: string
+    amount: string
+    researchId?: string | null
+    txHash?: string | null
+    txStatus?: 'mock' | 'pending' | 'confirmed' | 'failed'
+    chainId?: number | null
+    blockNumber?: string | null
+    requestId?: string | null
+    errorMessage?: string | null
+  }) {
+    counter += 1
+    const tx = {
+      id: `tx-${counter}`,
+      address: entry.address,
+      source: entry.source,
+      amount: entry.amount,
+      researchId: entry.researchId ?? null,
+      txHash: entry.txHash !== undefined ? entry.txHash : `0x${counter.toString(16).padStart(64, '0')}`,
+      txStatus: entry.txStatus ?? 'mock',
+      chainId: entry.chainId ?? null,
+      blockNumber: entry.blockNumber ?? null,
+      requestId: entry.requestId ?? `req-${counter}`,
+      errorMessage: entry.errorMessage ?? null,
+      createdAt: new Date('2026-06-25T00:00:00.000Z'),
+    }
+    entries.push(tx)
+    return tx
+  }
 
   return {
     entries,
@@ -12,18 +56,45 @@ const mockStore = vi.hoisted(() => {
       entries.length = 0
     },
     txLogRepo: {
-      async record(entry: { address: string; source: string; amount: string }) {
-        counter += 1
-        const tx = {
-          id: `tx-${counter}`,
+      async record(entry: Parameters<typeof createEntry>[0]) {
+        return createEntry(entry)
+      },
+      async claimRequest(entry: { address: string; source: string; amount: string; requestId: string; researchId?: string | null }) {
+        const existing = entries.find((tx) => tx.address === entry.address && tx.requestId === entry.requestId)
+        if (existing) {
+          if (existing.txStatus === 'pending') return { status: 'pending' as const, entry: existing }
+          if (existing.txStatus === 'failed') return { status: 'failed' as const, entry: existing }
+          return { status: 'existing' as const, entry: existing }
+        }
+        const tx = createEntry({
           address: entry.address,
           source: entry.source,
           amount: entry.amount,
-          txHash: `0x${counter.toString(16).padStart(64, '0')}`,
-          createdAt: new Date('2026-06-25T00:00:00.000Z'),
-        }
-        entries.push(tx)
-        return { id: tx.id, txHash: tx.txHash, createdAt: tx.createdAt }
+          researchId: entry.researchId ?? null,
+          txHash: null,
+          txStatus: 'pending',
+          requestId: entry.requestId,
+        })
+        return { status: 'claimed' as const, entry: tx }
+      },
+      async updateReceipt(id: string, patch: {
+        txHash?: string | null
+        txStatus?: 'mock' | 'pending' | 'confirmed' | 'failed'
+        chainId?: number | null
+        blockNumber?: string | null
+        errorMessage?: string | null
+      }) {
+        const tx = entries.find((entry) => entry.id === id)
+        if (!tx) throw new Error(`tx_log ${id} not found`)
+        if (patch.txHash !== undefined) tx.txHash = patch.txHash
+        if (patch.txStatus !== undefined) tx.txStatus = patch.txStatus
+        if (patch.chainId !== undefined) tx.chainId = patch.chainId
+        if (patch.blockNumber !== undefined) tx.blockNumber = patch.blockNumber
+        if (patch.errorMessage !== undefined) tx.errorMessage = patch.errorMessage
+        return tx
+      },
+      async findByRequestId(address: string, requestId: string) {
+        return entries.find((entry) => entry.address === address && entry.requestId === requestId) ?? null
       },
       async listByAddress(address: string, limit = 50) {
         return entries.filter((entry) => entry.address === address).slice(0, limit)

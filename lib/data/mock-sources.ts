@@ -58,6 +58,10 @@ export function paymentPayload(ctx: PaymentContext) {
   return {
     amount: ctx.amount,
     txHash: ctx.txHash,
+    txStatus: ctx.txStatus,
+    chainId: ctx.chainId,
+    blockNumber: ctx.blockNumber,
+    requestId: ctx.requestId,
     source: ctx.source,
   }
 }

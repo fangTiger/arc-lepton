@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AgentLogStream } from '@/components/research/AgentLogStream'
 import { BudgetMeter } from '@/components/research/BudgetMeter'
+import { TerminalMarkdown } from '@/components/research/TerminalMarkdown'
 import { TxFeed } from '@/components/research/TxFeed'
-import type { AgentEvent, ResearchRecord } from '@/components/research/types'
-import { utcTime } from '@/components/research/types'
+import type { AgentEvent, ResearchFollowUpRecord, ResearchRecord } from '@/components/research/types'
+import { utcDateTime, utcTime } from '@/components/research/types'
 
 type TimedEvent = AgentEvent & { receivedAt?: string }
 
@@ -22,21 +23,32 @@ type QuotaStatus = {
   global: QuotaBucket
 }
 
-const quickPrompts = [
+const promptPool = [
   'SHOULD I BUY PEPE?',
   'BTC PRICE PREDICTION',
   'SOL ECOSYSTEM HEALTH',
   'MEME COIN MOMENTUM',
-]
-
-const defaultTopics = [
-  'SHOULD I BUY PEPE?',
-  'BTC PRICE PREDICTION',
-  'SOL ECOSYSTEM HEALTH',
-  'MEME COIN MOMENTUM',
+  'ETH GAS TREND',
+  'DOGE VS SHIB',
+  'IS THIS ALT SZN?',
+  'STABLECOIN RISK CHECK',
+  'WHO LEADS L2 FLOW?',
+  'CAN BASE KEEP RUNNING?',
+  'WHAT ARE WHALES BUYING?',
+  'WHICH NARRATIVE IS HOT?',
 ]
 
 const TOPIC_ROTATE_MS = 4_500
+const VISIBLE_QUICK_PROMPTS = 6
+
+function shufflePrompts(prompts: string[]) {
+  const shuffled = [...prompts]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]]
+  }
+  return shuffled
+}
 
 function estimatedCalls(budget: string) {
   const numeric = Number(budget)
@@ -95,6 +107,47 @@ function persistedEvent(record: ResearchRecord): TimedEvent | null {
   return null
 }
 
+function hasTerminalEvent(events: TimedEvent[]) {
+  return events.some((event) => event.type === 'final' || event.type === 'error')
+}
+
+function followUpStatusTone(status: ResearchFollowUpRecord['status']) {
+  if (status === 'completed') return 'text-green'
+  if (status === 'failed') return 'text-red'
+  return 'text-cyan'
+}
+
+function followUpStatusLabel(status: ResearchFollowUpRecord['status']) {
+  if (status === 'completed') return 'COMPLETED'
+  if (status === 'failed') return 'FAILED'
+  return 'PENDING'
+}
+
+function followUpErrorMessage(code: string) {
+  if (code === 'BUDGET_EXHAUSTED') return 'No remaining budget is available for follow-up questions.'
+  if (code === 'REPORT_NOT_READY') return 'This report is not ready for follow-up questions yet.'
+  if (code === 'INVALID_BODY') return 'Enter a follow-up question between 1 and 500 characters.'
+  if (code === 'FOLLOW_UP_FAILED') return 'The follow-up answer could not be generated. Please try again.'
+  return 'Failed to submit the follow-up question.'
+}
+
+type LiveFollowUpResponse = {
+  error?: string
+  followUp?: ResearchFollowUpRecord
+}
+
+type LiveFollowUpsResponse = {
+  error?: string
+  followUps?: ResearchFollowUpRecord[]
+}
+
+function mergeFollowUps(current: ResearchFollowUpRecord[], incoming: ResearchFollowUpRecord[]) {
+  const byId = new Map<string, ResearchFollowUpRecord>()
+  for (const followUp of incoming) byId.set(followUp.id, followUp)
+  for (const followUp of current) byId.set(followUp.id, followUp)
+  return Array.from(byId.values()).sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt))
+}
+
 function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
   if (!quota) {
     return (
@@ -124,14 +177,22 @@ function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
 
 function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) => void }) {
   const router = useRouter()
+  const [promptDeck, setPromptDeck] = useState(promptPool)
   const [topicIndex, setTopicIndex] = useState(0)
-  const [topic, setTopic] = useState(defaultTopics[0])
+  const [topic, setTopic] = useState(promptPool[0] ?? '')
   const [hasEditedTopic, setHasEditedTopic] = useState(false)
   const [budget, setBudget] = useState('0.0100')
   const [error, setError] = useState<string | null>(null)
   const [quota, setQuota] = useState<QuotaStatus | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
   const quotaReason = quotaExceededReason(quota)
+  const visibleQuickPrompts = useMemo(() => promptDeck.slice(0, VISIBLE_QUICK_PROMPTS), [promptDeck])
+
+  useEffect(() => {
+    const shuffledPrompts = shufflePrompts(promptPool)
+    setPromptDeck(shuffledPrompts)
+    setTopic(shuffledPrompts[0] ?? '')
+  }, [])
 
   const loadQuota = useCallback(async () => {
     const res = await fetch('/api/quota', { credentials: 'include', cache: 'no-store' })
@@ -147,15 +208,16 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
 
   useEffect(() => {
     if (hasEditedTopic) return
+    if (promptDeck.length <= 1) return
     const timer = window.setInterval(() => {
-      setTopicIndex((current) => (current + 1) % defaultTopics.length)
+      setTopicIndex((current) => (current + 1) % promptDeck.length)
     }, TOPIC_ROTATE_MS)
     return () => window.clearInterval(timer)
-  }, [hasEditedTopic])
+  }, [hasEditedTopic, promptDeck.length])
 
   useEffect(() => {
-    if (!hasEditedTopic) setTopic(defaultTopics[topicIndex])
-  }, [hasEditedTopic, topicIndex])
+    if (!hasEditedTopic) setTopic(promptDeck[topicIndex] ?? promptDeck[0] ?? '')
+  }, [hasEditedTopic, promptDeck, topicIndex])
 
   async function submit() {
     setError(null)
@@ -201,7 +263,7 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
               setHasEditedTopic(true)
               setTopic(event.target.value)
             }}
-            placeholder={`_ ${defaultTopics[topicIndex]}`}
+            placeholder={`_ ${promptDeck[topicIndex] ?? promptDeck[0] ?? ''}`}
             rows={3}
             className="w-full resize-none border border-amber bg-bg-base px-3 py-3 font-mono text-sm text-text-primary outline-none placeholder:text-amber-dim focus:bg-bg-cell"
           />
@@ -209,8 +271,8 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
 
         <div>
           <div className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">&gt; QUICK PROMPTS</div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {quickPrompts.map((prompt) => (
+          <div className="grid gap-2 min-[540px]:grid-cols-2">
+            {visibleQuickPrompts.map((prompt) => (
               <button
                 key={prompt}
                 type="button"
@@ -270,6 +332,176 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
   )
 }
 
+function LiveFollowUpPanel({ researchId }: { researchId: string }) {
+  const router = useRouter()
+  const [followUps, setFollowUps] = useState<ResearchFollowUpRecord[]>([])
+  const [followUpQuestion, setFollowUpQuestion] = useState('')
+  const [followUpError, setFollowUpError] = useState<string | null>(null)
+  const [submittingFollowUp, setSubmittingFollowUp] = useState(false)
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
+  const [followUpsLoading, setFollowUpsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadFollowUps() {
+      setFollowUpsLoading(true)
+      try {
+        const res = await fetch(`/api/research/${researchId}/follow-ups`, { credentials: 'include' })
+        if (res.status === 401) {
+          router.replace(`/login?redirect=${encodeURIComponent(`/research?id=${researchId}`)}`)
+          throw new Error('Authentication expired. Please sign in again.')
+        }
+
+        const body = await res.json().catch(() => ({})) as LiveFollowUpsResponse
+        if (!res.ok) throw new Error(followUpErrorMessage(body.error ?? 'FOLLOW_UP_FAILED'))
+        const loadedFollowUps = Array.isArray(body.followUps) ? body.followUps : []
+        if (!cancelled) {
+          setFollowUps((current) => mergeFollowUps(current, loadedFollowUps))
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setFollowUpError(err instanceof Error ? err.message : followUpErrorMessage('FOLLOW_UP_FAILED'))
+        }
+      } finally {
+        if (!cancelled) setFollowUpsLoading(false)
+      }
+    }
+
+    loadFollowUps().catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [researchId])
+
+  async function submitFollowUp() {
+    const question = followUpQuestion.trim()
+    if (!question) {
+      setFollowUpError(followUpErrorMessage('INVALID_BODY'))
+      return
+    }
+
+    setFollowUpError(null)
+    setSubmittingFollowUp(true)
+    setPendingQuestion(question)
+
+    try {
+      const res = await fetch(`/api/research/${researchId}/follow-ups`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ question }),
+      })
+
+      if (res.status === 401) {
+        router.replace(`/login?redirect=${encodeURIComponent(`/research?id=${researchId}`)}`)
+        throw new Error('Authentication expired. Please sign in again.')
+      }
+
+      const body = await res.json().catch(() => ({})) as LiveFollowUpResponse
+      if (body.followUp) setFollowUps((current) => [...current, body.followUp as ResearchFollowUpRecord])
+      if (!res.ok) throw new Error(followUpErrorMessage(body.error ?? 'FOLLOW_UP_FAILED'))
+
+      setFollowUpQuestion('')
+    } catch (err) {
+      setFollowUpError(err instanceof Error ? err.message : followUpErrorMessage('FOLLOW_UP_FAILED'))
+    } finally {
+      setPendingQuestion(null)
+      setSubmittingFollowUp(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-border px-3 pb-3 pt-0">
+      <div className="border border-border bg-bg-panel">
+        <div className="border-b border-amber bg-bg-base px-3 py-2 font-mono text-[12px] font-bold uppercase tracking-[0.05em] text-amber">
+          &gt; FOLLOW-UP Q&amp;A
+        </div>
+        <div className="space-y-4 p-3">
+          <div className="space-y-3">
+            {followUps.length ? (
+              followUps.map((followUp, index) => (
+                <div key={followUp.id} className="border border-border bg-bg-base">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.05em]">
+                    <span className="font-bold text-amber">Q{index + 1}</span>
+                    <span className={followUpStatusTone(followUp.status)}>{followUpStatusLabel(followUp.status)}</span>
+                    <span className="text-text-muted">{utcDateTime(followUp.createdAt)}</span>
+                  </div>
+                  <div className="px-3 py-3">
+                    <div className="mb-3 whitespace-pre-wrap font-mono text-sm text-text-primary">{followUp.question}</div>
+                    {followUp.answerMd ? (
+                      <div className="border-t border-border pt-3">
+                        <TerminalMarkdown content={followUp.answerMd} />
+                      </div>
+                    ) : null}
+                    {followUp.status === 'failed' ? (
+                      <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-red">
+                        Follow-up answer failed. Please try again.
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))
+            ) : followUpsLoading ? (
+              <div className="border border-border bg-bg-base px-3 py-3 font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
+                Loading follow-up history...
+              </div>
+            ) : (
+              <div className="border border-border bg-bg-base px-3 py-3 font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
+                No follow-up questions yet. Ask a focused follow-up about this report.
+              </div>
+            )}
+
+            {pendingQuestion ? (
+              <div className="border border-border bg-bg-base">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.05em]">
+                  <span className="font-bold text-amber">NEW QUESTION</span>
+                  <span className="text-cyan blink">PENDING</span>
+                </div>
+                <div className="px-3 py-3">
+                  <div className="mb-3 whitespace-pre-wrap font-mono text-sm text-text-primary">{pendingQuestion}</div>
+                  <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-cyan blink">
+                    Generating follow-up answer...
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="grid gap-3">
+            <label className="block">
+              <span className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">QUESTION</span>
+              <textarea
+                value={followUpQuestion}
+                onChange={(event) => setFollowUpQuestion(event.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="_ Ask a follow-up about this report"
+                className="w-full resize-none border border-amber bg-bg-base px-3 py-3 font-mono text-sm text-text-primary outline-none placeholder:text-amber-dim focus:bg-bg-cell"
+              />
+            </label>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-text-muted">
+                {(followUpQuestion.trim() || '').length}/500
+              </div>
+              <button
+                type="button"
+                onClick={() => submitFollowUp().catch(() => {})}
+                disabled={submittingFollowUp}
+                className="terminal-button h-9 px-3 text-[11px] disabled:border-red disabled:text-red"
+              >
+                [SUBMIT FOLLOW-UP]
+              </button>
+            </div>
+            {followUpError ? <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-red">{followUpError}</div> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function LiveResearch({
   researchId,
   initialBudget,
@@ -281,10 +513,13 @@ function LiveResearch({
   const [events, setEvents] = useState<TimedEvent[]>([])
   const [research, setResearch] = useState<ResearchRecord | null>(null)
   const [isCancelling, setCancelling] = useState(false)
+  const stoppedRef = useRef(false)
   const final = events.find((event) => event.type === 'final')
+  const isTerminal = hasTerminalEvent(events)
 
   const onEvent = useCallback((event: TimedEvent) => {
-    setEvents((current) => [...current, event])
+    if (stoppedRef.current) return
+    setEvents((current) => (hasTerminalEvent(current) ? current : [...current, event]))
   }, [])
 
   useEffect(() => {
@@ -294,11 +529,13 @@ function LiveResearch({
       .then((body) => {
         if (!cancelled && body?.research) {
           const record = body.research as ResearchRecord
-          setResearch(record)
+          setResearch((current) => (
+            current?.status === 'cancelled' && record.status === 'running' ? current : record
+          ))
           const restored = persistedEvent(record)
           if (restored) {
             setEvents((current) => (
-              current.some((event) => event.type === 'final' || event.type === 'error') ? current : [restored]
+              hasTerminalEvent(current) ? current : [restored]
             ))
           }
         }
@@ -310,9 +547,26 @@ function LiveResearch({
   }, [researchId])
 
   async function cancel() {
+    if (isTerminal || stoppedRef.current) return
+    stoppedRef.current = true
+    const cancelledAt = new Date().toISOString()
+    const cancelledEvent: TimedEvent = { type: 'error', message: 'Research cancelled', receivedAt: utcTime(new Date(cancelledAt)) }
+    setResearch((current) => current ? {
+      ...current,
+      status: 'cancelled',
+      errorMessage: 'Research cancelled',
+      completedAt: current.completedAt ?? cancelledAt,
+    } : current)
+    setEvents((current) => (
+      hasTerminalEvent(current) ? current : [...current, cancelledEvent]
+    ))
     setCancelling(true)
-    await fetch(`/api/research/${researchId}/cancel`, { method: 'POST', credentials: 'include' }).catch(() => {})
-    setCancelling(false)
+    try {
+      const res = await fetch(`/api/research/${researchId}/cancel`, { method: 'POST', credentials: 'include' }).catch(() => null)
+      if (!res?.ok) return
+    } finally {
+      setCancelling(false)
+    }
   }
 
   const budget = research?.budgetUsdc ?? initialBudget
@@ -323,16 +577,21 @@ function LiveResearch({
         <div className="min-w-0 text-amber">
           &gt; LIVE RESEARCH <span className="ml-3 text-text-muted">#{researchId.slice(0, 8)}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {final ? (
-            <button type="button" onClick={() => router.push(`/research/${researchId}`)} className="terminal-button h-8 px-3 text-[11px]">
-              [VIEW FULL REPORT →]
-            </button>
+            <>
+              <button type="button" onClick={() => router.push(`/research/${researchId}#follow-up`)} className="terminal-button h-8 px-3 text-[11px]">
+                [ASK FOLLOW-UP →]
+              </button>
+              <button type="button" onClick={() => router.push(`/research/${researchId}`)} className="terminal-button h-8 px-3 text-[11px]">
+                [VIEW FULL REPORT →]
+              </button>
+            </>
           ) : null}
           <button
             type="button"
             onClick={cancel}
-            disabled={isCancelling || Boolean(final)}
+            disabled={isCancelling || isTerminal}
             className="h-8 border border-red bg-bg-base px-3 font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-red hover:bg-red hover:text-bg-base disabled:border-border disabled:text-text-muted disabled:hover:bg-bg-base"
           >
             [CANCEL]
@@ -344,6 +603,7 @@ function LiveResearch({
         <TxFeed events={events} />
         <BudgetMeter events={events} budgetUsdc={budget} />
       </div>
+      {final ? <LiveFollowUpPanel researchId={researchId} /> : null}
     </section>
   )
 }
@@ -366,7 +626,7 @@ export function ResearchPageClient() {
           [VIEW HISTORY]
         </a>
       </div>
-      {researchId ? <LiveResearch researchId={researchId} initialBudget={lastBudget} /> : <ResearchForm onStarted={handleStarted} />}
+      {researchId ? <LiveResearch key={researchId} researchId={researchId} initialBudget={lastBudget} /> : <ResearchForm onStarted={handleStarted} />}
     </main>
   )
 }

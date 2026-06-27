@@ -48,6 +48,43 @@ describe('MemoryResearchRepo', () => {
     })
   })
 
+  it('updates status conditionally only when the current status matches', async () => {
+    const repo = new MemoryResearchRepo()
+    const research = await repo.create({ address: '0xabc', topic: 'PEPE', budgetUsdc: '0.01' })
+
+    await repo.updateStatus(research.id, 'completed')
+
+    await expect(repo.updateStatusIfCurrent(research.id, 'running', 'cancelled', 'Research cancelled')).resolves.toBe(false)
+    expect(await repo.findById(research.id)).toMatchObject({
+      status: 'completed',
+      errorMessage: null,
+    })
+
+    await expect(repo.updateStatusIfCurrent(research.id, 'completed', 'failed', 'Late failure')).resolves.toBe(true)
+    expect(await repo.findById(research.id)).toMatchObject({
+      status: 'failed',
+      errorMessage: 'Late failure',
+    })
+  })
+
+  it('completes with report only while the research is still running', async () => {
+    const repo = new MemoryResearchRepo()
+    const research = await repo.create({ address: '0xabc', topic: 'PEPE', budgetUsdc: '0.01' })
+
+    await expect(repo.completeIfRunning(research.id, '# First report')).resolves.toBe(true)
+    expect(await repo.findById(research.id)).toMatchObject({
+      status: 'completed',
+      reportMd: '# First report',
+      errorMessage: null,
+    })
+
+    await expect(repo.completeIfRunning(research.id, '# Late report')).resolves.toBe(false)
+    expect(await repo.findById(research.id)).toMatchObject({
+      status: 'completed',
+      reportMd: '# First report',
+    })
+  })
+
   it('lists records by address newest first with a limit', async () => {
     vi.useFakeTimers()
     const repo = new MemoryResearchRepo()
