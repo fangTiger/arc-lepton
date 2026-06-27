@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth/middleware'
 import { isProductionMemoryDbFallback, researchRepo } from '@/lib/db'
 import { signResearchRunToken } from '@/lib/agent/research-token'
 import { consumeQuota, getQuotaStatus } from '@/lib/rate-limit/research-quota'
+import { recordResearchStarted } from '@/lib/stats/global-stats'
 
 const startSchema = z.object({
   topic: z.string().trim().min(1).max(200),
@@ -34,6 +35,9 @@ export async function POST(req: Request) {
       address,
       topic: body.data.topic,
       budgetUsdc: body.data.budgetUsdc,
+    })
+    await recordResearchStarted().catch((error) => {
+      console.warn('记录全局研究统计失败', error)
     })
     const researchId = isProductionMemoryDbFallback()
       ? await signResearchRunToken({

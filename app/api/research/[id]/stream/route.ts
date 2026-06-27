@@ -89,10 +89,6 @@ export async function GET(req: Request, { params }: RouteContext) {
     let unsubscribe: (() => void) | null = null
     let ownsDirectRun = false
 
-    const abortSharedRun = () => {
-      if (!sharedAbortController.signal.aborted) sharedAbortController.abort()
-    }
-
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         const safeEnqueue = (event: AgentEvent) => {
@@ -102,7 +98,6 @@ export async function GET(req: Request, { params }: RouteContext) {
             return true
           } catch {
             closed = true
-            if (ownsDirectRun) abortSharedRun()
             return false
           }
         }
@@ -141,7 +136,6 @@ export async function GET(req: Request, { params }: RouteContext) {
         if (history.events.length === 0 && research.status === 'running' && claimResearchRunner(researchId)) {
           ownsDirectRun = true
           requestAbortListener = () => {
-            abortSharedRun()
             safeClose()
           }
 
@@ -217,7 +211,6 @@ export async function GET(req: Request, { params }: RouteContext) {
         }
         unsubscribe?.()
         unsubscribe = null
-        if (ownsDirectRun) abortSharedRun()
       },
     })
 

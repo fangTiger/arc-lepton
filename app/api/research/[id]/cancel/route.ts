@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth/middleware'
 import { researchRepo } from '@/lib/db'
 import { abortResearch, markResearchDone, publishResearchEvent } from '@/lib/agent/event-bus'
+import { recordResearchFinished } from '@/lib/stats/global-stats'
 
 type RouteContext = {
   params: {
@@ -25,6 +26,9 @@ export async function POST(req: Request, { params }: RouteContext) {
     }
 
     abortResearch(params.id)
+    await recordResearchFinished().catch((error) => {
+      console.warn('记录全局研究结束统计失败', error)
+    })
     publishResearchEvent(params.id, { type: 'error', message: 'Research cancelled' })
     markResearchDone(params.id)
     return Response.json({ researchId: params.id, status: 'cancelled' })

@@ -341,7 +341,7 @@ describe('GET /api/research/[id]/stream', () => {
     })
   })
 
-  it('forwards request abort into the shared research signal without marking the run failed', async () => {
+  it('does not abort the shared research run when only the SSE request disconnects', async () => {
     const { GET } = await import('./route')
     const { getResearchAbortController } = await import('@/lib/agent/event-bus')
     const abortController = new AbortController()
@@ -358,9 +358,12 @@ describe('GET /api/research/[id]/stream', () => {
     expect(agentCall?.signal?.aborted).toBe(false)
 
     abortController.abort()
-    await res.text()
+    await Promise.race([
+      res.text(),
+      new Promise((resolve) => setTimeout(resolve, 20)),
+    ])
 
-    expect(agentCall?.signal?.aborted).toBe(true)
+    expect(agentCall?.signal?.aborted).toBe(false)
     expect(mockState.statuses).toEqual([])
   })
 

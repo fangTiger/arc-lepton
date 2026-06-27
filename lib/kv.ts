@@ -6,6 +6,7 @@ export interface KvClient {
   get(key: string): Promise<string | null>
   getdel(key: string): Promise<string | null>
   incr(key: string): Promise<number>
+  incrby?(key: string, increment: number): Promise<number>
   decr(key: string): Promise<number>
   expire(key: string, seconds: number): Promise<number>
 }

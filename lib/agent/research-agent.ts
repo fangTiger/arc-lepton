@@ -9,6 +9,7 @@ import {
   buildWhaleWatchData,
 } from '@/lib/data/mock-sources'
 import { decimalToUnits, unitsToDecimal } from '@/lib/db/tx-log-repo'
+import { recordPaymentAggregate, recordResearchFinished } from '@/lib/stats/global-stats'
 import { recordPaymentReceipt } from '@/lib/x402/payment-recorder'
 import {
   claimResearchRunner,
@@ -488,6 +489,9 @@ export async function* runResearchAgent(opts: {
 
         assertNotAborted(opts.signal)
         await researchRepo.appendSpent(opts.researchId, result.tool.amount)
+        await recordPaymentAggregate(result.payment.amount, result.payment.txStatus).catch((error) => {
+          console.warn('记录全局支付统计失败', error)
+        })
         assertNotAborted(opts.signal)
         usedTools.add(dedupMeta.argsKey)
         spentUnits += toolAmountUnits
@@ -561,6 +565,9 @@ export async function* runResearchAgent(opts: {
 
     const completed = await researchRepo.completeIfRunning(opts.researchId, reportMd)
     if (!completed) return
+    await recordResearchFinished().catch((error) => {
+      console.warn('记录全局研究结束统计失败', error)
+    })
     yield {
       type: 'final',
       reportMd,
@@ -580,6 +587,9 @@ export async function* runResearchAgent(opts: {
       }
       return
     }
+    await recordResearchFinished().catch((error) => {
+      console.warn('记录全局研究结束统计失败', error)
+    })
     yield { type: 'error', message }
   }
 }

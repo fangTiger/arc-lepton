@@ -37,7 +37,7 @@ export function AgentLogStream({
     () => events.some((event) => event.type === 'final' || event.type === 'error'),
     [events],
   )
-  const [connection, setConnection] = useState<'connecting' | 'online' | 'closed' | 'error'>(
+  const [connection, setConnection] = useState<'connecting' | 'online' | 'closed' | 'reconnecting'>(
     () => hasTerminalEvent ? 'closed' : 'connecting',
   )
 
@@ -57,7 +57,7 @@ export function AgentLogStream({
     const source = new EventSource(`/api/research/${researchId}/stream`, { withCredentials: true })
     source.onopen = () => setConnection('online')
     source.onerror = () => {
-      setConnection(source.readyState === EventSource.CLOSED ? 'closed' : 'error')
+      setConnection(source.readyState === EventSource.CLOSED ? 'closed' : 'reconnecting')
     }
     source.addEventListener('agent_event', (message) => {
       const event = JSON.parse((message as MessageEvent).data) as AgentEvent
@@ -87,7 +87,7 @@ export function AgentLogStream({
     <section className="min-h-[520px] border border-border bg-bg-panel">
       <div className="flex items-center justify-between border-b border-amber bg-bg-base px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.05em]">
         <span className="text-amber">AGENT LOG</span>
-        <span className={connection === 'online' ? 'text-cyan' : connection === 'error' ? 'text-red' : 'text-text-muted'}>
+        <span className={connection === 'online' ? 'text-cyan' : connection === 'reconnecting' ? 'text-yellow' : 'text-text-muted'}>
           {connection.toUpperCase()}
         </span>
       </div>

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentEvent } from './types'
 import { AgentLogStream } from './AgentLogStream'
@@ -87,5 +87,23 @@ describe('AgentLogStream', () => {
     })
     expect(MockEventSource.instances).toHaveLength(1)
     expect(screen.getByText('CLOSED')).toBeInTheDocument()
+  })
+
+  it('shows reconnecting instead of a red error for transient EventSource reconnects', async () => {
+    render(
+      <AgentLogStream
+        researchId="research-live"
+        events={[]}
+        onEvent={() => {}}
+      />,
+    )
+
+    const source = MockEventSource.instances[0]
+    act(() => {
+      source.onerror?.()
+    })
+
+    expect(screen.getByText('RECONNECTING')).toBeInTheDocument()
+    expect(screen.queryByText('ERROR')).not.toBeInTheDocument()
   })
 })
