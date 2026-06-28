@@ -1,0 +1,8 @@
+{
+  "outRoot": "/Users/captain/python/arc-lepton/artifacts/demo-video/signal-ledger-20260627T172623Z",
+  "framesDir": "/Users/captain/python/arc-lepton/artifacts/demo-video/signal-ledger-20260627T172623Z/frames",
+  "frameIndex": 212,
+  "fps": 2,
+  "sawFinal": true,
+  "finalUrl": "http://localhost:3000/dashboard"
+}
