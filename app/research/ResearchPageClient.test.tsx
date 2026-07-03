@@ -10,15 +10,23 @@ const navigation = vi.hoisted(() => ({
   searchId: null as string | null,
 }))
 
+type MockAgentEvent = {
+  type: string
+  reportMd?: string
+  message?: string
+  text?: string
+  delta?: string
+  receivedAt?: string
+  callId?: string
+  name?: string
+  payment?: unknown
+  dataPreview?: string
+  totalSpentUsdc?: string
+  totalCalls?: number
+}
+
 const agentLogHarness = vi.hoisted(() => ({
-  onEvent: null as null | ((event: {
-    type: string
-    reportMd?: string
-    message?: string
-    text?: string
-    delta?: string
-    receivedAt?: string
-  }) => void),
+  onEvent: null as null | ((event: MockAgentEvent) => void),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -31,15 +39,8 @@ vi.mock('@/components/research/AgentLogStream', () => ({
     events,
     onEvent,
   }: {
-    events: Array<{ type: string; reportMd?: string; message?: string; text?: string; delta?: string }>
-    onEvent: (event: {
-      type: string
-      reportMd?: string
-      message?: string
-      text?: string
-      delta?: string
-      receivedAt?: string
-    }) => void
+    events: MockAgentEvent[]
+    onEvent: (event: MockAgentEvent) => void
   }) => {
     agentLogHarness.onEvent = onEvent
     return (
@@ -51,7 +52,9 @@ vi.mock('@/components/research/AgentLogStream', () => ({
 }))
 
 vi.mock('@/components/research/TxFeed', () => ({
-  TxFeed: () => null,
+  TxFeed: ({ events }: { events: Array<unknown> }) => (
+    <div data-testid="tx-feed-events">{JSON.stringify(events)}</div>
+  ),
 }))
 
 vi.mock('@/components/research/BudgetMeter', () => ({
@@ -113,6 +116,7 @@ describe('ResearchPageClient', () => {
     expect(await screen.findByText('DAILY QUOTA')).toBeInTheDocument()
     expect(screen.getByText(/WALLET:/)).toHaveTextContent('4/10')
     expect(screen.getByText(/GLOBAL:/)).toHaveTextContent('67/100')
+    expect(screen.getByText(/ESTIMATED CALLS:/)).toHaveTextContent('ESTIMATED CALLS: 3')
     expect(screen.getByText('Rate limits will be relaxed after mainnet launch.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /\[VIEW HISTORY\]/i })).toHaveAttribute('href', '/dashboard')
   })
@@ -247,6 +251,237 @@ describe('ResearchPageClient', () => {
 
     expect(await screen.findByTestId('agent-log-events')).toHaveTextContent('# Restored report')
     expect(screen.getByRole('button', { name: /\[VIEW FULL REPORT →\]/i })).toBeInTheDocument()
+  })
+
+  it('merges tx_log settlement status into pending live payment events from the initial detail load', async () => {
+    navigation.searchId = 'research-1'
+    let resolveDetail!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/research/research-1')) {
+        return new Promise<Response>((resolve) => {
+          resolveDetail = resolve
+        })
+      }
+      return Promise.resolve(Response.json({}))
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    act(() => {
+      agentLogHarness.onEvent?.({
+        type: 'tool_result',
+        callId: 'call-news',
+        name: 'news',
+        payment: {
+          amount: '0.0003',
+          txHash: null,
+          txStatus: 'pending',
+          chainId: null,
+          blockNumber: null,
+          requestId: 'req-news',
+        },
+        dataPreview: '{}',
+      } as never)
+    })
+
+    await act(async () => {
+      resolveDetail(Response.json({
+        research: {
+          id: 'research-1',
+          address: '0xabcdef000000000000000000000000000000c1d3',
+          topic: 'SHOULD I BUY PEPE?',
+          budgetUsdc: '0.01',
+          spentUsdc: '0.0003',
+          status: 'completed',
+          reportMd: '# Restored report',
+          errorMessage: null,
+          startedAt: '2026-06-25T00:00:00.000Z',
+          completedAt: '2026-06-25T00:00:18.000Z',
+        },
+        txLog: [
+          {
+            id: 'tx-news',
+            address: '0xabcdef000000000000000000000000000000c1d3',
+            source: 'news',
+            amount: '0.0003',
+            txHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+            txStatus: 'confirmed',
+            chainId: 5_042_002,
+            blockNumber: '12345',
+            settlementId: 'settlement-1',
+            requestId: 'req-news',
+            errorMessage: null,
+            createdAt: '2026-06-25T00:00:05.000Z',
+          },
+        ],
+      }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"txStatus":"confirmed"')
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"txHash":"0x1111111111111111111111111111111111111111111111111111111111111111"')
+    })
+  })
+
+  it('materializes tx_log rows into the TX feed when restoring a completed research session', async () => {
+    navigation.searchId = 'research-1'
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/research/research-1')) {
+        return Response.json({
+          research: {
+            id: 'research-1',
+            address: '0xabcdef000000000000000000000000000000c1d3',
+            topic: 'SHOULD I BUY PEPE?',
+            budgetUsdc: '0.01',
+            spentUsdc: '0.0006',
+            status: 'completed',
+            reportMd: '# Restored report',
+            errorMessage: null,
+            startedAt: '2026-06-25T00:00:00.000Z',
+            completedAt: '2026-06-25T00:00:18.000Z',
+          },
+          txLog: [
+            {
+              id: 'tx-confirmed',
+              address: '0xabcdef000000000000000000000000000000c1d3',
+              source: 'news',
+              amount: '0.0003',
+              txHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+              txStatus: 'confirmed',
+              chainId: 5_042_002,
+              blockNumber: '12345',
+              settlementId: 'settlement-1',
+              requestId: 'req-confirmed',
+              errorMessage: null,
+              createdAt: '2026-06-25T00:00:05.000Z',
+            },
+            {
+              id: 'tx-failed',
+              address: '0xabcdef000000000000000000000000000000c1d3',
+              source: 'whale-watch',
+              amount: '0.0002',
+              txHash: null,
+              txStatus: 'failed',
+              chainId: null,
+              blockNumber: null,
+              settlementId: 'settlement-1',
+              requestId: 'req-failed',
+              errorMessage: 'RPC timeout',
+              createdAt: '2026-06-25T00:00:06.000Z',
+            },
+            {
+              id: 'tx-pending',
+              address: '0xabcdef000000000000000000000000000000c1d3',
+              source: 'twitter-signals',
+              amount: '0.0001',
+              txHash: null,
+              txStatus: 'pending',
+              chainId: null,
+              blockNumber: null,
+              settlementId: null,
+              requestId: 'req-pending',
+              errorMessage: null,
+              createdAt: '2026-06-25T00:00:07.000Z',
+            },
+          ],
+        })
+      }
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    expect(await screen.findByTestId('agent-log-events')).toHaveTextContent('# Restored report')
+    await waitFor(() => {
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"txStatus":"confirmed"')
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"txStatus":"failed"')
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"txStatus":"pending"')
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"name":"news"')
+      expect(screen.getByTestId('tx-feed-events')).toHaveTextContent('"name":"whale-watch"')
+    })
+  })
+
+  it('polls research detail after terminal events until pending payment statuses settle', async () => {
+    vi.useFakeTimers()
+    navigation.searchId = 'research-1'
+    let detailCalls = 0
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === '/api/research/research-1') {
+        detailCalls += 1
+        return Promise.resolve(Response.json({
+          research: {
+            id: 'research-1',
+            address: '0xabcdef000000000000000000000000000000c1d3',
+            topic: 'SHOULD I BUY PEPE?',
+            budgetUsdc: '0.01',
+            spentUsdc: '0.0003',
+            status: 'completed',
+            reportMd: '# Restored report',
+            errorMessage: null,
+            startedAt: '2026-06-25T00:00:00.000Z',
+            completedAt: '2026-06-25T00:00:18.000Z',
+          },
+          txLog: detailCalls >= 2 ? [
+            {
+              id: 'tx-news',
+              address: '0xabcdef000000000000000000000000000000c1d3',
+              source: 'news',
+              amount: '0.0003',
+              txHash: '0x3333333333333333333333333333333333333333333333333333333333333333',
+              txStatus: 'confirmed',
+              chainId: 5_042_002,
+              blockNumber: '67890',
+              settlementId: 'settlement-1',
+              requestId: 'req-news',
+              errorMessage: null,
+              createdAt: '2026-06-25T00:00:05.000Z',
+            },
+          ] : [],
+        }))
+      }
+      return Promise.resolve(Response.json({}))
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    act(() => {
+      agentLogHarness.onEvent?.({
+        type: 'tool_result',
+        callId: 'call-news',
+        name: 'news',
+        payment: {
+          amount: '0.0003',
+          txHash: null,
+          txStatus: 'pending',
+          chainId: null,
+          blockNumber: null,
+          requestId: 'req-news',
+        },
+        dataPreview: '{}',
+      } as never)
+      agentLogHarness.onEvent?.({
+        type: 'final',
+        reportMd: '# Report',
+        totalSpentUsdc: '0.0003',
+        totalCalls: 1,
+      })
+    })
+
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(detailCalls).toBe(1)
+
+    act(() => {
+      vi.advanceTimersByTime(5_000)
+    })
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(detailCalls).toBe(2)
   })
 
   it('marks the UI cancelled locally and ignores late agent events after cancel succeeds', async () => {

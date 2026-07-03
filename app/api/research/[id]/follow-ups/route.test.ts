@@ -73,10 +73,14 @@ const mockState = vi.hoisted(() => {
     followUps,
     researches,
     answerResearchFollowUp: vi.fn(),
+    recordResearchPaymentIntent: vi.fn(),
+    settleResearchPayments: vi.fn(),
     reset() {
       createdCounter = 1
       followUps.splice(1)
       this.answerResearchFollowUp.mockReset()
+      this.recordResearchPaymentIntent.mockReset()
+      this.settleResearchPayments.mockReset()
     },
     researchRepo: {
       async findById(id: string) {
@@ -138,6 +142,14 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/agent/research-follow-up', () => ({
   answerResearchFollowUp: mockState.answerResearchFollowUp,
+}))
+
+vi.mock('@/lib/x402/payment-recorder', () => ({
+  recordResearchPaymentIntent: mockState.recordResearchPaymentIntent,
+}))
+
+vi.mock('@/lib/x402/payment-settlement', () => ({
+  settleResearchPayments: mockState.settleResearchPayments,
 }))
 
 beforeAll(() => {
@@ -231,6 +243,8 @@ describe('POST /api/research/[id]/follow-ups', () => {
       status: 'completed',
       spentUsdc: '0',
     }))
+    expect(mockState.recordResearchPaymentIntent).not.toHaveBeenCalled()
+    expect(mockState.settleResearchPayments).not.toHaveBeenCalled()
     expect(mockState.answerResearchFollowUp).toHaveBeenCalledWith({
       topic: 'SHOULD I BUY PEPE?',
       reportMd: '# Report\n\nWait for confirmation.',

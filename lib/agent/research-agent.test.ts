@@ -5,13 +5,16 @@ const mockState = vi.hoisted(() => {
     address: string
     source: string
     amount: string
-    txHash: string
-    txStatus: 'mock' | 'confirmed' | 'failed'
+    txHash: string | null
+    txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
     chainId: number | null
     blockNumber: string | null
     requestId: string
     errorMessage: string | null
   }> = []
+  const paymentReceiptCalls: Array<{ address: string; source: string; amount: string; requestId?: string; researchId?: string; signal?: AbortSignal }> = []
+  const researchPaymentIntentCalls: Array<{ address: string; source: string; amount: string; requestId?: string; researchId?: string; signal?: AbortSignal }> = []
+  const settlementCalls: Array<{ address: string; researchId: string }> = []
   const appendSpentEntries: Array<{ id: string; deltaUsdc: string }> = []
   const researchRecords = new Map<string, { spentUsdc: string; status: string; reportMd: string | null; errorMessage: string | null }>()
   let txCounter = 0
@@ -41,8 +44,8 @@ const mockState = vi.hoisted(() => {
         address: string
         source: string
         amount: string
-        txHash: string
-        txStatus: 'mock' | 'confirmed' | 'failed'
+        txHash: string | null
+        txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
         chainId: number | null
         blockNumber: string | null
         requestId: string
@@ -50,6 +53,7 @@ const mockState = vi.hoisted(() => {
         createdAt: Date
       }>)
     = null
+  let settlementImpl: null | ((input: { address: string; researchId: string }) => Promise<unknown>) = null
 
   function makeToolCall(id: string, name: string, token = 'PEPE') {
     return {
@@ -129,6 +133,9 @@ const mockState = vi.hoisted(() => {
     researchRecords,
     reset() {
       paymentEntries.length = 0
+      paymentReceiptCalls.length = 0
+      researchPaymentIntentCalls.length = 0
+      settlementCalls.length = 0
       appendSpentEntries.length = 0
       researchRecords.clear()
       txCounter = 0
@@ -138,6 +145,7 @@ const mockState = vi.hoisted(() => {
       reportStreamImpl = null
       scriptedMessages = []
       paymentRecorderImpl = null
+      settlementImpl = null
       cancelBeforeComplete = false
       completeBeforeFailureStatusUpdate = false
       cancelBeforeFailureStatusUpdate = false
@@ -161,6 +169,7 @@ const mockState = vi.hoisted(() => {
         researchId?: string
         signal?: AbortSignal
       }) {
+        paymentReceiptCalls.push(entry)
         if (paymentRecorderImpl) return paymentRecorderImpl(entry)
         if (failPayment) {
           throw Object.assign(new Error('ARC receipt failed'), { code: 'PAYMENT_RECEIPT_FAILED' })
@@ -183,12 +192,62 @@ const mockState = vi.hoisted(() => {
         paymentEntries.push(payment)
         return payment
       },
+      async recordResearchPaymentIntent(entry: {
+        address: string
+        source: string
+        amount: string
+        requestId?: string
+        researchId?: string
+        signal?: AbortSignal
+      }) {
+        researchPaymentIntentCalls.push(entry)
+        if (paymentRecorderImpl) return paymentRecorderImpl(entry)
+        if (failPayment) {
+          throw Object.assign(new Error('ARC receipt failed'), { code: 'PAYMENT_INTENT_FAILED' })
+        }
+        txCounter += 1
+        const payment = {
+          id: `tx-${txCounter}`,
+          address: entry.address,
+          source: entry.source,
+          amount: entry.amount,
+          txHash: null,
+          txStatus: 'pending' as const,
+          chainId: null,
+          blockNumber: null,
+          requestId: entry.requestId ?? `call-${txCounter}`,
+          errorMessage: null,
+          createdAt: new Date('2026-06-25T00:00:00.000Z'),
+        }
+        paymentEntries.push(payment)
+        return payment
+      },
     },
+    paymentReceiptCalls,
+    researchPaymentIntentCalls,
+    settlementCalls,
     setPaymentFailure(value: boolean) {
       failPayment = value
     },
     setPaymentRecorderImpl(impl: typeof paymentRecorderImpl) {
       paymentRecorderImpl = impl
+    },
+    setSettlementImpl(impl: typeof settlementImpl) {
+      settlementImpl = impl
+    },
+    paymentSettlement: {
+      async settleResearchPayments(input: { address: string; researchId: string }) {
+        settlementCalls.push(input)
+        if (settlementImpl) return settlementImpl(input)
+        return {
+          status: 'confirmed',
+          settlementId: 'settlement-1',
+          settledCount: paymentEntries.filter((entry) => entry.txStatus === 'pending').length,
+          txHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          chainId: 5_042_002,
+          blockNumber: '12345',
+        }
+      },
     },
     cancelBeforeComplete() {
       cancelBeforeComplete = true
@@ -283,6 +342,11 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/x402/payment-recorder', () => ({
   recordPaymentReceipt: mockState.paymentRecorder.recordPaymentReceipt,
+  recordResearchPaymentIntent: mockState.paymentRecorder.recordResearchPaymentIntent,
+}))
+
+vi.mock('@/lib/x402/payment-settlement', () => ({
+  settleResearchPayments: mockState.paymentSettlement.settleResearchPayments,
 }))
 
 beforeEach(() => {
@@ -354,11 +418,14 @@ describe('runResearchAgent', () => {
     expect(events.find((event) => event.type === 'tool_result')).toMatchObject({
       type: 'tool_result',
       payment: {
-        txStatus: 'mock',
+        txHash: null,
+        txStatus: 'pending',
         chainId: null,
         blockNumber: null,
       },
     })
+    expect(mockState.researchPaymentIntentCalls.map((entry) => entry.requestId)).toEqual(['call-1', 'call-2'])
+    expect(mockState.paymentReceiptCalls).toEqual([])
     expect(mockState.researchRecords.get('research-1')).toMatchObject({
       status: 'completed',
       spentUsdc: '0.0002',
@@ -376,6 +443,93 @@ describe('runResearchAgent', () => {
     )
     expect(streamParams?.messages?.at(-1)?.content).toContain('FINAL REPORT MODE')
     expect(streamParams?.messages?.at(-1)?.content).toContain('Do not call any tools')
+  })
+
+  it('emits the final event without waiting for research payment settlement to resolve', async () => {
+    let releaseSettlement: () => void = () => {
+      throw new Error('missing releaseSettlement')
+    }
+    let settlementResolved = false
+    const settlementGate = new Promise<void>((resolve) => {
+      releaseSettlement = resolve
+    })
+    mockState.setSettlementImpl(async () => {
+      await settlementGate
+      settlementResolved = true
+      return { status: 'confirmed' }
+    })
+
+    const result = await Promise.race([
+      collectEvents('0.01'),
+      new Promise<'timed-out'>((resolve) => setTimeout(() => resolve('timed-out'), 20)),
+    ])
+
+    expect(result).not.toBe('timed-out')
+    const events = result as Awaited<ReturnType<typeof collectEvents>>
+    expect(events.at(-1)).toMatchObject({
+      type: 'final',
+      totalSpentUsdc: '0.0002',
+      totalCalls: 2,
+    })
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
+    expect(settlementResolved).toBe(false)
+
+    releaseSettlement()
+    await vi.waitFor(() => {
+      expect(settlementResolved).toBe(true)
+    })
+  })
+
+  it('keeps completed research completed when async settlement fails after final', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockState.setSettlementImpl(async () => {
+      throw new Error('settlement RPC timeout')
+    })
+
+    const events = await collectEvents('0.01')
+
+    expect(events.at(-1)).toMatchObject({
+      type: 'final',
+      totalSpentUsdc: '0.0002',
+      totalCalls: 2,
+    })
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
+    expect(events.some((event) => event.type === 'error')).toBe(false)
+    expect(mockState.researchRecords.get('research-1')).toMatchObject({
+      status: 'completed',
+      spentUsdc: '0.0002',
+    })
+  })
+
+  it('settles pending intents when the research fails after paid tool calls completed', async () => {
+    mockState.setReportStreamImpl(async function* () {
+      throw new Error('final report timeout')
+    })
+
+    const events = await collectEvents('0.01')
+
+    expect(events.at(-1)).toEqual({
+      type: 'error',
+      message: 'final report timeout',
+    })
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
+    expect(mockState.researchRecords.get('research-1')).toMatchObject({
+      status: 'failed',
+      spentUsdc: '0.0002',
+      errorMessage: 'final report timeout',
+    })
   })
 
   it('replaces dirty final report streams with a deterministic fallback report', async () => {
@@ -422,6 +576,75 @@ describe('runResearchAgent', () => {
       totalSpentUsdc: '0.0001',
       totalCalls: 1,
     })
+  })
+
+  it('caps paid tool execution at three calls even when the model asks for more', async () => {
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Collect every available data source.',
+        tool_calls: [
+          mockState.makeToolCall('limit-call-1', 'sentiment'),
+          mockState.makeToolCall('limit-call-2', 'twitter_signals'),
+          mockState.makeToolCall('limit-call-3', 'whale_watch'),
+          mockState.makeToolCall('limit-call-4', 'news'),
+          mockState.makeToolCall('limit-call-5', 'kline_pattern'),
+        ],
+      },
+    ])
+
+    const events = await collectEvents('0.01')
+    const streamParams = mockState.client.chat.completions.create.mock.calls.at(-1)?.[0] as
+      | {
+          stream?: boolean
+          messages?: Array<{
+            role: string
+            content: string | null
+            name?: string
+            tool_call_id?: string
+          }>
+        }
+      | undefined
+    const toolMessages = (streamParams?.messages ?? []).filter((message) => message.role === 'tool')
+    const toolMessagesById = new Map(toolMessages.map((message) => [message.tool_call_id, message]))
+
+    expect(events.filter((event) => event.type === 'tool_call')).toHaveLength(3)
+    expect(events.filter((event) => event.type === 'tool_result')).toHaveLength(3)
+    expect(mockState.researchPaymentIntentCalls.map((entry) => entry.requestId)).toEqual([
+      'limit-call-1',
+      'limit-call-2',
+      'limit-call-3',
+    ])
+    expect(mockState.appendSpentEntries).toEqual([
+      { id: 'research-1', deltaUsdc: '0.0001' },
+      { id: 'research-1', deltaUsdc: '0.0001' },
+      { id: 'research-1', deltaUsdc: '0.0002' },
+    ])
+    expect(events.at(-1)).toMatchObject({
+      type: 'final',
+      totalSpentUsdc: '0.0004',
+      totalCalls: 3,
+    })
+    expect(JSON.parse(toolMessagesById.get('limit-call-4')?.content ?? 'null')).toMatchObject({
+      status: 'skipped',
+      reason: 'tool_call_limit_reached',
+      name: 'news',
+    })
+    expect(JSON.parse(toolMessagesById.get('limit-call-5')?.content ?? 'null')).toMatchObject({
+      status: 'skipped',
+      reason: 'tool_call_limit_reached',
+      name: 'kline_pattern',
+    })
+    expect(mockState.client.chat.completions.create.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'system',
+            content: expect.stringContaining('Use at most 3 paid data-source calls'),
+          }),
+        ]),
+      }),
+    )
   })
 
   it('keeps tool_call history balanced when budget skips later tool calls', async () => {
@@ -676,8 +899,8 @@ describe('runResearchAgent', () => {
         address: entry.address,
         source: entry.source,
         amount: entry.amount,
-        txHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-        txStatus: 'mock',
+        txHash: null,
+        txStatus: 'pending',
         chainId: null,
         blockNumber: null,
         requestId: entry.requestId ?? 'cancel-after-payment',
@@ -694,6 +917,58 @@ describe('runResearchAgent', () => {
     ])
     expect(mockState.appendSpentEntries).toEqual([])
     expect(events.some((event) => event.type === 'tool_result' || event.type === 'budget' || event.type === 'final')).toBe(false)
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
+    expect(mockState.researchRecords.get('research-1')).toMatchObject({
+      status: 'cancelled',
+      spentUsdc: '0',
+      reportMd: null,
+      errorMessage: 'Research cancelled',
+    })
+  })
+
+  it('settles a pending intent when cancellation happens after the recorder claim and before it returns', async () => {
+    const abortController = new AbortController()
+
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [mockState.makeToolCall('post-claim-abort', 'sentiment')],
+      },
+    ])
+    mockState.setPaymentRecorderImpl(async (entry) => {
+      mockState.paymentEntries.push({
+        address: entry.address,
+        source: entry.source,
+        amount: entry.amount,
+        txHash: null,
+        txStatus: 'pending',
+        chainId: null,
+        blockNumber: null,
+        requestId: entry.requestId ?? 'post-claim-abort',
+        errorMessage: null,
+      })
+      abortController.abort()
+      throw new Error('Research cancelled')
+    })
+
+    const events = await collectEventsWithOptions({ signal: abortController.signal })
+
+    expect(events).toEqual([
+      { type: 'tool_call', name: 'sentiment', args: { token: 'PEPE' }, callId: 'post-claim-abort' },
+      { type: 'error', message: 'Research cancelled' },
+    ])
+    expect(mockState.appendSpentEntries).toEqual([])
+    expect(events.some((event) => event.type === 'tool_result' || event.type === 'budget' || event.type === 'final')).toBe(false)
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
     expect(mockState.researchRecords.get('research-1')).toMatchObject({
       status: 'cancelled',
       spentUsdc: '0',
@@ -767,8 +1042,8 @@ describe('runResearchAgent', () => {
         address: entry.address,
         source: entry.source,
         amount: entry.amount,
-        txHash: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-        txStatus: 'mock',
+        txHash: null,
+        txStatus: 'pending',
         chainId: null,
         blockNumber: null,
         requestId: entry.requestId ?? 'route-cancel-race',
@@ -786,6 +1061,11 @@ describe('runResearchAgent', () => {
     expect(mockState.researchRecords.get('research-1')).toMatchObject({
       status: 'cancelled',
       errorMessage: 'Research cancelled',
+    })
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
     })
   })
 })

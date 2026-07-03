@@ -1,12 +1,12 @@
-# Graph Report - arc-lepton  (2026-06-27)
+# Graph Report - arc-lepton  (2026-07-03)
 
 ## Corpus Check
-- 73 files · ~47,750 words
+- 75 files · ~907,949 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 189 nodes · 178 edges · 15 communities detected
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 14 edges (avg confidence: 0.8)
+- 202 nodes · 195 edges · 16 communities detected
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -24,7 +24,8 @@
 - [[_COMMUNITY_Community 11|Community 11]]
 - [[_COMMUNITY_Community 12|Community 12]]
 - [[_COMMUNITY_Community 13|Community 13]]
-- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 14|Community 14]]
+- [[_COMMUNITY_Community 16|Community 16]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `GET()` - 12 edges
@@ -61,12 +62,12 @@ Cohesion: 0.13
 Nodes (2): GET(), serializeResearch()
 
 ### Community 2 - "Community 2"
-Cohesion: 0.22
-Nodes (4): middleware(), MockKv, final(), mergeFollowUps()
+Cohesion: 0.15
+Nodes (8): argsText(), eventLine(), utcTime(), extractPreview(), mergeTxLogIntoEvents(), txLogDataPreview(), txLogRequestId(), txLogToToolResultEvent()
 
 ### Community 3 - "Community 3"
-Cohesion: 0.18
-Nodes (4): argsText(), eventLine(), utcTime(), extractPreview()
+Cohesion: 0.22
+Nodes (4): middleware(), MockKv, final(), mergeFollowUps()
 
 ### Community 4 - "Community 4"
 Cohesion: 0.27
@@ -93,22 +94,26 @@ Cohesion: 0.25
 Nodes (4): AuthGate(), useSiweLogin(), useInvalidateSession(), useUser()
 
 ### Community 10 - "Community 10"
+Cohesion: 0.38
+Nodes (4): base64url(), hold(), shot(), signSession()
+
+### Community 11 - "Community 11"
 Cohesion: 0.29
 Nodes (4): signTestMessage(), buildSiweMessage(), buildValidBody(), postVerify()
 
-### Community 11 - "Community 11"
+### Community 12 - "Community 12"
 Cohesion: 0.67
 Nodes (2): formatBlock(), TopBar()
 
-### Community 12 - "Community 12"
+### Community 13 - "Community 13"
 Cohesion: 0.5
 Nodes (1): MockEventSource
 
-### Community 13 - "Community 13"
+### Community 14 - "Community 14"
 Cohesion: 0.67
 Nodes (2): BudgetMeter(), decimal()
 
-### Community 15 - "Community 15"
+### Community 16 - "Community 16"
 Cohesion: 1.0
 Nodes (2): chainLabel(), NetworkGuard()
 
@@ -121,24 +126,24 @@ Nodes (2): chainLabel(), NetworkGuard()
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 8`** (9 nodes): `route.test.ts`, `route.test.ts`, `route.test.ts`, `route.test.ts`, `route.test.ts`, `route.test.ts`, `route.test.ts`, `authedRequest()`, `waitForAssertion()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 11`** (4 nodes): `TopBar.tsx`, `formatBlock()`, `formatUtcTime()`, `TopBar()`
+- **Thin community `Community 12`** (4 nodes): `TopBar.tsx`, `formatBlock()`, `formatUtcTime()`, `TopBar()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 12`** (4 nodes): `MockEventSource`, `.constructor()`, `.reset()`, `AgentLogStream.test.tsx`
+- **Thin community `Community 13`** (4 nodes): `MockEventSource`, `.constructor()`, `.reset()`, `AgentLogStream.test.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 13`** (4 nodes): `bar()`, `BudgetMeter()`, `decimal()`, `BudgetMeter.tsx`
+- **Thin community `Community 14`** (4 nodes): `bar()`, `BudgetMeter()`, `decimal()`, `BudgetMeter.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 15`** (3 nodes): `NetworkGuard.tsx`, `chainLabel()`, `NetworkGuard()`
+- **Thin community `Community 16`** (3 nodes): `NetworkGuard.tsx`, `chainLabel()`, `NetworkGuard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `POST()` connect `Community 4` to `Community 10`, `Community 2`?**
-  _High betweenness centrality (0.102) - this node is a cross-community bridge._
-- **Why does `final()` connect `Community 2` to `Community 0`?**
-  _High betweenness centrality (0.077) - this node is a cross-community bridge._
+- **Why does `POST()` connect `Community 4` to `Community 3`, `Community 11`?**
+  _High betweenness centrality (0.097) - this node is a cross-community bridge._
 - **Why does `GET()` connect `Community 1` to `Community 4`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Why does `final()` connect `Community 3` to `Community 0`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `POST()` (e.g. with `postVerify()` and `.get()`) actually correct?**
   _`POST()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Community 0` be split into smaller, more focused modules?**

@@ -12,6 +12,7 @@ const mockStore = vi.hoisted(() => {
     txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
     chainId: number | null
     blockNumber: string | null
+    settlementId: string | null
     requestId: string
     errorMessage: string | null
     createdAt: Date
@@ -32,6 +33,7 @@ const mockStore = vi.hoisted(() => {
         txStatus?: 'mock' | 'pending' | 'confirmed' | 'failed'
         chainId?: number | null
         blockNumber?: string | null
+        settlementId?: string | null
         requestId?: string
         errorMessage?: string | null
       }) {
@@ -45,6 +47,7 @@ const mockStore = vi.hoisted(() => {
           txStatus: entry.txStatus ?? 'mock',
           chainId: entry.chainId ?? null,
           blockNumber: entry.blockNumber ?? null,
+          settlementId: entry.settlementId ?? null,
           requestId: entry.requestId ?? `req-${counter}`,
           errorMessage: entry.errorMessage ?? null,
           createdAt: new Date(Date.UTC(2026, 5, 25, 0, counter, 0)),
@@ -102,6 +105,7 @@ describe('wallet tx log APIs', () => {
       txStatus: 'confirmed',
       chainId: 5_042_002,
       blockNumber: '12345',
+      settlementId: 'settlement-1',
       requestId: 'req-confirmed',
     })
     await mockStore.txLogRepo.record({ address: '0xother', source: 'sentiment', amount: '0.0001' })
@@ -119,6 +123,7 @@ describe('wallet tx log APIs', () => {
       txStatus: 'confirmed',
       chainId: 5_042_002,
       blockNumber: '12345',
+      settlementId: 'settlement-1',
       requestId: 'req-confirmed',
       errorMessage: null,
     })

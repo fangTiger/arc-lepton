@@ -1,4 +1,5 @@
 export * from './users'
 export * from './tx-log'
+export * from './payment-settlement'
 export * from './research'
 export * from './research-follow-up'

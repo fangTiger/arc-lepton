@@ -57,9 +57,90 @@ export type TxLogRecord = {
   txStatus: TxStatus
   chainId: number | null
   blockNumber: string | null
+  settlementId: string | null
   requestId: string | null
   errorMessage: string | null
   createdAt: string
+}
+
+function txLogRequestId(entry: TxLogRecord) {
+  return entry.requestId ?? entry.id
+}
+
+function txLogDataPreview(entry: TxLogRecord) {
+  return entry.errorMessage ?? '{}'
+}
+
+export function txLogToToolResultEvent(entry: TxLogRecord): Extract<AgentEvent, { type: 'tool_result' }> {
+  const requestId = txLogRequestId(entry)
+  return {
+    type: 'tool_result',
+    callId: requestId,
+    name: entry.source,
+    payment: {
+      amount: entry.amount,
+      txHash: entry.txHash,
+      txStatus: entry.txStatus,
+      chainId: entry.chainId,
+      blockNumber: entry.blockNumber,
+      requestId,
+    },
+    dataPreview: txLogDataPreview(entry),
+  }
+}
+
+export function mergeTxLogIntoEvents<T extends AgentEvent>(events: T[], txLog: TxLogRecord[]): T[] {
+  const txLogByRequestId = new Map<string, TxLogRecord>()
+  for (const entry of txLog) {
+    txLogByRequestId.set(txLogRequestId(entry), entry)
+  }
+  if (!txLogByRequestId.size) return events
+
+  let changed = false
+  const eventRequestIds = new Set<string>()
+  const merged = events.map((event) => {
+    if (event.type !== 'tool_result') return event
+    eventRequestIds.add(event.payment.requestId)
+    const txEntry = txLogByRequestId.get(event.payment.requestId)
+    if (!txEntry) return event
+
+    const nextPayment = {
+      ...event.payment,
+      txHash: txEntry.txHash,
+      txStatus: txEntry.txStatus,
+      chainId: txEntry.chainId,
+      blockNumber: txEntry.blockNumber,
+    }
+    if (
+      nextPayment.txHash === event.payment.txHash
+      && nextPayment.txStatus === event.payment.txStatus
+      && nextPayment.chainId === event.payment.chainId
+      && nextPayment.blockNumber === event.payment.blockNumber
+    ) {
+      return event
+    }
+
+    changed = true
+    return {
+      ...event,
+      payment: nextPayment,
+    } as T
+  })
+
+  const missingEvents = txLog
+    .filter((entry) => !eventRequestIds.has(txLogRequestId(entry)))
+    .map((entry) => txLogToToolResultEvent(entry) as T)
+
+  if (!missingEvents.length) return changed ? merged : events
+
+  const terminalIndex = merged.findIndex((event) => event.type === 'final' || event.type === 'error')
+  if (terminalIndex === -1) return [...merged, ...missingEvents]
+
+  return [
+    ...merged.slice(0, terminalIndex),
+    ...missingEvents,
+    ...merged.slice(terminalIndex),
+  ]
 }
 
 export function isBillablePaymentStatus(status: TxStatus) {
@@ -77,6 +158,7 @@ export function shortId(id: string) {
 
 export function paymentStatusLabel(status: TxStatus) {
   if (status === 'mock') return 'mock receipt'
+  if (status === 'pending') return 'pending settlement'
   return status
 }
 

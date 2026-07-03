@@ -78,4 +78,75 @@ describe('TxFeed', () => {
     expect(links).toHaveLength(1)
     expect(links[0]).toHaveAttribute('href', 'https://arc.example/tx/0x1111111111111111111111111111111111111111111111111111111111111111')
   })
+
+  it('shows pending settlement without rendering an explorer link', () => {
+    render(createElement(TxFeed, {
+      events: [
+        {
+          type: 'tool_result',
+          callId: 'call-pending',
+          name: 'sentiment',
+          payment: {
+            amount: '0.0001',
+            txHash: null,
+            txStatus: 'pending',
+            chainId: null,
+            blockNumber: null,
+            requestId: 'req-pending',
+          },
+          dataPreview: '{}',
+        },
+      ],
+    }))
+
+    expect(screen.getByText('pending settlement')).toBeInTheDocument()
+    expect(screen.getByText('not broadcast')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByText('confirmed')).not.toBeInTheDocument()
+  })
+
+  it('renders shared confirmed settlement hashes as separate logical payment rows', () => {
+    const sharedHash = '0x3333333333333333333333333333333333333333333333333333333333333333'
+
+    render(createElement(TxFeed, {
+      events: [
+        {
+          type: 'tool_result',
+          callId: 'call-news',
+          name: 'news',
+          payment: {
+            amount: '0.0003',
+            txHash: sharedHash,
+            txStatus: 'confirmed',
+            chainId: 5_042_002,
+            blockNumber: '12345',
+            requestId: 'req-news',
+          },
+          dataPreview: '{}',
+        },
+        {
+          type: 'tool_result',
+          callId: 'call-sentiment',
+          name: 'sentiment',
+          payment: {
+            amount: '0.0001',
+            txHash: sharedHash,
+            txStatus: 'confirmed',
+            chainId: 5_042_002,
+            blockNumber: '12345',
+            requestId: 'req-sentiment',
+          },
+          dataPreview: '{}',
+        },
+      ],
+    }))
+
+    const links = screen.getAllByRole('link')
+
+    expect(screen.getByText('news')).toBeInTheDocument()
+    expect(screen.getByText('sentiment')).toBeInTheDocument()
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveAttribute('href', `https://arc.example/tx/${sharedHash}`)
+    expect(links[1]).toHaveAttribute('href', `https://arc.example/tx/${sharedHash}`)
+  })
 })

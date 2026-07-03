@@ -319,4 +319,173 @@ describe('MemoryTxLogRepo', () => {
       txHash: null,
     })
   })
+
+  it('stores a settlement id on pending research payment intents', async () => {
+    const repo = new MemoryTxLogRepo()
+
+    const entry = await repo.record({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-1',
+      requestId: 'req-pending-settlement',
+      txStatus: 'pending',
+      settlementId: 'settlement-1',
+    })
+
+    expect(entry).toMatchObject({
+      txStatus: 'pending',
+      txHash: null,
+      settlementId: 'settlement-1',
+    })
+  })
+
+  it('lists only pending payment intents for the owned research', async () => {
+    const repo = new MemoryTxLogRepo()
+
+    await repo.record({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-1',
+      requestId: 'req-pending-1',
+      txStatus: 'pending',
+    })
+    await repo.record({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      researchId: 'research-1',
+      requestId: 'req-confirmed',
+      txStatus: 'confirmed',
+    })
+    await repo.record({
+      address: '0xabc',
+      source: 'whale-watch',
+      amount: '0.0002',
+      researchId: 'research-2',
+      requestId: 'req-other-research',
+      txStatus: 'pending',
+    })
+    await repo.record({
+      address: '0xdef',
+      source: 'twitter-signals',
+      amount: '0.0001',
+      researchId: 'research-1',
+      requestId: 'req-other-address',
+      txStatus: 'pending',
+    })
+
+    const pending = await repo.listPendingByResearchId('0xabc', 'research-1', 50)
+
+    expect(pending).toHaveLength(1)
+    expect(pending[0]).toMatchObject({
+      address: '0xabc',
+      researchId: 'research-1',
+      requestId: 'req-pending-1',
+      txStatus: 'pending',
+    })
+  })
+
+  it('marks a research settlement batch confirmed with one shared chain receipt', async () => {
+    const repo = new MemoryTxLogRepo()
+
+    await repo.record({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-1',
+      requestId: 'req-news',
+      txStatus: 'pending',
+    })
+    await repo.record({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      researchId: 'research-1',
+      requestId: 'req-sentiment',
+      txStatus: 'pending',
+    })
+
+    const updated = await repo.markResearchSettlementConfirmed({
+      address: '0xabc',
+      researchId: 'research-1',
+      requestIds: ['req-news', 'req-sentiment'],
+      settlementId: 'settlement-1',
+      txHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      chainId: 5_042_002,
+      blockNumber: '12345',
+    })
+
+    expect(updated).toHaveLength(2)
+    expect(updated).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        requestId: 'req-news',
+        settlementId: 'settlement-1',
+        txStatus: 'confirmed',
+        txHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        chainId: 5_042_002,
+        blockNumber: '12345',
+      }),
+      expect.objectContaining({
+        requestId: 'req-sentiment',
+        settlementId: 'settlement-1',
+        txStatus: 'confirmed',
+        txHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        chainId: 5_042_002,
+        blockNumber: '12345',
+      }),
+    ]))
+  })
+
+  it('marks a research settlement batch failed with the shared failure reason', async () => {
+    const repo = new MemoryTxLogRepo()
+
+    await repo.record({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-1',
+      requestId: 'req-news',
+      txStatus: 'pending',
+    })
+    await repo.record({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      researchId: 'research-1',
+      requestId: 'req-sentiment',
+      txStatus: 'pending',
+    })
+
+    const updated = await repo.markResearchSettlementFailed({
+      address: '0xabc',
+      researchId: 'research-1',
+      requestIds: ['req-news', 'req-sentiment'],
+      settlementId: 'settlement-1',
+      errorMessage: 'RPC timeout',
+    })
+
+    expect(updated).toHaveLength(2)
+    expect(updated).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        requestId: 'req-news',
+        settlementId: 'settlement-1',
+        txStatus: 'failed',
+        txHash: null,
+        chainId: null,
+        blockNumber: null,
+        errorMessage: 'RPC timeout',
+      }),
+      expect.objectContaining({
+        requestId: 'req-sentiment',
+        settlementId: 'settlement-1',
+        txStatus: 'failed',
+        txHash: null,
+        chainId: null,
+        blockNumber: null,
+        errorMessage: 'RPC timeout',
+      }),
+    ]))
+  })
 })

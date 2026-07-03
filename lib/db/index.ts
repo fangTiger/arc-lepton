@@ -3,6 +3,18 @@ import type { Research, ResearchStatus } from './research-repo'
 import { MemoryResearchRepo } from './research-repo-memory'
 import type { ResearchFollowUp, ResearchFollowUpRepo } from './research-follow-up-repo'
 import { MemoryResearchFollowUpRepo } from './research-follow-up-repo-memory'
+import type {
+  PaymentSettlement,
+  PaymentSettlementClaimInput,
+  PaymentSettlementClaimResult,
+  PaymentSettlementConfirmedReconcileQuery,
+  PaymentSettlementFailurePatch,
+  PaymentSettlementReceiptPatch,
+  PaymentSettlementRepo,
+  PaymentSettlementRetryClaimInput,
+  PaymentSettlementRetryQuery,
+} from './payment-settlement-repo'
+import { MemoryPaymentSettlementRepo } from './payment-settlement-repo-memory'
 import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogScopedEntry } from './tx-log-repo'
 import { MemoryTxLogRepo } from './tx-log-repo-memory'
 import type { UsersRepo } from './users-repo'
@@ -11,21 +23,25 @@ import { MemoryUsersRepo } from './users-repo-memory'
 
 const usersMemoryFallbackMessage = '⚠ Using in-memory users repo (dev fallback). Data lost on restart.'
 const txLogMemoryFallbackMessage = '⚠ Using in-memory tx_log repo (dev fallback). Data lost on restart.'
+const paymentSettlementMemoryFallbackMessage = '⚠ Using in-memory payment_settlement repo (dev fallback). Data lost on restart.'
 const researchMemoryFallbackMessage = '⚠ Using in-memory research repo (dev fallback). Data lost on restart.'
 const researchFollowUpMemoryFallbackMessage = '⚠ Using in-memory research_follow_up repo (dev fallback). Data lost on restart.'
 
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: UsersRepo
   __arcLeptonTxLogRepo?: TxLogRepo
+  __arcLeptonPaymentSettlementRepo?: PaymentSettlementRepo
   __arcLeptonResearchRepo?: ResearchRepo
   __arcLeptonResearchFollowUpRepo?: ResearchFollowUpRepo
   __arcLeptonPgDb?: Promise<unknown>
   __arcLeptonPgUsersRepo?: Promise<UsersRepo>
   __arcLeptonPgTxLogRepo?: Promise<TxLogRepo>
+  __arcLeptonPgPaymentSettlementRepo?: Promise<PaymentSettlementRepo>
   __arcLeptonPgResearchRepo?: Promise<ResearchRepo>
   __arcLeptonPgResearchFollowUpRepo?: Promise<ResearchFollowUpRepo>
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
+  __arcLeptonPaymentSettlementRepoWarned?: boolean
   __arcLeptonResearchRepoWarned?: boolean
   __arcLeptonResearchFollowUpRepoWarned?: boolean
 }
@@ -122,6 +138,18 @@ class LazyPgTxLogRepo implements TxLogRepo {
     return (await this.getRepo()).listByResearchId(address, researchId, limit)
   }
 
+  async listPendingByResearchId(address: string, researchId: string, limit = 50): Promise<TxLogScopedEntry[]> {
+    return (await this.getRepo()).listPendingByResearchId(address, researchId, limit)
+  }
+
+  async markResearchSettlementConfirmed(input: Parameters<TxLogRepo['markResearchSettlementConfirmed']>[0]): Promise<TxLogScopedEntry[]> {
+    return (await this.getRepo()).markResearchSettlementConfirmed(input)
+  }
+
+  async markResearchSettlementFailed(input: Parameters<TxLogRepo['markResearchSettlementFailed']>[0]): Promise<TxLogScopedEntry[]> {
+    return (await this.getRepo()).markResearchSettlementFailed(input)
+  }
+
   async totalSpentByAddress(address: string): Promise<string> {
     return (await this.getRepo()).totalSpentByAddress(address)
   }
@@ -132,6 +160,52 @@ class LazyPgTxLogRepo implements TxLogRepo {
 
   async totalSpent(): Promise<string> {
     return (await this.getRepo()).totalSpent()
+  }
+}
+
+class LazyPgPaymentSettlementRepo implements PaymentSettlementRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgPaymentSettlementRepo ??= (async () => {
+      const [{ PgPaymentSettlementRepo }, db] = await Promise.all([import('./payment-settlement-repo-pg'), getPgDb()])
+      return new PgPaymentSettlementRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgPaymentSettlementRepo
+  }
+
+  async claimResearchSettlement(input: PaymentSettlementClaimInput): Promise<PaymentSettlementClaimResult> {
+    return (await this.getRepo()).claimResearchSettlement(input)
+  }
+
+  async claimRetryableSettlement(id: string, input: PaymentSettlementRetryClaimInput = {}): Promise<PaymentSettlementClaimResult> {
+    return (await this.getRepo()).claimRetryableSettlement(id, input)
+  }
+
+  async recordSettlementReceipt(id: string, patch: PaymentSettlementReceiptPatch): Promise<PaymentSettlement> {
+    return (await this.getRepo()).recordSettlementReceipt(id, patch)
+  }
+
+  async confirmSettlement(id: string, patch: PaymentSettlementReceiptPatch): Promise<PaymentSettlement> {
+    return (await this.getRepo()).confirmSettlement(id, patch)
+  }
+
+  async failSettlement(id: string, patch: PaymentSettlementFailurePatch): Promise<PaymentSettlement> {
+    return (await this.getRepo()).failSettlement(id, patch)
+  }
+
+  async findById(id: string): Promise<PaymentSettlement | null> {
+    return (await this.getRepo()).findById(id)
+  }
+
+  async listRetryableSettlements(query: PaymentSettlementRetryQuery = {}): Promise<PaymentSettlement[]> {
+    return (await this.getRepo()).listRetryableSettlements(query)
+  }
+
+  async listConfirmedSettlementsNeedingReconcile(query: PaymentSettlementConfirmedReconcileQuery = {}): Promise<PaymentSettlement[]> {
+    return (await this.getRepo()).listConfirmedSettlementsNeedingReconcile(query)
+  }
+
+  async count(): Promise<number> {
+    return (await this.getRepo()).count()
   }
 }
 
@@ -241,6 +315,19 @@ function createTxLogRepo(): TxLogRepo {
 }
 
 export const txLogRepo: TxLogRepo = createTxLogRepo()
+
+function createPaymentSettlementRepo(): PaymentSettlementRepo {
+  if (hasDbEnv()) return new LazyPgPaymentSettlementRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonPaymentSettlementRepoWarned) {
+    console.warn(paymentSettlementMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonPaymentSettlementRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonPaymentSettlementRepo ??= new MemoryPaymentSettlementRepo()
+  return memoryRepoGlobal.__arcLeptonPaymentSettlementRepo
+}
+
+export const paymentSettlementRepo: PaymentSettlementRepo = createPaymentSettlementRepo()
 
 function createResearchRepo(): ResearchRepo {
   if (hasDbEnv()) return new LazyPgResearchRepo()

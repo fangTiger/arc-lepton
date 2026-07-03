@@ -465,4 +465,136 @@ describe('payment-recorder', () => {
       errorMessage: 'RPC timeout',
     })
   })
+
+  it('records a research payment intent as pending without calling the ARC recorder', async () => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+    const recordArcReceipt = vi.fn()
+
+    const payment = await recordResearchPaymentIntent(
+      {
+        address: '0xabc',
+        source: 'sentiment',
+        amount: '0.0001',
+        requestId: 'req-research-pending',
+        researchId: 'research-1',
+        mode: 'arc',
+      },
+      { txLogRepo, recordArcReceipt },
+    )
+
+    expect(recordArcReceipt).not.toHaveBeenCalled()
+    expect(payment).toMatchObject({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      txHash: null,
+      txStatus: 'pending',
+      chainId: null,
+      blockNumber: null,
+      requestId: 'req-research-pending',
+      researchId: 'research-1',
+      settlementId: null,
+      errorMessage: null,
+    })
+    expect(await txLogRepo.listByAddress('0xabc')).toHaveLength(1)
+  })
+
+  it('reuses an existing pending research intent for the same payment scope', async () => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+
+    const first = await recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      requestId: 'req-research-replay',
+      researchId: 'research-1',
+    }, { txLogRepo })
+    const second = await recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      requestId: 'req-research-replay',
+      researchId: 'research-1',
+    }, { txLogRepo })
+
+    expect(second).toEqual(first)
+    expect(second.txStatus).toBe('pending')
+    expect(await txLogRepo.listByAddress('0xabc')).toHaveLength(1)
+  })
+
+  it('reuses an already confirmed research intent without creating a new pending row', async () => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+    const existing = await txLogRepo.record({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-1',
+      requestId: 'req-research-confirmed',
+      txHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      txStatus: 'confirmed',
+      chainId: 5_042_002,
+      blockNumber: '12345',
+    })
+
+    const payment = await recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      requestId: 'req-research-confirmed',
+      researchId: 'research-1',
+    }, { txLogRepo })
+
+    expect(payment).toEqual(existing)
+    expect(await txLogRepo.listByAddress('0xabc')).toHaveLength(1)
+  })
+
+  it.each([
+    'invalid/key',
+    'a'.repeat(129),
+    '',
+    '   ',
+    ' req-with-space ',
+  ])('rejects an invalid research intent requestId (%s) before writing anything', async (requestId) => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+
+    await expect(recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      requestId,
+      researchId: 'research-1',
+    }, { txLogRepo })).rejects.toMatchObject({
+      code: 'PAYMENT_IDEMPOTENCY_KEY_INVALID',
+    })
+
+    expect(await txLogRepo.listByAddress('0xabc')).toHaveLength(0)
+  })
+
+  it('rejects reusing a research intent requestId for a different payment scope', async () => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+
+    await recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'news',
+      amount: '0.0003',
+      requestId: 'req-research-conflict',
+      researchId: 'research-1',
+    }, { txLogRepo })
+
+    await expect(recordResearchPaymentIntent({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      requestId: 'req-research-conflict',
+      researchId: 'research-1',
+    }, { txLogRepo })).rejects.toMatchObject({
+      code: 'PAYMENT_IDEMPOTENCY_CONFLICT',
+      requestId: 'req-research-conflict',
+    })
+  })
 })

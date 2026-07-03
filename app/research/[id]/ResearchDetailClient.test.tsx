@@ -134,7 +134,7 @@ describe('ResearchDetailClient', () => {
     expect(screen.getByText('confirmed')).toBeInTheDocument()
     expect(screen.getByText('mock receipt')).toBeInTheDocument()
     expect(screen.getByText('failed')).toBeInTheDocument()
-    expect(screen.getByText('pending')).toBeInTheDocument()
+    expect(screen.getByText('pending settlement')).toBeInTheDocument()
     expect(screen.getAllByText('not broadcast')).toHaveLength(2)
     expect(links).toHaveLength(1)
     expect(links[0]).toHaveAttribute('href', 'https://arc.example/tx/0x1111111111111111111111111111111111111111111111111111111111111111')

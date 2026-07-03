@@ -6,6 +6,7 @@ export default {
     './lib/db/schema/tx-log.ts',
     './lib/db/schema/research.ts',
     './lib/db/schema/research-follow-up.ts',
+    './lib/db/schema/payment-settlement.ts',
   ],
   out: './drizzle',
   dialect: 'postgresql',

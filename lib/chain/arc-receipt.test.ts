@@ -69,6 +69,36 @@ describe('arc-receipt', () => {
     expect(encodeReceiptPayload(payload)).toMatch(/^0x[0-9a-f]+$/)
   })
 
+  it('builds a structured ARC research settlement payload and encodes it as calldata', async () => {
+    const { buildResearchSettlementPayload, encodeReceiptPayload } = await import('./arc-receipt')
+
+    const payload = buildResearchSettlementPayload({
+      buyer: '0xabc',
+      researchId: 'research-1',
+      totalAmount: '0.0004',
+      items: [
+        { requestId: 'req-news', source: 'news', amount: '0.0003' },
+        { requestId: 'req-sentiment', source: 'sentiment', amount: '0.0001' },
+      ],
+      createdAt: '2026-07-03T00:00:00.000Z',
+    })
+
+    expect(payload).toEqual({
+      kind: 'arc-lepton.research-settlement',
+      version: 1,
+      buyer: '0xabc',
+      researchId: 'research-1',
+      totalAmount: '0.0004',
+      itemCount: 2,
+      items: [
+        { requestId: 'req-news', source: 'news', amount: '0.0003' },
+        { requestId: 'req-sentiment', source: 'sentiment', amount: '0.0001' },
+      ],
+      createdAt: '2026-07-03T00:00:00.000Z',
+    })
+    expect(encodeReceiptPayload(payload)).toMatch(/^0x[0-9a-f]+$/)
+  })
+
   it('returns a mock receipt without broadcasting in mock mode', async () => {
     const { recordArcReceipt } = await import('./arc-receipt')
     const { deps, sendTransaction, waitForTransactionReceipt } = createDeps()
@@ -154,6 +184,50 @@ describe('arc-receipt', () => {
       chainId: 5_042_002,
       blockNumber: '12345',
       requestId: 'req-arc',
+    })
+  })
+
+  it('broadcasts a 0-value ARC research settlement transaction with the settlement payload', async () => {
+    process.env.ARC_RECEIPT_MODE = 'arc'
+    process.env.ARC_RECORDER_PRIVATE_KEY = VALID_PRIVATE_KEY
+    process.env.ARC_RECEIPT_TO_ADDRESS = RECEIPT_ADDRESS
+    const { hexToString } = await import('viem')
+    const { recordArcResearchSettlement } = await import('./arc-receipt')
+    const { deps, sendTransaction, waitForTransactionReceipt } = createDeps()
+    sendTransaction.mockResolvedValue('0xabababababababababababababababababababababababababababababababab')
+    waitForTransactionReceipt.mockResolvedValue({
+      status: 'success',
+      blockNumber: 45678n,
+    })
+
+    const receipt = await recordArcResearchSettlement(
+      {
+        buyer: '0xabc',
+        researchId: 'research-1',
+        totalAmount: '0.0004',
+        items: [
+          { requestId: 'req-news', source: 'news', amount: '0.0003' },
+          { requestId: 'req-sentiment', source: 'sentiment', amount: '0.0001' },
+        ],
+        mode: 'arc',
+        createdAt: '2026-07-03T00:00:00.000Z',
+      },
+      deps as never,
+    )
+
+    const data = sendTransaction.mock.calls[0]?.[0]?.data
+    expect(JSON.parse(hexToString(data))).toMatchObject({
+      kind: 'arc-lepton.research-settlement',
+      buyer: '0xabc',
+      researchId: 'research-1',
+      totalAmount: '0.0004',
+      itemCount: 2,
+    })
+    expect(receipt).toEqual({
+      txHash: '0xabababababababababababababababababababababababababababababababab',
+      txStatus: 'confirmed',
+      chainId: 5_042_002,
+      blockNumber: '45678',
     })
   })
 

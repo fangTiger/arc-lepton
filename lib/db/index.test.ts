@@ -10,10 +10,12 @@ const originalEnv = {
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: unknown
   __arcLeptonTxLogRepo?: unknown
+  __arcLeptonPaymentSettlementRepo?: unknown
   __arcLeptonResearchRepo?: unknown
   __arcLeptonResearchFollowUpRepo?: unknown
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
+  __arcLeptonPaymentSettlementRepoWarned?: boolean
   __arcLeptonResearchRepoWarned?: boolean
   __arcLeptonResearchFollowUpRepoWarned?: boolean
 }
@@ -32,10 +34,12 @@ function restoreEnv(name: keyof typeof originalEnv) {
 function clearMemoryRepoGlobals() {
   delete memoryRepoGlobal.__arcLeptonUsersRepo
   delete memoryRepoGlobal.__arcLeptonTxLogRepo
+  delete memoryRepoGlobal.__arcLeptonPaymentSettlementRepo
   delete memoryRepoGlobal.__arcLeptonResearchRepo
   delete memoryRepoGlobal.__arcLeptonResearchFollowUpRepo
   delete memoryRepoGlobal.__arcLeptonUsersRepoWarned
   delete memoryRepoGlobal.__arcLeptonTxLogRepoWarned
+  delete memoryRepoGlobal.__arcLeptonPaymentSettlementRepoWarned
   delete memoryRepoGlobal.__arcLeptonResearchRepoWarned
   delete memoryRepoGlobal.__arcLeptonResearchFollowUpRepoWarned
 }
@@ -103,5 +107,29 @@ describe('db dev fallback repos', () => {
 
     expect(items).toHaveLength(1)
     expect(items[0]?.question).toBe('What would invalidate the setup?')
+  })
+
+  it('shares the in-memory payment settlement fallback across module reloads', async () => {
+    const first = await import('./index')
+    const claim = await first.paymentSettlementRepo.claimResearchSettlement({
+      address: '0xabc',
+      researchId: 'research-1',
+      requestIds: ['req-1'],
+      totalAmount: '0.0003',
+    })
+    await first.paymentSettlementRepo.failSettlement(claim.settlement.id, {
+      errorMessage: 'RPC timeout',
+    })
+
+    vi.resetModules()
+    const second = await import('./index')
+    const retryable = await second.paymentSettlementRepo.listRetryableSettlements()
+
+    expect(retryable).toHaveLength(1)
+    expect(retryable[0]).toMatchObject({
+      id: claim.settlement.id,
+      status: 'failed',
+      errorMessage: 'RPC timeout',
+    })
   })
 })

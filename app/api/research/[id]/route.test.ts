@@ -27,9 +27,25 @@ const mockStore = vi.hoisted(() => {
       txStatus: 'confirmed' as const,
       chainId: 5_042_002,
       blockNumber: '12345',
+      settlementId: 'settlement-1',
       requestId: 'req-1',
       errorMessage: null,
       createdAt: new Date('2026-06-25T00:00:05.000Z'),
+    },
+    {
+      id: 'tx-1b',
+      address: '0xabcdef000000000000000000000000000000c1d3',
+      source: 'sentiment',
+      amount: '0.0001',
+      researchId: 'research-1',
+      txHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+      txStatus: 'confirmed' as const,
+      chainId: 5_042_002,
+      blockNumber: '12345',
+      settlementId: 'settlement-1',
+      requestId: 'req-1b',
+      errorMessage: null,
+      createdAt: new Date('2026-06-25T00:00:06.000Z'),
     },
     {
       id: 'tx-2',
@@ -41,6 +57,7 @@ const mockStore = vi.hoisted(() => {
       txStatus: 'confirmed' as const,
       chainId: 5_042_002,
       blockNumber: '12346',
+      settlementId: null,
       requestId: 'req-2',
       errorMessage: null,
       createdAt: new Date('2026-06-25T00:00:08.000Z'),
@@ -55,6 +72,7 @@ const mockStore = vi.hoisted(() => {
       txStatus: 'mock' as const,
       chainId: null,
       blockNumber: null,
+      settlementId: null,
       requestId: 'req-3',
       errorMessage: null,
       createdAt: new Date('2026-06-25T00:00:10.000Z'),
@@ -104,12 +122,21 @@ describe('GET /api/research/[id]', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(body.txLog).toHaveLength(1)
+    expect(body.txLog).toHaveLength(2)
     expect(body.txLog).toEqual([
       expect.objectContaining({
         id: 'tx-1',
         source: 'news',
         requestId: 'req-1',
+        settlementId: 'settlement-1',
+        txHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+      }),
+      expect.objectContaining({
+        id: 'tx-1b',
+        source: 'sentiment',
+        requestId: 'req-1b',
+        settlementId: 'settlement-1',
+        txHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
       }),
     ])
   })

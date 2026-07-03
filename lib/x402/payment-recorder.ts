@@ -166,3 +166,21 @@ export async function recordPaymentReceipt(input: PaymentReceiptInput, deps: Pay
     throw new PaymentReceiptError(message, requestId, failed)
   }
 }
+
+export async function recordResearchPaymentIntent(input: PaymentReceiptInput, deps: PaymentRecorderDeps = {}): Promise<TxLogScopedEntry> {
+  assertNotAborted(input.signal)
+  const repo = deps.txLogRepo ?? defaultTxLogRepo
+  const requestId = input.requestId === undefined ? (deps.createRequestId ?? randomUUID)() : input.requestId
+  assertValidRequestId(requestId)
+
+  const claim = await repo.claimRequest({
+    address: input.address,
+    source: input.source,
+    amount: input.amount,
+    requestId,
+    researchId: input.researchId,
+  })
+  assertNotAborted(input.signal)
+
+  return claim.entry
+}

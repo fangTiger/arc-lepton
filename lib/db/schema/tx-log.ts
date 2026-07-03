@@ -12,6 +12,7 @@ export const txLog = pgTable(
     txStatus: text('tx_status').notNull().default('mock'),
     chainId: integer('chain_id'),
     blockNumber: text('block_number'),
+    settlementId: text('settlement_id'),
     requestId: text('request_id'),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

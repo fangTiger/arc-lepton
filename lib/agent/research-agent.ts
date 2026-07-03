@@ -10,7 +10,8 @@ import {
 } from '@/lib/data/mock-sources'
 import { decimalToUnits, unitsToDecimal } from '@/lib/db/tx-log-repo'
 import { recordPaymentAggregate, recordResearchFinished } from '@/lib/stats/global-stats'
-import { recordPaymentReceipt } from '@/lib/x402/payment-recorder'
+import { recordResearchPaymentIntent } from '@/lib/x402/payment-recorder'
+import { settleResearchPayments } from '@/lib/x402/payment-settlement'
 import {
   claimResearchRunner,
   getResearchAbortController,
@@ -89,6 +90,7 @@ type CompletedToolResult = {
 }
 
 const MIN_TOOL_AMOUNT = '0.0001'
+export const MAX_PAID_TOOL_CALLS = 3
 const MAX_TOOL_TURNS = 6
 const INVALID_REPORT_PATTERNS = [
   /<\|\|dsml\|\|/i,
@@ -163,10 +165,11 @@ Available tools:
 - kline_pattern: $0.0005 — 4h candlestick pattern
 
 Strategy:
-1. Start with cheap tools, especially sentiment and twitter_signals, to establish a baseline.
-2. Use higher-cost tools such as news and kline_pattern only when they improve the answer.
-3. Do not call the same data source repeatedly.
-4. Stay within budget while collecting multiple angles.
+1. Use at most 3 paid data-source calls for this research run.
+2. Start with cheap, high-signal tools, especially sentiment and twitter_signals, to establish a baseline.
+3. Use higher-cost tools such as news and kline_pattern only when they materially improve the answer.
+4. Do not call the same data source repeatedly or ask for redundant coverage.
+5. Stay within budget while collecting multiple angles.
 
 Return a Markdown research report with: concise conclusion, key findings, risks, action guidance, and data citations.`
 }
@@ -243,14 +246,20 @@ function safeToolErrorMessage(error: unknown) {
   return 'Tool execution failed'
 }
 
-async function executeTool(address: string, researchId: string, call: ToolCall, signal?: AbortSignal) {
+async function executeTool(
+  address: string,
+  researchId: string,
+  call: ToolCall,
+  signal?: AbortSignal,
+  onPaymentIntentRecorded?: () => void,
+) {
   assertNotAborted(signal)
   const tool = localTools[call.function.name as keyof typeof localTools]
   if (!tool) return null
 
   const args = parseToolArgs(call.function.arguments)
   const data = tool.buildData(args.token)
-  const tx = await recordPaymentReceipt({
+  const tx = await recordResearchPaymentIntent({
     address,
     source: tool.source,
     amount: tool.amount,
@@ -258,6 +267,7 @@ async function executeTool(address: string, researchId: string, call: ToolCall, 
     researchId,
     signal,
   })
+  onPaymentIntentRecorded?.()
   assertNotAborted(signal)
 
   return {
@@ -388,6 +398,12 @@ function finalizeReport(rawReportMd: string, completedResults: CompletedToolResu
   return rawReportMd.trim()
 }
 
+function settleResearchPaymentsInBackground(address: string, researchId: string) {
+  void settleResearchPayments({ address, researchId }).catch((error) => {
+    console.warn('异步研究支付结算失败', error)
+  })
+}
+
 export async function* runResearchAgent(opts: {
   researchId: string
   address: string
@@ -400,6 +416,8 @@ export async function* runResearchAgent(opts: {
   const minToolUnits = decimalToUnits(MIN_TOOL_AMOUNT)
   let spentUnits = 0n
   let totalCalls = 0
+  let hasPaymentIntent = false
+  let shouldAttemptSettlement = false
   let reportMd = ''
   const completedResults: CompletedToolResult[] = []
   const usedTools = new Set<string>()
@@ -412,6 +430,7 @@ export async function* runResearchAgent(opts: {
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn += 1) {
       assertNotAborted(opts.signal)
       if (remaining(budgetUnits, spentUnits) < minToolUnits) break
+      if (totalCalls >= MAX_PAID_TOOL_CALLS) break
 
       const response = await client.chat.completions.create({
         model: DEEPSEEK_MODEL,
@@ -452,6 +471,14 @@ export async function* runResearchAgent(opts: {
           })
           continue
         }
+        if (totalCalls >= MAX_PAID_TOOL_CALLS) {
+          pushToolMessage(messages, call, {
+            status: 'skipped',
+            reason: 'tool_call_limit_reached',
+            name: call.function.name,
+          })
+          continue
+        }
         const toolAmountUnits = decimalToUnits(tool.amount)
         if (!canExecuteMoreTools || spentUnits + toolAmountUnits > budgetUnits) {
           canExecuteMoreTools = false
@@ -465,10 +492,13 @@ export async function* runResearchAgent(opts: {
 
         const args = parseToolArgs(call.function.arguments)
         yield { type: 'tool_call', name: call.function.name, args, callId: call.id }
+        shouldAttemptSettlement = true
 
         let result
         try {
-          result = await executeTool(opts.address, opts.researchId, call, opts.signal)
+          result = await executeTool(opts.address, opts.researchId, call, opts.signal, () => {
+            hasPaymentIntent = true
+          })
         } catch (error) {
           pushToolMessage(messages, call, {
             status: 'error',
@@ -540,7 +570,7 @@ export async function* runResearchAgent(opts: {
         if (remaining(budgetUnits, spentUnits) < minToolUnits) canExecuteMoreTools = false
       }
 
-      if (executedInTurn === 0 || remaining(budgetUnits, spentUnits) < minToolUnits) break
+      if (executedInTurn === 0 || remaining(budgetUnits, spentUnits) < minToolUnits || totalCalls >= MAX_PAID_TOOL_CALLS) break
     }
 
     assertNotAborted(opts.signal)
@@ -568,6 +598,7 @@ export async function* runResearchAgent(opts: {
     await recordResearchFinished().catch((error) => {
       console.warn('记录全局研究结束统计失败', error)
     })
+    settleResearchPaymentsInBackground(opts.address, opts.researchId)
     yield {
       type: 'final',
       reportMd,
@@ -577,11 +608,15 @@ export async function* runResearchAgent(opts: {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Research agent failed'
     const status = opts.signal?.aborted ? 'cancelled' : 'failed'
+    const shouldSettlePaymentIntents = shouldAttemptSettlement || hasPaymentIntent || totalCalls > 0
     const updated = await researchRepo.updateStatusIfCurrent(opts.researchId, 'running', status, message)
     if (!updated) {
       if (opts.signal?.aborted) {
         const latest = await researchRepo.findById(opts.researchId)
         if (latest?.status === 'cancelled') {
+          if (shouldSettlePaymentIntents) {
+            settleResearchPaymentsInBackground(opts.address, opts.researchId)
+          }
           yield { type: 'error', message: latest.errorMessage ?? message }
         }
       }
@@ -590,6 +625,9 @@ export async function* runResearchAgent(opts: {
     await recordResearchFinished().catch((error) => {
       console.warn('记录全局研究结束统计失败', error)
     })
+    if (shouldSettlePaymentIntents) {
+      settleResearchPaymentsInBackground(opts.address, opts.researchId)
+    }
     yield { type: 'error', message }
   }
 }

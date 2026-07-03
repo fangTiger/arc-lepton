@@ -6,8 +6,8 @@ import { AgentLogStream } from '@/components/research/AgentLogStream'
 import { BudgetMeter } from '@/components/research/BudgetMeter'
 import { TerminalMarkdown } from '@/components/research/TerminalMarkdown'
 import { TxFeed } from '@/components/research/TxFeed'
-import type { AgentEvent, ResearchFollowUpRecord, ResearchRecord } from '@/components/research/types'
-import { utcDateTime, utcTime } from '@/components/research/types'
+import type { AgentEvent, ResearchFollowUpRecord, ResearchRecord, TxLogRecord } from '@/components/research/types'
+import { mergeTxLogIntoEvents, utcDateTime, utcTime } from '@/components/research/types'
 
 type TimedEvent = AgentEvent & { receivedAt?: string }
 
@@ -40,6 +40,8 @@ const promptPool = [
 
 const TOPIC_ROTATE_MS = 4_500
 const VISIBLE_QUICK_PROMPTS = 6
+const TX_LOG_POLL_MS = 5_000
+const MAX_ESTIMATED_PAID_CALLS = 3
 
 function shufflePrompts(prompts: string[]) {
   const shuffled = [...prompts]
@@ -53,8 +55,9 @@ function shufflePrompts(prompts: string[]) {
 function estimatedCalls(budget: string) {
   const numeric = Number(budget)
   if (!Number.isFinite(numeric)) return '0'
-  const baseline = Math.max(1, Math.floor(numeric / 0.0012))
-  return `${baseline}-${baseline + 2}`
+  const baseline = Math.min(MAX_ESTIMATED_PAID_CALLS, Math.max(1, Math.floor(numeric / 0.0012)))
+  const upper = Math.min(MAX_ESTIMATED_PAID_CALLS, baseline + 2)
+  return baseline === upper ? String(baseline) : `${baseline}-${upper}`
 }
 
 function formatBudget(value: number) {
@@ -111,6 +114,10 @@ function hasTerminalEvent(events: TimedEvent[]) {
   return events.some((event) => event.type === 'final' || event.type === 'error')
 }
 
+function hasPendingPayment(events: TimedEvent[]) {
+  return events.some((event) => event.type === 'tool_result' && event.payment.txStatus === 'pending')
+}
+
 function followUpStatusTone(status: ResearchFollowUpRecord['status']) {
   if (status === 'completed') return 'text-green'
   if (status === 'failed') return 'text-red'
@@ -139,6 +146,11 @@ type LiveFollowUpResponse = {
 type LiveFollowUpsResponse = {
   error?: string
   followUps?: ResearchFollowUpRecord[]
+}
+
+type ResearchDetailResponse = {
+  research?: ResearchRecord
+  txLog?: TxLogRecord[]
 }
 
 function mergeFollowUps(current: ResearchFollowUpRecord[], incoming: ResearchFollowUpRecord[]) {
@@ -510,41 +522,60 @@ function LiveResearch({
   initialBudget: string
 }) {
   const router = useRouter()
+  const routerReplace = router.replace
   const [events, setEvents] = useState<TimedEvent[]>([])
   const [research, setResearch] = useState<ResearchRecord | null>(null)
   const [isCancelling, setCancelling] = useState(false)
   const stoppedRef = useRef(false)
   const final = events.find((event) => event.type === 'final')
   const isTerminal = hasTerminalEvent(events)
+  const hasPendingSettlement = hasPendingPayment(events)
 
   const onEvent = useCallback((event: TimedEvent) => {
     if (stoppedRef.current) return
     setEvents((current) => (hasTerminalEvent(current) ? current : [...current, event]))
   }, [])
 
+  const loadResearchDetail = useCallback(async (shouldIgnore?: () => boolean) => {
+    const res = await fetch(`/api/research/${researchId}`, { credentials: 'include', cache: 'no-store' })
+    if (res.status === 401) {
+      routerReplace(`/login?redirect=${encodeURIComponent(`/research?id=${researchId}`)}`)
+      throw new Error('Authentication expired. Please sign in again.')
+    }
+    if (!res.ok) return
+
+    const body = await res.json().catch(() => null) as ResearchDetailResponse | null
+    if (shouldIgnore?.()) return
+    if (!body?.research) return
+
+    const record = body.research
+    const txLog = Array.isArray(body.txLog) ? body.txLog : []
+    setResearch((current) => (
+      current?.status === 'cancelled' && record.status === 'running' ? current : record
+    ))
+    setEvents((current) => {
+      const merged = mergeTxLogIntoEvents(current, txLog)
+      const restored = persistedEvent(record)
+      if (!restored || hasTerminalEvent(merged)) return merged
+      return [...merged, restored]
+    })
+  }, [researchId, routerReplace])
+
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/research/${researchId}`, { credentials: 'include' })
-      .then((res) => res.ok ? res.json() : null)
-      .then((body) => {
-        if (!cancelled && body?.research) {
-          const record = body.research as ResearchRecord
-          setResearch((current) => (
-            current?.status === 'cancelled' && record.status === 'running' ? current : record
-          ))
-          const restored = persistedEvent(record)
-          if (restored) {
-            setEvents((current) => (
-              hasTerminalEvent(current) ? current : [restored]
-            ))
-          }
-        }
-      })
-      .catch(() => {})
+    loadResearchDetail(() => cancelled).catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [researchId])
+  }, [loadResearchDetail])
+
+  useEffect(() => {
+    if (!isTerminal || !hasPendingSettlement) return undefined
+    const timer = window.setInterval(() => {
+      loadResearchDetail().catch(() => {})
+    }, TX_LOG_POLL_MS)
+    return () => window.clearInterval(timer)
+  }, [hasPendingSettlement, isTerminal, loadResearchDetail])
 
   async function cancel() {
     if (isTerminal || stoppedRef.current) return

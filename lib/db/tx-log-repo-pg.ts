@@ -1,9 +1,20 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { VercelPgDatabase } from 'drizzle-orm/vercel-postgres'
 import * as schema from './schema'
 import { txLog } from './schema/tx-log'
-import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogScopedEntry, TxStatus } from './tx-log-repo'
+import type {
+  TxLogClaimInput,
+  TxLogClaimResult,
+  TxLogEntry,
+  TxLogReceiptPatch,
+  TxLogRecordInput,
+  TxLogRepo,
+  TxLogScopedEntry,
+  TxLogSettlementConfirmInput,
+  TxLogSettlementFailInput,
+  TxStatus,
+} from './tx-log-repo'
 import {
   BILLABLE_TX_STATUSES,
   PaymentIdempotencyConflictError,
@@ -53,6 +64,7 @@ export class PgTxLogRepo implements TxLogRepo {
         txStatus: entry.txStatus ?? 'mock',
         chainId: entry.chainId ?? null,
         blockNumber: entry.blockNumber ?? null,
+        settlementId: entry.settlementId ?? null,
         requestId: entry.requestId ?? randomUUID(),
         errorMessage: entry.errorMessage ?? null,
       })
@@ -74,6 +86,7 @@ export class PgTxLogRepo implements TxLogRepo {
         txStatus: 'pending',
         chainId: null,
         blockNumber: null,
+        settlementId: null,
         requestId: input.requestId,
         errorMessage: null,
       })
@@ -100,6 +113,7 @@ export class PgTxLogRepo implements TxLogRepo {
         txStatus: patch.txStatus,
         chainId: patch.chainId,
         blockNumber: patch.blockNumber,
+        settlementId: patch.settlementId,
         errorMessage: patch.errorMessage,
       })
       .where(eq(txLog.id, id))
@@ -143,6 +157,73 @@ export class PgTxLogRepo implements TxLogRepo {
       .limit(limit)
 
     return rows.map(toTxLogEntry)
+  }
+
+  async listPendingByResearchId(address: string, researchId: string, limit = 50): Promise<TxLogScopedEntry[]> {
+    const normalizedResearchId = normalizeResearchId(researchId)
+    if (!normalizedResearchId) return []
+
+    const rows = await this.database
+      .select()
+      .from(txLog)
+      .where(and(
+        eq(txLog.address, address),
+        eq(txLog.researchId, normalizedResearchId),
+        eq(txLog.txStatus, 'pending'),
+        isNotNull(txLog.requestId),
+      ))
+      .orderBy(desc(txLog.createdAt))
+      .limit(limit)
+
+    return rows.map(toTxLogScopedEntry)
+  }
+
+  async markResearchSettlementConfirmed(input: TxLogSettlementConfirmInput): Promise<TxLogScopedEntry[]> {
+    const normalizedResearchId = normalizeResearchId(input.researchId)
+    if (!normalizedResearchId || input.requestIds.length === 0) return []
+
+    const rows = await this.database
+      .update(txLog)
+      .set({
+        txHash: input.txHash,
+        txStatus: input.txStatus ?? 'confirmed',
+        chainId: input.chainId,
+        blockNumber: input.blockNumber,
+        settlementId: input.settlementId,
+        errorMessage: null,
+      })
+      .where(and(
+        eq(txLog.address, input.address),
+        eq(txLog.researchId, normalizedResearchId),
+        inArray(txLog.requestId, input.requestIds),
+      ))
+      .returning()
+
+    return rows.map(toTxLogScopedEntry)
+  }
+
+  async markResearchSettlementFailed(input: TxLogSettlementFailInput): Promise<TxLogScopedEntry[]> {
+    const normalizedResearchId = normalizeResearchId(input.researchId)
+    if (!normalizedResearchId || input.requestIds.length === 0) return []
+
+    const rows = await this.database
+      .update(txLog)
+      .set({
+        txHash: input.txHash ?? null,
+        txStatus: 'failed',
+        chainId: input.chainId ?? null,
+        blockNumber: input.blockNumber ?? null,
+        settlementId: input.settlementId,
+        errorMessage: input.errorMessage,
+      })
+      .where(and(
+        eq(txLog.address, input.address),
+        eq(txLog.researchId, normalizedResearchId),
+        inArray(txLog.requestId, input.requestIds),
+      ))
+      .returning()
+
+    return rows.map(toTxLogScopedEntry)
   }
 
   async totalSpentByAddress(address: string): Promise<string> {

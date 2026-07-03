@@ -15,6 +15,14 @@ describe('drizzle config', () => {
     ]))
   })
 
+  it('includes the payment settlement schema for migrations', async () => {
+    const config = (await import('./drizzle.config')).default
+
+    expect(config.schema).toEqual(expect.arrayContaining([
+      './lib/db/schema/payment-settlement.ts',
+    ]))
+  })
+
   it('uses POSTGRES_URL when DATABASE_URL is not set', async () => {
     vi.stubEnv('DATABASE_URL', '')
     vi.stubEnv('POSTGRES_URL', 'postgres://example.test/db')

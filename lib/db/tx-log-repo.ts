@@ -12,6 +12,7 @@ export type TxLogEntry = {
   txStatus: TxStatus
   chainId: number | null
   blockNumber: string | null
+  settlementId: string | null
   requestId: string | null
   errorMessage: string | null
   createdAt: Date
@@ -30,6 +31,7 @@ export type TxLogRecordInput = {
   txStatus?: TxStatus
   chainId?: number | null
   blockNumber?: string | null
+  settlementId?: string | null
   requestId?: string
   errorMessage?: string | null
 }
@@ -53,7 +55,30 @@ export type TxLogReceiptPatch = {
   txStatus?: TxStatus
   chainId?: number | null
   blockNumber?: string | null
+  settlementId?: string | null
   errorMessage?: string | null
+}
+
+export type TxLogSettlementConfirmInput = {
+  address: string
+  researchId: string
+  requestIds: string[]
+  settlementId: string
+  txHash: string
+  txStatus?: Extract<TxStatus, 'mock' | 'confirmed'>
+  chainId: number | null
+  blockNumber: string | null
+}
+
+export type TxLogSettlementFailInput = {
+  address: string
+  researchId: string
+  requestIds: string[]
+  settlementId: string
+  errorMessage: string
+  txHash?: string | null
+  chainId?: number | null
+  blockNumber?: string | null
 }
 
 export class PaymentIdempotencyConflictError extends Error {
@@ -76,6 +101,9 @@ export interface TxLogRepo {
   findByRequestId(address: string, requestId: string): Promise<TxLogScopedEntry | null>
   listByAddress(address: string, limit?: number): Promise<TxLogEntry[]>
   listByResearchId(address: string, researchId: string, limit?: number): Promise<TxLogEntry[]>
+  listPendingByResearchId(address: string, researchId: string, limit?: number): Promise<TxLogScopedEntry[]>
+  markResearchSettlementConfirmed(input: TxLogSettlementConfirmInput): Promise<TxLogScopedEntry[]>
+  markResearchSettlementFailed(input: TxLogSettlementFailInput): Promise<TxLogScopedEntry[]>
   totalSpentByAddress(address: string): Promise<string>
   count(): Promise<number>
   totalSpent(): Promise<string>

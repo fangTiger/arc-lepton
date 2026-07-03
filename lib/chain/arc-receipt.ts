@@ -34,6 +34,32 @@ export type ArcReceiptPayload = {
   createdAt: string
 }
 
+export type ArcResearchSettlementItem = {
+  requestId: string
+  source: string
+  amount: string
+}
+
+export type ArcResearchSettlementInput = {
+  buyer: string
+  researchId: string
+  totalAmount: string
+  items: ArcResearchSettlementItem[]
+  createdAt?: string
+  mode?: ArcReceiptMode
+}
+
+export type ArcResearchSettlementPayload = {
+  kind: 'arc-lepton.research-settlement'
+  version: 1
+  buyer: string
+  researchId: string
+  totalAmount: string
+  itemCount: number
+  items: ArcResearchSettlementItem[]
+  createdAt: string
+}
+
 export type ArcReceiptResult = {
   txHash: string
   txStatus: 'mock' | 'confirmed'
@@ -41,6 +67,8 @@ export type ArcReceiptResult = {
   blockNumber: string | null
   requestId: string
 }
+
+export type ArcSettlementResult = Omit<ArcReceiptResult, 'requestId'>
 
 type ArcReceiptDeps = {
   createPublicClient: typeof createPublicClient
@@ -110,7 +138,20 @@ export function buildReceiptPayload(input: ArcReceiptInput): ArcReceiptPayload {
   }
 }
 
-export function encodeReceiptPayload(payload: ArcReceiptPayload): Hex {
+export function buildResearchSettlementPayload(input: ArcResearchSettlementInput): ArcResearchSettlementPayload {
+  return {
+    kind: 'arc-lepton.research-settlement',
+    version: 1,
+    buyer: input.buyer,
+    researchId: input.researchId,
+    totalAmount: input.totalAmount,
+    itemCount: input.items.length,
+    items: input.items.map((item) => ({ ...item })),
+    createdAt: input.createdAt ?? new Date().toISOString(),
+  }
+}
+
+export function encodeReceiptPayload(payload: ArcReceiptPayload | ArcResearchSettlementPayload): Hex {
   return stringToHex(JSON.stringify(payload))
 }
 
@@ -124,15 +165,18 @@ function createArcChain(rpcUrl: string) {
   })
 }
 
-export async function recordArcReceipt(input: ArcReceiptInput, deps: ArcReceiptDeps = defaultDeps): Promise<ArcReceiptResult> {
-  const mode = currentMode(input.mode)
+async function recordArcPayload(
+  payload: ArcReceiptPayload | ArcResearchSettlementPayload,
+  modeInput: ArcReceiptMode | undefined,
+  deps: ArcReceiptDeps,
+): Promise<ArcSettlementResult> {
+  const mode = currentMode(modeInput)
   if (mode === 'mock') {
     return {
       txHash: mockTxHash(),
       txStatus: 'mock',
       chainId: null,
       blockNumber: null,
-      requestId: input.requestId,
     }
   }
 
@@ -153,7 +197,7 @@ export async function recordArcReceipt(input: ArcReceiptInput, deps: ArcReceiptD
   const transport = deps.http(rpcUrl)
   const publicClient = deps.createPublicClient({ chain, transport })
   const walletClient = deps.createWalletClient({ account, chain, transport })
-  const data = encodeReceiptPayload(buildReceiptPayload(input))
+  const data = encodeReceiptPayload(payload)
 
   let txHash: Hex | undefined
   try {
@@ -182,7 +226,6 @@ export async function recordArcReceipt(input: ArcReceiptInput, deps: ArcReceiptD
       txStatus: 'confirmed',
       chainId: chain.id,
       blockNumber,
-      requestId: input.requestId,
     }
   } catch (error) {
     if (error instanceof ArcReceiptError) throw error
@@ -195,4 +238,19 @@ export async function recordArcReceipt(input: ArcReceiptInput, deps: ArcReceiptD
       blockNumber: null,
     })
   }
+}
+
+export async function recordArcReceipt(input: ArcReceiptInput, deps: ArcReceiptDeps = defaultDeps): Promise<ArcReceiptResult> {
+  const receipt = await recordArcPayload(buildReceiptPayload(input), input.mode, deps)
+  return {
+    ...receipt,
+    requestId: input.requestId,
+  }
+}
+
+export async function recordArcResearchSettlement(
+  input: ArcResearchSettlementInput,
+  deps: ArcReceiptDeps = defaultDeps,
+): Promise<ArcSettlementResult> {
+  return recordArcPayload(buildResearchSettlementPayload(input), input.mode, deps)
 }

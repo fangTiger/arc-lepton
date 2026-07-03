@@ -1,5 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogScopedEntry } from './tx-log-repo'
+import type {
+  TxLogClaimInput,
+  TxLogClaimResult,
+  TxLogEntry,
+  TxLogReceiptPatch,
+  TxLogRecordInput,
+  TxLogRepo,
+  TxLogScopedEntry,
+  TxLogSettlementConfirmInput,
+  TxLogSettlementFailInput,
+} from './tx-log-repo'
 import {
   PaymentIdempotencyConflictError,
   decimalToUnits,
@@ -56,6 +66,7 @@ export class MemoryTxLogRepo implements TxLogRepo {
       txStatus: entry.txStatus ?? 'mock',
       chainId: entry.chainId ?? null,
       blockNumber: entry.blockNumber ?? null,
+      settlementId: entry.settlementId ?? null,
       requestId,
       errorMessage: entry.errorMessage ?? null,
       createdAt: new Date(),
@@ -88,6 +99,7 @@ export class MemoryTxLogRepo implements TxLogRepo {
       txStatus: 'pending',
       chainId: null,
       blockNumber: null,
+      settlementId: null,
       errorMessage: null,
     })
     if (!entry.requestId) throw new Error(`tx_log ${entry.id} is missing requestId`)
@@ -105,6 +117,7 @@ export class MemoryTxLogRepo implements TxLogRepo {
       txStatus: patch.txStatus ?? existing.txStatus,
       chainId: patch.chainId !== undefined ? patch.chainId : existing.chainId,
       blockNumber: patch.blockNumber !== undefined ? patch.blockNumber : existing.blockNumber,
+      settlementId: patch.settlementId !== undefined ? patch.settlementId : existing.settlementId,
       errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : existing.errorMessage,
     }
 
@@ -134,6 +147,88 @@ export class MemoryTxLogRepo implements TxLogRepo {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit)
       .map((entry) => this.cloneEntry(entry))
+  }
+
+  async listPendingByResearchId(address: string, researchId: string, limit = 50): Promise<TxLogScopedEntry[]> {
+    const normalizedResearchId = normalizeResearchId(researchId)
+    if (!normalizedResearchId) return []
+
+    return [...this.entries.values()]
+      .filter((entry): entry is TxLogScopedEntry => (
+        entry.address === address
+        && entry.researchId === normalizedResearchId
+        && entry.txStatus === 'pending'
+        && Boolean(entry.requestId)
+      ))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit)
+      .map((entry) => this.cloneEntry(entry))
+  }
+
+  async markResearchSettlementConfirmed(input: TxLogSettlementConfirmInput): Promise<TxLogScopedEntry[]> {
+    const requestIds = new Set(input.requestIds)
+    const normalizedResearchId = normalizeResearchId(input.researchId)
+    if (!normalizedResearchId || requestIds.size === 0) return []
+
+    const updated: TxLogScopedEntry[] = []
+    for (const entry of this.entries.values()) {
+      if (
+        entry.address !== input.address
+        || entry.researchId !== normalizedResearchId
+        || !entry.requestId
+        || !requestIds.has(entry.requestId)
+      ) {
+        continue
+      }
+
+      const next: TxLogScopedEntry = {
+        ...entry,
+        txHash: input.txHash,
+        txStatus: input.txStatus ?? 'confirmed',
+        chainId: input.chainId,
+        blockNumber: input.blockNumber,
+        settlementId: input.settlementId,
+        errorMessage: null,
+        requestId: entry.requestId,
+      }
+      this.entries.set(entry.id, next)
+      updated.push(this.cloneEntry(next))
+    }
+
+    return updated
+  }
+
+  async markResearchSettlementFailed(input: TxLogSettlementFailInput): Promise<TxLogScopedEntry[]> {
+    const requestIds = new Set(input.requestIds)
+    const normalizedResearchId = normalizeResearchId(input.researchId)
+    if (!normalizedResearchId || requestIds.size === 0) return []
+
+    const updated: TxLogScopedEntry[] = []
+    for (const entry of this.entries.values()) {
+      if (
+        entry.address !== input.address
+        || entry.researchId !== normalizedResearchId
+        || !entry.requestId
+        || !requestIds.has(entry.requestId)
+      ) {
+        continue
+      }
+
+      const next: TxLogScopedEntry = {
+        ...entry,
+        txHash: input.txHash ?? null,
+        txStatus: 'failed',
+        chainId: input.chainId ?? null,
+        blockNumber: input.blockNumber ?? null,
+        settlementId: input.settlementId,
+        errorMessage: input.errorMessage,
+        requestId: entry.requestId,
+      }
+      this.entries.set(entry.id, next)
+      updated.push(this.cloneEntry(next))
+    }
+
+    return updated
   }
 
   async totalSpentByAddress(address: string): Promise<string> {
