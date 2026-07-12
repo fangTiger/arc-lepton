@@ -2,16 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import type { Hex } from 'viem'
+import { useAccount, useChainId, usePublicClient, useSignTypedData, useSwitchChain, useWriteContract } from 'wagmi'
 import { AgentLogStream } from '@/components/research/AgentLogStream'
 import { BudgetMeter } from '@/components/research/BudgetMeter'
 import { TerminalMarkdown } from '@/components/research/TerminalMarkdown'
 import { TxFeed } from '@/components/research/TxFeed'
 import type { AgentEvent, ResearchFollowUpRecord, ResearchRecord, TxLogRecord } from '@/components/research/types'
 import { mergeTxLogIntoEvents, utcDateTime, utcTime } from '@/components/research/types'
+import { useUser } from '@/hooks/useUser'
+import { ARC_CHAIN_ID } from '@/lib/constants'
 
 type TimedEvent = AgentEvent & { receivedAt?: string }
 
 type QuotaBucket = {
+  consumed?: number
+  reserved?: number
   used: number
   limit: number
   remaining: number
@@ -21,6 +27,77 @@ type QuotaBucket = {
 type QuotaStatus = {
   wallet: QuotaBucket
   global: QuotaBucket
+}
+
+type ResearchBackendConfig = {
+  settlementBackend?: 'calldata' | 'escrow'
+  fundingUiEnabled?: boolean
+}
+
+type PrepareResearchResponse = {
+  researchId: string
+  status: 'funding'
+  activationPhase: 'none' | 'funded' | 'activating' | 'active' | 'expired' | 'cancelled'
+  quotaReservationState: 'reserved' | 'activating' | 'consumed' | 'released' | 'none'
+  buyer: string
+  topic: string
+  budgetUsdc: string
+  budgetUnits: string
+  chainId: number
+  factory: string
+  implementation: string
+  usdc: string
+  intentSigner: string
+  researchKey: string
+  expectedEscrowAddress: string
+  expectedExpiresAt: string
+  fundingDeadline: string
+  fundingVoucher: {
+    buyer: string
+    researchKey: string
+    budgetUnits: string
+    expectedExpiresAt: string
+    fundingDeadline: string
+    intentSigner: string
+    voucherNonce: string
+  }
+  fundingSigner: string
+  fundingSignature: `0x${string}`
+}
+
+type FundingStep =
+  | 'idle'
+  | 'preparing'
+  | 'needs_approve'
+  | 'needs_create'
+  | 'prepared'
+  | 'checking_allowance'
+  | 'approving'
+  | 'funding'
+  | 'funded'
+  | 'signing_activation'
+  | 'activating'
+  | 'failed'
+
+type ActivationAuthorization = {
+  escrow: string
+  researchKey: string
+  buyer: string
+  intentSigner: string
+  initialBudget: string
+  expectedExpiresAt: string
+  activationNonce: string
+  deadline: string
+}
+
+type FundingIntent = {
+  prepare: PrepareResearchResponse
+  idempotencyKey: string
+  step: FundingStep
+  fundingTxHash: `0x${string}` | null
+  fundingLogIndex: number | null
+  activationAuthorization: ActivationAuthorization | null
+  activationSignature: `0x${string}` | null
 }
 
 const promptPool = [
@@ -42,6 +119,68 @@ const TOPIC_ROTATE_MS = 4_500
 const VISIBLE_QUICK_PROMPTS = 6
 const TX_LOG_POLL_MS = 5_000
 const MAX_ESTIMATED_PAID_CALLS = 3
+const FUNDING_INTENT_STORAGE_KEY = 'arc:research-funding-state'
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const
+
+const researchEscrowFactoryAbi = [
+  {
+    type: 'function',
+    name: 'createAndFund',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'voucher',
+        type: 'tuple',
+        components: [
+          { name: 'buyer', type: 'address' },
+          { name: 'researchKey', type: 'bytes32' },
+          { name: 'budgetUnits', type: 'uint256' },
+          { name: 'expectedExpiresAt', type: 'uint64' },
+          { name: 'fundingDeadline', type: 'uint64' },
+          { name: 'intentSigner', type: 'address' },
+          { name: 'voucherNonce', type: 'uint256' },
+        ],
+      },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [{ name: 'escrow', type: 'address' }],
+  },
+] as const
+
+const activationAuthorizationTypes = {
+  ActivationAuthorization: [
+    { name: 'escrow', type: 'address' },
+    { name: 'researchKey', type: 'bytes32' },
+    { name: 'buyer', type: 'address' },
+    { name: 'intentSigner', type: 'address' },
+    { name: 'initialBudget', type: 'uint256' },
+    { name: 'expectedExpiresAt', type: 'uint64' },
+    { name: 'activationNonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint64' },
+  ],
+} as const
 
 function shufflePrompts(prompts: string[]) {
   const shuffled = [...prompts]
@@ -64,6 +203,73 @@ function formatBudget(value: number) {
   return value.toFixed(4)
 }
 
+function sameAddress(left: string | undefined | null, right: string | undefined | null) {
+  return Boolean(left && right && left.toLowerCase() === right.toLowerCase())
+}
+
+function toHexAddress(value: string) {
+  return value as `0x${string}`
+}
+
+function toHexHash(value: string) {
+  return value as `0x${string}`
+}
+
+function unixSeconds(value: string) {
+  if (/^\d+$/.test(value)) return Number(value)
+  return Math.floor(Date.parse(value) / 1000)
+}
+
+function stablePrepareKey() {
+  const randomId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  return `research-${randomId}`
+}
+
+function shortHash(value: string) {
+  return `${value.slice(0, 10)}…${value.slice(-6)}`
+}
+
+function fundingStepLabel(step: FundingStep) {
+  if (step === 'idle') return 'IDLE'
+  if (step === 'preparing') return 'PREPARING'
+  if (step === 'needs_approve') return 'NEEDS APPROVE'
+  if (step === 'needs_create') return 'READY TO FUND'
+  if (step === 'prepared') return 'PREPARED'
+  if (step === 'checking_allowance') return 'CHECKING ALLOWANCE'
+  if (step === 'approving') return 'APPROVING USDC'
+  if (step === 'funding') return 'CREATE AND FUND'
+  if (step === 'funded') return 'FUNDED'
+  if (step === 'signing_activation') return 'SIGN ACTIVATION'
+  if (step === 'activating') return 'ACTIVATING'
+  return 'FAILED'
+}
+
+function isWalletRejection(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? '').toLowerCase()
+  return message.includes('reject') || message.includes('denied') || message.includes('cancel')
+}
+
+function startFailureMessage(status: number, code?: string) {
+  if (status === 401) return 'Authentication expired. Please sign in again.'
+  if (code === 'DURABLE_DB_REQUIRED' || status === 503) {
+    return 'Research service is temporarily unavailable. Please try again after maintenance.'
+  }
+  if (status >= 500) return 'Research could not be started. Please try again.'
+  return 'Research could not be started. Please check the request and try again.'
+}
+
+function parseStoredFundingIntent(value: string | null): FundingIntent | null {
+  if (!value) return null
+  try {
+    const parsed = JSON.parse(value) as FundingIntent
+    if (!parsed?.prepare?.researchId || !parsed.idempotencyKey) return null
+    if (Date.parse(parsed.prepare.fundingDeadline) <= Date.now()) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 function quotaBar(bucket: QuotaBucket) {
   const width = 10
   const ratio = bucket.limit > 0 ? bucket.used / bucket.limit : 1
@@ -76,6 +282,14 @@ function quotaTone(bucket: QuotaBucket) {
   if (ratio >= 1) return 'text-red'
   if (ratio >= 0.8) return 'text-yellow'
   return 'text-amber'
+}
+
+function quotaConsumed(bucket: QuotaBucket) {
+  return bucket.consumed ?? bucket.used
+}
+
+function quotaReserved(bucket: QuotaBucket) {
+  return bucket.reserved ?? 0
 }
 
 function resetIn(resetAt: string) {
@@ -170,7 +384,7 @@ function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
   }
 
   return (
-    <div className="border border-border bg-bg-base p-3 font-mono text-[11px] uppercase tracking-[0.05em]">
+    <div className="border border-border bg-bg-base p-3 font-mono text-[11px] uppercase tracking-[0.05em]" role="status" aria-live="polite">
       <div className="mb-2 font-bold text-amber">DAILY QUOTA</div>
       <div className="grid gap-2 md:grid-cols-2">
         <div className={quotaTone(quota.wallet)}>
@@ -180,6 +394,14 @@ function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
           GLOBAL: <span className="tabular-nums">{quotaBar(quota.global)} {quota.global.used}/{quota.global.limit}</span>
         </div>
       </div>
+      <div className="mt-2 grid gap-2 text-text-secondary md:grid-cols-2">
+        <div>WALLET CONSUMED: <span className="tabular-nums text-text-primary">{quotaConsumed(quota.wallet)}</span></div>
+        <div>GLOBAL CONSUMED: <span className="tabular-nums text-text-primary">{quotaConsumed(quota.global)}</span></div>
+        <div>WALLET RESERVED: <span className="tabular-nums text-amber">{quotaReserved(quota.wallet)}</span></div>
+        <div>GLOBAL RESERVED: <span className="tabular-nums text-amber">{quotaReserved(quota.global)}</span></div>
+        <div>WALLET REMAINING: <span className="tabular-nums text-green">{quota.wallet.remaining}</span></div>
+        <div>GLOBAL REMAINING: <span className="tabular-nums text-green">{quota.global.remaining}</span></div>
+      </div>
       <div className="mt-2 text-text-secondary">RESETS IN: {resetIn(quota.wallet.resetAt)}</div>
       <div className="my-2 border-t border-border" />
       <div className="normal-case tracking-normal text-text-muted">Rate limits will be relaxed after mainnet launch.</div>
@@ -187,8 +409,95 @@ function QuotaPanel({ quota }: { quota: QuotaStatus | null }) {
   )
 }
 
+function FundingField({ label, value }: { label: string; value: string | number | null | undefined }) {
+  if (value === null || value === undefined || value === '') return null
+  return (
+    <div className="grid gap-1 border-t border-border pt-2 md:grid-cols-[150px_1fr]">
+      <div className="text-text-muted">{label}</div>
+      <div className="break-all text-amber">{String(value)}</div>
+    </div>
+  )
+}
+
+function FundingPanel({
+  enabled,
+  intent,
+  step,
+  restored,
+}: {
+  enabled: boolean
+  intent: FundingIntent | null
+  step: FundingStep
+  restored: boolean
+}) {
+  if (!enabled && !intent) return null
+
+  const prepare = intent?.prepare
+  return (
+    <div className="border border-border bg-bg-base p-3 font-mono text-[11px] uppercase tracking-[0.05em]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-bold text-amber">ESCROW FUNDING</div>
+        <div
+          className={step === 'failed' ? 'text-red' : step === 'activating' ? 'text-cyan blink' : 'text-green'}
+          role="status"
+          aria-live="polite"
+        >
+          {fundingStepLabel(step)}
+        </div>
+      </div>
+      {restored ? <div className="mt-2 text-cyan">RESTORED FUNDING SESSION</div> : null}
+      {!prepare ? (
+        <div className="mt-2 normal-case tracking-normal text-text-muted">
+          Escrow funding is enabled. Starting research will first reserve quota and prepare the funding voucher.
+        </div>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <FundingField label="RESEARCH ID" value={prepare.researchId} />
+          <FundingField label="OFFICIAL USDC" value={prepare.usdc} />
+          <FundingField label="FACTORY" value={prepare.factory} />
+          <FundingField label="PREDICTED ESCROW" value={prepare.expectedEscrowAddress} />
+          <FundingField label="BUDGET UNITS" value={prepare.budgetUnits} />
+          <FundingField label="EXPECTED EXPIRES" value={prepare.expectedExpiresAt} />
+          <FundingField label="FUNDING DEADLINE" value={prepare.fundingDeadline} />
+          <FundingField label="INTENT SIGNER" value={prepare.intentSigner} />
+          <FundingField label="RESERVED QUOTA" value={prepare.quotaReservationState} />
+          <FundingField label="FUNDING TX" value={intent?.fundingTxHash ? shortHash(intent.fundingTxHash) : null} />
+          <FundingField
+            label="ACTIVATION"
+            value={intent?.activationAuthorization
+              ? `deadline ${intent.activationAuthorization.deadline}, nonce ${intent.activationAuthorization.activationNonce}`
+              : null}
+          />
+          {intent?.fundingTxHash ? (
+            <div className="border-t border-border pt-2 text-green">
+              FUNDED RECEIPT OBSERVED: <span className="break-all">{intent.fundingTxHash}</span>
+            </div>
+          ) : null}
+          {step === 'funded' || step === 'signing_activation' || step === 'activating' ? (
+            <div className="border-t border-border pt-2 normal-case tracking-normal text-text-secondary">
+              DUAL-KEY TRUST BOUNDARY: buyer signs activation for intent signer {prepare.intentSigner}; settlement still requires the independent settler path.
+            </div>
+          ) : null}
+          {step === 'activating' ? (
+            <div className="border-t border-border pt-2 text-cyan blink" role="status" aria-live="polite">ACTIVATING ON CHAIN</div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) => void }) {
   const router = useRouter()
+  const { address: walletAddress, isConnected } = useAccount()
+  const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const { writeContractAsync } = useWriteContract()
+  const { signTypedDataAsync } = useSignTypedData()
+  const { switchChainAsync } = useSwitchChain()
+  const { address: siweBuyer } = useUser()
+  const prepareKeyRef = useRef<string | null>(null)
+  const inFlightRef = useRef(false)
   const [promptDeck, setPromptDeck] = useState(promptPool)
   const [topicIndex, setTopicIndex] = useState(0)
   const [topic, setTopic] = useState(promptPool[0] ?? '')
@@ -196,8 +505,13 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
   const [budget, setBudget] = useState('0.0100')
   const [error, setError] = useState<string | null>(null)
   const [quota, setQuota] = useState<QuotaStatus | null>(null)
+  const [backendConfig, setBackendConfig] = useState<ResearchBackendConfig | null>(null)
+  const [fundingIntent, setFundingIntent] = useState<FundingIntent | null>(null)
+  const [fundingStep, setFundingStep] = useState<FundingStep>('idle')
+  const [restoredFundingIntent, setRestoredFundingIntent] = useState(false)
   const [isSubmitting, setSubmitting] = useState(false)
   const quotaReason = quotaExceededReason(quota)
+  const escrowFundingEnabled = backendConfig?.settlementBackend === 'escrow' && backendConfig.fundingUiEnabled === true
   const visibleQuickPrompts = useMemo(() => promptDeck.slice(0, VISIBLE_QUICK_PROMPTS), [promptDeck])
 
   useEffect(() => {
@@ -231,35 +545,385 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
     if (!hasEditedTopic) setTopic(promptDeck[topicIndex] ?? promptDeck[0] ?? '')
   }, [hasEditedTopic, promptDeck, topicIndex])
 
+  const loadBackendConfig = useCallback(async () => {
+    const res = await fetch('/api/research/config', { credentials: 'include', cache: 'no-store' })
+    if (!res.ok) {
+      const fallback: ResearchBackendConfig = { settlementBackend: 'calldata', fundingUiEnabled: false }
+      setBackendConfig(fallback)
+      return fallback
+    }
+    const config = await res.json() as ResearchBackendConfig
+    setBackendConfig(config)
+    return config
+  }, [])
+
+  useEffect(() => {
+    loadBackendConfig().catch(() => {
+      setBackendConfig({ settlementBackend: 'calldata', fundingUiEnabled: false })
+    })
+  }, [loadBackendConfig])
+
+  useEffect(() => {
+    const stored = parseStoredFundingIntent(window.localStorage.getItem(FUNDING_INTENT_STORAGE_KEY))
+    if (!stored) return
+    setFundingIntent(stored)
+    setFundingStep(stored.fundingTxHash ? 'funded' : stored.step === 'prepared' ? 'needs_create' : stored.step)
+    setRestoredFundingIntent(true)
+    setTopic(stored.prepare.topic)
+    setBudget(stored.prepare.budgetUsdc)
+    setHasEditedTopic(true)
+    prepareKeyRef.current = stored.idempotencyKey
+  }, [])
+
+  function persistFundingIntent(next: FundingIntent | null, step?: FundingStep) {
+    setFundingIntent(next)
+    if (step) setFundingStep(step)
+    if (!next) {
+      window.localStorage.removeItem(FUNDING_INTENT_STORAGE_KEY)
+      prepareKeyRef.current = null
+      return
+    }
+    window.localStorage.setItem(FUNDING_INTENT_STORAGE_KEY, JSON.stringify({
+      ...next,
+      step: step ?? next.step,
+    }))
+  }
+
+  async function getBackendConfig() {
+    return backendConfig ?? await loadBackendConfig()
+  }
+
+  function assertFundingContext(prepare: PrepareResearchResponse) {
+    if (!isConnected || !walletAddress) {
+      throw new Error('Wallet, session, chain, or voucher changed. Connect the prepared buyer wallet to continue.')
+    }
+    if (!sameAddress(walletAddress, prepare.buyer) || !sameAddress(siweBuyer, prepare.buyer)) {
+      throw new Error('Wallet, session, chain, or voucher changed. Prepared buyer no longer matches the connected wallet.')
+    }
+    if (chainId !== prepare.chainId || (ARC_CHAIN_ID > 0 && chainId !== ARC_CHAIN_ID)) {
+      throw new Error('Wallet, session, chain, or voucher changed. Switch to Arc Testnet before continuing.')
+    }
+    if (Date.parse(prepare.fundingDeadline) <= Date.now()) {
+      throw new Error('Wallet, session, chain, or voucher changed. Funding voucher deadline has expired.')
+    }
+    if (Date.parse(prepare.expectedExpiresAt) <= Date.now()) {
+      throw new Error('Wallet, session, chain, or voucher changed. Escrow expected expiry has expired.')
+    }
+  }
+
+  async function readAllowance(prepare: PrepareResearchResponse) {
+    if (!publicClient) throw new Error('Wallet RPC client is not ready.')
+    const allowance = await publicClient.readContract({
+      address: toHexAddress(prepare.usdc),
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [toHexAddress(prepare.buyer), toHexAddress(prepare.factory)],
+    })
+    return typeof allowance === 'bigint' ? allowance : BigInt(String(allowance ?? 0))
+  }
+
+  async function prepareEscrowResearch() {
+    const idempotencyKey = prepareKeyRef.current
+      ?? stablePrepareKey()
+    prepareKeyRef.current = idempotencyKey
+    setFundingStep('preparing')
+    const res = await fetch('/api/research/prepare', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'content-type': 'application/json',
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({ topic, budgetUsdc: budget }),
+    })
+    if (res.status === 401) {
+      router.replace('/login?redirect=%2Fresearch')
+      throw new Error('Authentication expired. Please sign in again.')
+    }
+    if (res.status === 429) {
+      const body = await res.json() as { quota?: QuotaStatus; error?: string }
+      if (body.quota) setQuota(body.quota)
+      throw new Error(`Quota exceeded. ${body.error ?? 'Reservation failed'}.`)
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { error?: string }
+      throw new Error(startFailureMessage(res.status, body.error))
+    }
+    const prepare = await res.json() as PrepareResearchResponse
+    assertFundingContext(prepare)
+    const intent: FundingIntent = {
+      prepare,
+      idempotencyKey,
+      step: 'checking_allowance',
+      fundingTxHash: null,
+      fundingLogIndex: null,
+      activationAuthorization: null,
+      activationSignature: null,
+    }
+    persistFundingIntent(intent, 'checking_allowance')
+    const allowance = await readAllowance(prepare)
+    persistFundingIntent(intent, allowance >= BigInt(prepare.budgetUnits) ? 'needs_create' : 'needs_approve')
+  }
+
+  async function approveUsdc() {
+    if (!fundingIntent) return
+    const { prepare } = fundingIntent
+    assertFundingContext(prepare)
+    setError(null)
+    persistFundingIntent(fundingIntent, 'approving')
+    await writeContractAsync({
+      address: toHexAddress(prepare.usdc),
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [toHexAddress(prepare.factory), BigInt(prepare.budgetUnits)],
+    })
+    persistFundingIntent(fundingIntent, 'needs_create')
+  }
+
+  async function createAndFundEscrow() {
+    if (!fundingIntent) return
+    const { prepare } = fundingIntent
+    assertFundingContext(prepare)
+    setError(null)
+    const allowance = await readAllowance(prepare)
+    if (allowance < BigInt(prepare.budgetUnits)) {
+      setError('Allowance is still below the prepared budget. Approve USDC before funding.')
+      persistFundingIntent(fundingIntent, 'needs_approve')
+      return
+    }
+    persistFundingIntent(fundingIntent, 'funding')
+    const fundingHash = await writeContractAsync({
+      address: toHexAddress(prepare.factory),
+      abi: researchEscrowFactoryAbi,
+      functionName: 'createAndFund',
+      args: [
+        {
+          buyer: toHexAddress(prepare.fundingVoucher.buyer),
+          researchKey: toHexHash(prepare.fundingVoucher.researchKey),
+          budgetUnits: BigInt(prepare.fundingVoucher.budgetUnits),
+          expectedExpiresAt: BigInt(prepare.fundingVoucher.expectedExpiresAt),
+          fundingDeadline: BigInt(prepare.fundingVoucher.fundingDeadline),
+          intentSigner: toHexAddress(prepare.fundingVoucher.intentSigner),
+          voucherNonce: BigInt(prepare.fundingVoucher.voucherNonce),
+        },
+        prepare.fundingSignature,
+      ],
+    })
+    const receipt = publicClient
+      ? await publicClient.waitForTransactionReceipt({ hash: fundingHash })
+      : null
+    const fundingLogIndex = Number(receipt?.logs?.[0]?.logIndex ?? 0)
+    persistFundingIntent({
+      ...fundingIntent,
+      fundingTxHash: fundingHash,
+      fundingLogIndex,
+      step: 'funded',
+    }, 'funded')
+  }
+
+  function activationAuthorizationFor(prepare: PrepareResearchResponse): ActivationAuthorization {
+    return {
+      escrow: prepare.expectedEscrowAddress,
+      researchKey: prepare.researchKey,
+      buyer: prepare.buyer,
+      intentSigner: prepare.intentSigner,
+      initialBudget: prepare.budgetUnits,
+      expectedExpiresAt: String(unixSeconds(prepare.fundingVoucher.expectedExpiresAt)),
+      activationNonce: prepare.fundingVoucher.voucherNonce,
+      deadline: String(unixSeconds(prepare.fundingVoucher.fundingDeadline)),
+    }
+  }
+
+  async function signActivationAndStart() {
+    if (!fundingIntent?.fundingTxHash || fundingIntent.fundingLogIndex === null) return
+    const { prepare } = fundingIntent
+    assertFundingContext(prepare)
+    setError(null)
+    const authorization = activationAuthorizationFor(prepare)
+    persistFundingIntent({
+      ...fundingIntent,
+      activationAuthorization: authorization,
+    }, 'signing_activation')
+    let signature: Hex
+    try {
+      signature = await signTypedDataAsync({
+        domain: {
+          name: 'ArcLeptonResearchEscrow',
+          version: '1',
+          chainId: BigInt(prepare.chainId),
+          verifyingContract: toHexAddress(prepare.expectedEscrowAddress),
+        },
+        types: activationAuthorizationTypes,
+        primaryType: 'ActivationAuthorization',
+        message: {
+          escrow: toHexAddress(authorization.escrow),
+          researchKey: toHexHash(authorization.researchKey),
+          buyer: toHexAddress(authorization.buyer),
+          intentSigner: toHexAddress(authorization.intentSigner),
+          initialBudget: BigInt(authorization.initialBudget),
+          expectedExpiresAt: BigInt(authorization.expectedExpiresAt),
+          activationNonce: BigInt(authorization.activationNonce),
+          deadline: BigInt(authorization.deadline),
+        },
+      })
+    } catch (err) {
+      persistFundingIntent({
+        ...fundingIntent,
+        activationAuthorization: authorization,
+      }, 'funded')
+      throw new Error(isWalletRejection(err) ? 'Activation signature rejected. Review the funding summary and retry.' : 'Activation signature failed. Please retry.')
+    }
+
+    persistFundingIntent({
+      ...fundingIntent,
+      activationAuthorization: authorization,
+      activationSignature: signature,
+    }, 'activating')
+    const res = await fetch('/api/research/start', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        researchId: prepare.researchId,
+        fundingTxHash: fundingIntent.fundingTxHash,
+        fundingLogIndex: fundingIntent.fundingLogIndex,
+        activationAuthorization: authorization,
+        activationSignature: signature,
+      }),
+    })
+    if (res.status === 401) {
+      router.replace('/login?redirect=%2Fresearch')
+      throw new Error('Authentication expired. Please sign in again.')
+    }
+    const body = await res.json().catch(() => ({})) as { researchId?: string; status?: string; activationPhase?: string; error?: string }
+    if (!res.ok && res.status !== 202) throw new Error(startFailureMessage(res.status, body.error))
+    if (body.status === 'running' || body.activationPhase === 'active') {
+      persistFundingIntent(null)
+      onStarted(body.researchId ?? prepare.researchId, prepare.budgetUsdc)
+      return
+    }
+    persistFundingIntent({
+      ...fundingIntent,
+      activationAuthorization: authorization,
+      activationSignature: signature,
+    }, 'activating')
+  }
+
+  async function switchToPreparedChain() {
+    if (!fundingIntent) return
+    try {
+      await switchChainAsync({ chainId: fundingIntent.prepare.chainId })
+    } finally {
+      setError('Wallet, session, chain, or voucher changed. Switch to Arc Testnet before continuing.')
+    }
+  }
+
+  async function legacyStart() {
+    const res = await fetch('/api/research/start', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ topic, budgetUsdc: budget }),
+    })
+    if (res.status === 429) {
+      const body = await res.json() as { quota?: QuotaStatus }
+      if (body.quota) setQuota(body.quota)
+      const resetAt = body.quota?.wallet.resetAt ?? quota?.wallet.resetAt ?? new Date().toISOString()
+      throw new Error(`Quota exceeded. Resets in ${resetIn(resetAt)}.`)
+    }
+    if (res.status === 401) {
+      router.replace('/login?redirect=%2Fresearch')
+      throw new Error('Authentication expired. Please sign in again.')
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { error?: string }
+      throw new Error(startFailureMessage(res.status, body.error))
+    }
+    const body = await res.json() as { researchId: string }
+    onStarted(body.researchId, budget)
+  }
+
   async function submit() {
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     setError(null)
     setSubmitting(true)
     try {
-      const res = await fetch('/api/research/start', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ topic, budgetUsdc: budget }),
-      })
-      if (res.status === 429) {
-        const body = await res.json() as { quota?: QuotaStatus }
-        if (body.quota) setQuota(body.quota)
-        const resetAt = body.quota?.wallet.resetAt ?? quota?.wallet.resetAt ?? new Date().toISOString()
-        throw new Error(`Quota exceeded. Resets in ${resetIn(resetAt)}.`)
+      const config = await getBackendConfig()
+      if (config.settlementBackend === 'escrow' && config.fundingUiEnabled) {
+        await prepareEscrowResearch()
+      } else {
+        await legacyStart()
       }
-      if (res.status === 401) {
-        router.replace('/login?redirect=%2Fresearch')
-        throw new Error('Authentication expired. Please sign in again.')
-      }
-      if (!res.ok) throw new Error(`START_FAILED_${res.status}`)
-      const body = await res.json() as { researchId: string }
-      onStarted(body.researchId, budget)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'START_FAILED')
     } finally {
+      inFlightRef.current = false
       setSubmitting(false)
     }
   }
+
+  async function runFundingAction(action: () => Promise<void>) {
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    setError(null)
+    setSubmitting(true)
+    try {
+      await action()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'FUNDING_ACTION_FAILED')
+    } finally {
+      inFlightRef.current = false
+      setSubmitting(false)
+    }
+  }
+
+  const preparedChainMismatch = Boolean(fundingIntent && chainId !== fundingIntent.prepare.chainId)
+  const fundingAction = fundingIntent ? (
+    <div className="grid gap-2">
+      {preparedChainMismatch ? (
+        <button
+          type="button"
+          onClick={() => runFundingAction(switchToPreparedChain)}
+          disabled={isSubmitting}
+          className="terminal-button h-11 w-full border-red px-4 text-sm text-red disabled:border-red disabled:text-red"
+        >
+          [SWITCH TO ARC TESTNET]
+        </button>
+      ) : fundingStep === 'needs_approve' ? (
+        <button
+          type="button"
+          onClick={() => runFundingAction(approveUsdc)}
+          disabled={isSubmitting}
+          className="terminal-button h-11 w-full px-4 text-sm"
+        >
+          {isSubmitting ? '[APPROVING...]' : '[APPROVE USDC]'}
+        </button>
+      ) : fundingStep === 'needs_create' || fundingStep === 'prepared' ? (
+        <button
+          type="button"
+          onClick={() => runFundingAction(createAndFundEscrow)}
+          disabled={isSubmitting}
+          className="terminal-button h-11 w-full px-4 text-sm"
+        >
+          {isSubmitting ? '[FUNDING...]' : '[CREATE AND FUND ESCROW]'}
+        </button>
+      ) : fundingStep === 'funded' || fundingStep === 'signing_activation' ? (
+        <button
+          type="button"
+          onClick={() => runFundingAction(signActivationAndStart)}
+          disabled={isSubmitting}
+          className="terminal-button h-11 w-full bg-amber px-4 text-sm text-bg-base hover:bg-bg-base hover:text-amber"
+        >
+          {isSubmitting ? '[SIGNING ACTIVATION...]' : '[SIGN ACTIVATION]'}
+        </button>
+      ) : fundingStep === 'activating' ? (
+        <div className="border border-cyan bg-bg-base px-3 py-3 font-mono text-[11px] uppercase tracking-[0.05em] text-cyan blink">
+          ACTIVATING ON CHAIN — refresh-safe; the same activation operation will continue.
+        </div>
+      ) : null}
+    </div>
+  ) : null
 
   return (
     <section className="mx-auto w-full max-w-[640px] border border-border bg-bg-panel">
@@ -304,6 +968,7 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
           <div className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-amber">BUDGET</div>
           <div className="grid gap-3 md:grid-cols-[150px_1fr] md:items-center">
             <input
+              aria-label="Budget USDC"
               value={budget}
               onChange={(event) => setBudget(event.target.value)}
               className="h-11 border border-border bg-bg-base px-3 font-mono text-sm font-bold tabular-nums text-amber outline-none focus:border-amber"
@@ -311,6 +976,7 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
             <div className="flex items-center gap-3 font-mono text-[11px] text-text-muted">
               <span>$0.001</span>
               <input
+                aria-label="Budget slider"
                 type="range"
                 min="0.001"
                 max="0.1"
@@ -328,17 +994,30 @@ function ResearchForm({ onStarted }: { onStarted: (id: string, budget: string) =
         </div>
 
         <QuotaPanel quota={quota} />
+        <FundingPanel
+          enabled={escrowFundingEnabled}
+          intent={fundingIntent}
+          step={fundingStep}
+          restored={restoredFundingIntent}
+        />
+        {fundingAction}
 
-        <button
-          type="button"
-          onClick={submit}
-          disabled={isSubmitting || !topic.trim() || Boolean(quotaReason)}
-          title={quotaReason ? `${quotaReason}. Resets in ${resetIn(quota?.wallet.resetAt ?? new Date().toISOString())}.` : undefined}
-          className="terminal-button h-12 w-full bg-amber px-4 text-sm text-bg-base hover:bg-bg-base hover:text-amber disabled:border-red disabled:bg-bg-cell disabled:text-red"
-        >
-          {quotaReason ? '[ QUOTA EXCEEDED ]' : isSubmitting ? '[ STARTING... ]' : '[ ▸ START RESEARCH ]'}
-        </button>
-        {error ? <div className="font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-red">[ERR] {error}</div> : null}
+        {!fundingIntent ? (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={isSubmitting || !topic.trim() || Boolean(quotaReason)}
+            title={quotaReason ? `${quotaReason}. Resets in ${resetIn(quota?.wallet.resetAt ?? new Date().toISOString())}.` : undefined}
+            className="terminal-button h-12 w-full bg-amber px-4 text-sm text-bg-base hover:bg-bg-base hover:text-amber disabled:border-red disabled:bg-bg-cell disabled:text-red"
+          >
+            {quotaReason ? '[ QUOTA EXCEEDED ]' : isSubmitting ? '[ STARTING... ]' : '[ ▸ START RESEARCH ]'}
+          </button>
+        ) : null}
+        {error ? (
+          <div role="alert" className="font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-red">
+            [ERR] {error}
+          </div>
+        ) : null}
       </div>
     </section>
   )

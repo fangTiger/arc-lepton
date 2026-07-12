@@ -49,6 +49,7 @@ describe('mergeTxLogIntoEvents', () => {
         requestId: 'req-news',
         errorMessage: null,
         createdAt: '2026-07-03T00:00:00.000Z',
+        ...emptyIntentSnapshot(),
       },
     ]
 
@@ -106,6 +107,7 @@ describe('mergeTxLogIntoEvents', () => {
         requestId: 'req-news',
         errorMessage: null,
         createdAt: '2026-07-03T00:00:00.000Z',
+        ...emptyIntentSnapshot(),
       },
       {
         id: 'tx-failed',
@@ -120,6 +122,7 @@ describe('mergeTxLogIntoEvents', () => {
         requestId: 'req-failed',
         errorMessage: 'RPC timeout',
         createdAt: '2026-07-03T00:00:01.000Z',
+        ...emptyIntentSnapshot(),
       },
       {
         id: 'tx-pending-no-request',
@@ -134,6 +137,7 @@ describe('mergeTxLogIntoEvents', () => {
         requestId: null,
         errorMessage: null,
         createdAt: '2026-07-03T00:00:02.000Z',
+        ...emptyIntentSnapshot(),
       },
     ]
 
@@ -176,4 +180,79 @@ describe('mergeTxLogIntoEvents', () => {
       events[1],
     ])
   })
+
+  it('does not overlay unreconciled escrow broadcast txHash onto payment events', () => {
+    const events: AgentEvent[] = [
+      {
+        type: 'tool_result',
+        callId: 'call-news',
+        name: 'news',
+        payment: {
+          amount: '0.0003',
+          txHash: null,
+          txStatus: 'pending',
+          chainId: null,
+          blockNumber: null,
+          requestId: 'req-news',
+        },
+        dataPreview: '{}',
+      },
+    ]
+    const txLog: TxLogRecord[] = [
+      {
+        id: 'tx-news',
+        address: '0xabc',
+        source: 'news',
+        amount: '0.0003',
+        txHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        txStatus: 'pending',
+        chainId: 5_042_002,
+        blockNumber: '999',
+        settlementId: 'settlement-pending',
+        requestId: 'req-news',
+        errorMessage: null,
+        createdAt: '2026-07-03T00:00:00.000Z',
+        ...emptyIntentSnapshot(),
+        backend: 'escrow',
+        operationPhase: 'broadcasting',
+        operationTxHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      },
+    ]
+
+    const merged = researchTypes.mergeTxLogIntoEvents(events, txLog)
+
+    expect(merged[0]).toMatchObject({
+      type: 'tool_result',
+      payment: {
+        requestId: 'req-news',
+        txStatus: 'pending',
+        txHash: null,
+        chainId: null,
+        blockNumber: null,
+      },
+    })
+  })
 })
+
+function emptyIntentSnapshot() {
+  return {
+    backend: null,
+    version: null,
+    paymentIntentId: null,
+    toolOrdinal: null,
+    requestKey: null,
+    sourceId: null,
+    amountUnits: null,
+    registryRevision: null,
+    expectedPayout: null,
+    maxUnitPrice: null,
+    registryReadBlock: null,
+    payloadHash: null,
+    escrowAddress: null,
+    researchKey: null,
+    operationPhase: null,
+    operationTxHash: null,
+    operationBlockNumber: null,
+    escrow: null,
+  }
+}

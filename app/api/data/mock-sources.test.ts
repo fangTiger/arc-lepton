@@ -51,9 +51,30 @@ const mockStore = vi.hoisted(() => {
 
   return {
     entries,
+    recordArcReceipt: vi.fn(async (input: { requestId: string }) => {
+      counter += 1
+      const txHash = `0x${counter.toString(16).padStart(64, '0')}`
+      if (process.env.ARC_RECEIPT_MODE?.trim().toLowerCase() === 'arc') {
+        return {
+          txHash,
+          txStatus: 'confirmed' as const,
+          chainId: 5_042_002,
+          blockNumber: '123456',
+          requestId: input.requestId,
+        }
+      }
+      return {
+        txHash,
+        txStatus: 'mock' as const,
+        chainId: null,
+        blockNumber: null,
+        requestId: input.requestId,
+      }
+    }),
     reset() {
       counter = 0
       entries.length = 0
+      this.recordArcReceipt.mockClear()
     },
     txLogRepo: {
       async record(entry: Parameters<typeof createEntry>[0]) {
@@ -113,18 +134,34 @@ vi.mock('@/lib/db', () => ({
   txLogRepo: mockStore.txLogRepo,
 }))
 
+vi.mock('@/lib/chain/arc-receipt', () => ({
+  recordArcReceipt: mockStore.recordArcReceipt,
+}))
+
 beforeAll(() => {
   process.env.JWT_SECRET = 'test-secret-test-secret-test-secret-32b'
 })
 
 beforeEach(() => {
   mockStore.reset()
+  delete process.env.ARC_RECEIPT_MODE
+  delete process.env.ARC_RESEARCH_SETTLEMENT_BACKEND
 })
 
 async function authedRequest(path: string) {
   const jwt = await signSessionJwt('0xAbCdEf000000000000000000000000000000C1d3')
   return new Request(`http://localhost${path}`, {
     headers: { cookie: `arc_session=${jwt}` },
+  })
+}
+
+async function authedRequestWithHeaders(path: string, headers: Record<string, string>) {
+  const jwt = await signSessionJwt('0xAbCdEf000000000000000000000000000000C1d3')
+  return new Request(`http://localhost${path}`, {
+    headers: {
+      cookie: `arc_session=${jwt}`,
+      ...headers,
+    },
   })
 }
 
@@ -188,5 +225,40 @@ describe('mock data sources', () => {
 
     expect(res.status).toBe(404)
     expect(mockStore.entries).toHaveLength(0)
+  })
+
+  it('keeps direct ARC receipt mode on the legacy path even when research escrow backend is enabled', async () => {
+    process.env.ARC_RECEIPT_MODE = 'arc'
+    process.env.ARC_RESEARCH_SETTLEMENT_BACKEND = 'escrow'
+    const { GET } = await import('./[name]/route')
+
+    const res = await GET(
+      await authedRequestWithHeaders('/api/data/sentiment?token=PEPE', { 'Idempotency-Key': 'direct-arc-receipt-1' }),
+      { params: { name: 'sentiment' } },
+    )
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('X-Payment-Tx-Status')).toBe('confirmed')
+    expect(body.payment).toMatchObject({
+      amount: '0.0001',
+      source: 'sentiment',
+      txStatus: 'confirmed',
+      chainId: 5_042_002,
+      blockNumber: '123456',
+    })
+    expect(mockStore.recordArcReceipt).toHaveBeenCalledWith(expect.objectContaining({
+      source: 'sentiment',
+      amount: '0.0001',
+      requestId: expect.any(String),
+      researchId: undefined,
+    }))
+    expect(mockStore.entries).toHaveLength(1)
+    expect(mockStore.entries[0]).toMatchObject({
+      researchId: null,
+      txStatus: 'confirmed',
+      chainId: 5_042_002,
+      blockNumber: '123456',
+    })
   })
 })

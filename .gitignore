@@ -32,8 +32,9 @@ contracts/.env.seeds
 log/
 *.log
 
-# AI Lens local cache
-cache/lens.json
+# 本地工具/任务缓存
+cache/
+.devos/
 
 # 系统
 .DS_Store

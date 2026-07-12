@@ -7,9 +7,29 @@ import { ResearchDetailClient } from './ResearchDetailClient'
 const routerPush = vi.fn()
 const routerReplace = vi.fn()
 const fetchMock = vi.fn()
+const walletMocks = vi.hoisted(() => ({
+  account: '0xabcdef000000000000000000000000000000c1d3',
+  chainId: 5_042_002,
+  sessionAddress: '0xabcdef000000000000000000000000000000c1d3',
+  switchChainAsync: vi.fn(),
+  waitForTransactionReceipt: vi.fn(),
+  writeContractAsync: vi.fn(),
+}))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: routerPush, replace: routerReplace }),
+}))
+
+vi.mock('wagmi', () => ({
+  useAccount: () => ({ address: walletMocks.account }),
+  useChainId: () => walletMocks.chainId,
+  usePublicClient: () => ({ waitForTransactionReceipt: walletMocks.waitForTransactionReceipt }),
+  useSwitchChain: () => ({ switchChainAsync: walletMocks.switchChainAsync }),
+  useWriteContract: () => ({ writeContractAsync: walletMocks.writeContractAsync }),
+}))
+
+vi.mock('@/hooks/useUser', () => ({
+  useUser: () => ({ address: walletMocks.sessionAddress, isAuthed: !!walletMocks.sessionAddress, isLoading: false }),
 }))
 
 vi.mock('@/components/research/TerminalMarkdown', () => ({
@@ -19,7 +39,14 @@ vi.mock('@/components/research/TerminalMarkdown', () => ({
 describe('ResearchDetailClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    walletMocks.account = '0xabcdef000000000000000000000000000000c1d3'
+    walletMocks.chainId = 5_042_002
+    walletMocks.sessionAddress = '0xabcdef000000000000000000000000000000c1d3'
+    walletMocks.switchChainAsync.mockResolvedValue(undefined)
+    walletMocks.waitForTransactionReceipt.mockResolvedValue({ transactionHash: '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' })
+    walletMocks.writeContractAsync.mockResolvedValue('0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc')
     process.env.NEXT_PUBLIC_ARC_EXPLORER_URL = 'https://arc.example'
+    process.env.NEXT_PUBLIC_ARC_CHAIN_ID = '5042002'
     window.history.replaceState({}, '', '/research/research-1')
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
@@ -116,6 +143,101 @@ describe('ResearchDetailClient', () => {
     vi.stubGlobal('fetch', fetchMock)
   })
 
+  function escrowDetailResponse(overrides: Record<string, unknown> = {}) {
+    return {
+      research: {
+        id: 'research-1',
+        address: '0xabcdef000000000000000000000000000000c1d3',
+        topic: 'SHOULD I BUY PEPE?',
+        budgetUsdc: '1.00',
+        budgetUnits: '1000000',
+        spentUsdc: '0',
+        status: 'funding',
+        activationPhase: 'funded',
+        finalizationState: 'none',
+        quotaReservationState: 'reserved',
+        prepareRequestId: 'idem-1',
+        buyer: '0xabcdef000000000000000000000000000000c1d3',
+        researchKey: `0x${'aa'.repeat(32)}`,
+        expectedEscrowAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        escrowAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        reportMd: null,
+        errorMessage: null,
+        createdAt: '2026-07-11T00:00:00.000Z',
+        preparedAt: '2026-07-11T00:00:00.000Z',
+        fundingExpiresAt: '2026-07-11T00:15:00.000Z',
+        expectedExpiresAt: '2026-07-12T00:00:00.000Z',
+        fundingDeadline: '2026-07-11T00:15:00.000Z',
+        intentSigner: '0x5555555555555555555555555555555555555555',
+        voucherNonce: '7',
+        quotaDate: '2026-07-11',
+        cancelRequestedAt: null,
+        chainId: 5_042_002,
+        startedAt: null,
+        completedAt: null,
+        ...overrides,
+      },
+      escrowConfig: {
+        chainId: 5_042_002,
+        factory: '0x3333333333333333333333333333333333333333',
+        usdc: '0x3600000000000000000000000000000000000000',
+        explorerBase: 'https://arc.example',
+      },
+      txLog: [
+        {
+          id: 'tx-escrow',
+          address: '0xabcdef000000000000000000000000000000c1d3',
+          source: 'news',
+          amount: '0.0003',
+          txHash: null,
+          txStatus: 'pending',
+          chainId: null,
+          blockNumber: null,
+          settlementId: 'settlement-1',
+          requestId: 'req-escrow',
+          backend: 'escrow',
+          version: 1,
+          paymentIntentId: 'intent-1',
+          toolOrdinal: 1,
+          requestKey: `0x${'01'.repeat(32)}`,
+          sourceId: `0x${'02'.repeat(32)}`,
+          amountUnits: '300',
+          registryRevision: '7',
+          expectedPayout: '0xf000000000000000000000000000000000000001',
+          maxUnitPrice: '300',
+          registryReadBlock: '123',
+          payloadHash: `0x${'03'.repeat(32)}`,
+          escrowAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          researchKey: `0x${'aa'.repeat(32)}`,
+          operationPhase: 'broadcasting',
+          operationTxHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          operationBlockNumber: '999',
+          escrow: {
+            operationKey: 'SETTLE:research-1',
+            operationPhase: 'broadcasting',
+            operationTxHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            operationBlockNumber: '999',
+            operationLastError: null,
+            confirmed: false,
+            settlementId: 'settlement-1',
+            researchKey: `0x${'aa'.repeat(32)}`,
+            escrowAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            requestKey: `0x${'01'.repeat(32)}`,
+            sourceId: `0x${'02'.repeat(32)}`,
+            amountUnits: '300',
+            registryRevision: '7',
+            expectedPayout: '0xf000000000000000000000000000000000000001',
+            maxUnitPrice: '300',
+            registryReadBlock: '123',
+            payloadHash: `0x${'03'.repeat(32)}`,
+          },
+          errorMessage: null,
+          createdAt: '2026-07-11T00:03:00.000Z',
+        },
+      ],
+    }
+  }
+
   it('offers a way back to the current session and to research history', async () => {
     render(createElement(ResearchDetailClient, { id: 'research-1' }))
 
@@ -144,6 +266,83 @@ describe('ResearchDetailClient', () => {
     render(createElement(ResearchDetailClient, { id: 'research-1' }))
 
     expect(await screen.findByText(/\$0\.0012 USDC \(2 calls\)/i)).toBeInTheDocument()
+  })
+
+  it('separates escrow status, finalization, budget, addresses, and operation evidence', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/follow-ups')) return Response.json({ followUps: [] })
+      return Response.json(escrowDetailResponse())
+    })
+
+    render(createElement(ResearchDetailClient, { id: 'research-1' }))
+
+    expect(await screen.findByText(/escrow evidence/i)).toBeInTheDocument()
+    expect(screen.getByText('RESEARCH STATUS')).toBeInTheDocument()
+    expect(screen.getByText('funding')).toBeInTheDocument()
+    expect(screen.getByText('ACTIVATION PHASE')).toBeInTheDocument()
+    expect(screen.getByText('funded')).toBeInTheDocument()
+    expect(screen.getByText('FINALIZATION STATE')).toBeInTheDocument()
+    expect(screen.getAllByText('none').length).toBeGreaterThan(0)
+    expect(screen.getByText('ESCROW STATE')).toBeInTheDocument()
+    expect(screen.getByText('Funded')).toBeInTheDocument()
+    expect(screen.getByText('$1.00 USDC')).toBeInTheDocument()
+    expect(screen.getByText('1000000 units')).toBeInTheDocument()
+    expect(screen.getByText('OFFICIAL USDC')).toBeInTheDocument()
+    expect(screen.getByText('FACTORY')).toBeInTheDocument()
+    expect(screen.getByText('EXPECTED ESCROW')).toBeInTheDocument()
+    expect(screen.getByText('ACTUAL ESCROW')).toBeInTheDocument()
+    expect(screen.getByText('broadcasting')).toBeInTheDocument()
+    expect(screen.getByText('block 999')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /\[cancel funded escrow\]/i })).toBeInTheDocument()
+  })
+
+  it('broadcasts cancelUnactivated from the buyer wallet for a Funded escrow', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/follow-ups')) return Response.json({ followUps: [] })
+      return Response.json(escrowDetailResponse())
+    })
+
+    render(createElement(ResearchDetailClient, { id: 'research-1' }))
+
+    const cancelButton = await screen.findByRole('button', { name: /\[cancel funded escrow\]/i })
+    fireEvent.click(cancelButton)
+    fireEvent.click(cancelButton)
+
+    await waitFor(() => {
+      expect(walletMocks.writeContractAsync).toHaveBeenCalledWith(expect.objectContaining({
+        address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        functionName: 'cancelUnactivated',
+      }))
+    })
+    expect(walletMocks.writeContractAsync).toHaveBeenCalledTimes(1)
+    expect(walletMocks.waitForTransactionReceipt).toHaveBeenCalledWith({
+      hash: '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+    })
+    expect(await screen.findByText(/\[cancel tx confirmed\]/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /0xcccc\.\.\.cccc/i })).toHaveAttribute(
+      'href',
+      'https://arc.example/tx/0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+    )
+  })
+
+  it('does not offer buyer cancelUnactivated once the escrow is Active', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/follow-ups')) return Response.json({ followUps: [] })
+      return Response.json(escrowDetailResponse({
+        status: 'running',
+        activationPhase: 'active',
+        finalizationState: 'open',
+      }))
+    })
+
+    render(createElement(ResearchDetailClient, { id: 'research-1' }))
+
+    expect(await screen.findByText(/escrow evidence/i)).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /\[cancel funded escrow\]/i })).not.toBeInTheDocument()
   })
 
   it('shows a follow-up entry point with an empty state', async () => {

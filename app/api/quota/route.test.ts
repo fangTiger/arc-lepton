@@ -16,8 +16,9 @@ beforeAll(() => {
 beforeEach(() => {
   vi.clearAllMocks()
   mockQuota.getQuotaStatus.mockResolvedValue({
-    wallet: { used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
-    global: { used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+    wallet: { consumed: 3, reserved: 1, used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
+    global: { consumed: 60, reserved: 7, used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+    backend: 'postgres',
   })
 })
 
@@ -46,8 +47,9 @@ describe('GET /api/quota', () => {
     expect(res.status).toBe(200)
     expect(mockQuota.getQuotaStatus).toHaveBeenCalledWith('0xabcdef000000000000000000000000000000c1d3')
     expect(body).toEqual({
-      wallet: { used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
-      global: { used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+      wallet: { consumed: 3, reserved: 1, used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
+      global: { consumed: 60, reserved: 7, used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+      backend: 'postgres',
     })
   })
 })

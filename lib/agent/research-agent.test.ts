@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockState = vi.hoisted(() => {
+  type MockResearchRecord = {
+    spentUsdc: string
+    budgetUsdc?: string
+    status: string
+    activationPhase?: string
+    finalizationState?: string
+    cancelRequestedAt?: Date | null
+    expectedExpiresAt?: Date | null
+    reportMd: string | null
+    errorMessage: string | null
+  }
   const paymentEntries: Array<{
     address: string
     source: string
@@ -13,10 +24,28 @@ const mockState = vi.hoisted(() => {
     errorMessage: string | null
   }> = []
   const paymentReceiptCalls: Array<{ address: string; source: string; amount: string; requestId?: string; researchId?: string; signal?: AbortSignal }> = []
-  const researchPaymentIntentCalls: Array<{ address: string; source: string; amount: string; requestId?: string; researchId?: string; signal?: AbortSignal }> = []
+  const researchPaymentIntentCalls: Array<{
+    address: string
+    source: string
+    amount: string
+    requestId?: string
+    researchId?: string
+    paymentIntentId?: string
+    toolOrdinal?: number
+    researchKey?: string
+    escrowAddress?: string
+    registryRevision?: string
+    expectedPayout?: string
+    maxUnitPrice?: string
+    registryReadBlock?: string
+    payload?: unknown
+    signal?: AbortSignal
+  }> = []
+  const dataSourceCalls: Array<{ source: string; token: string }> = []
+  const sideEffectOrder: string[] = []
   const settlementCalls: Array<{ address: string; researchId: string }> = []
   const appendSpentEntries: Array<{ id: string; deltaUsdc: string }> = []
-  const researchRecords = new Map<string, { spentUsdc: string; status: string; reportMd: string | null; errorMessage: string | null }>()
+  const researchRecords = new Map<string, MockResearchRecord>()
   let txCounter = 0
   let nonStreamCalls = 0
   let failPayment = false
@@ -38,6 +67,15 @@ const mockState = vi.hoisted(() => {
         amount: string
         requestId?: string
         researchId?: string
+        paymentIntentId?: string
+        toolOrdinal?: number
+        researchKey?: string
+        escrowAddress?: string
+        registryRevision?: string
+        expectedPayout?: string
+        maxUnitPrice?: string
+        registryReadBlock?: string
+        payload?: unknown
         signal?: AbortSignal
       }) => Promise<{
         id: string
@@ -130,11 +168,15 @@ const mockState = vi.hoisted(() => {
     makeToolCall,
     paymentEntries,
     appendSpentEntries,
+    dataSourceCalls,
+    sideEffectOrder,
     researchRecords,
     reset() {
       paymentEntries.length = 0
       paymentReceiptCalls.length = 0
       researchPaymentIntentCalls.length = 0
+      dataSourceCalls.length = 0
+      sideEffectOrder.length = 0
       settlementCalls.length = 0
       appendSpentEntries.length = 0
       researchRecords.clear()
@@ -198,9 +240,19 @@ const mockState = vi.hoisted(() => {
         amount: string
         requestId?: string
         researchId?: string
+        paymentIntentId?: string
+        toolOrdinal?: number
+        researchKey?: string
+        escrowAddress?: string
+        registryRevision?: string
+        expectedPayout?: string
+        maxUnitPrice?: string
+        registryReadBlock?: string
+        payload?: unknown
         signal?: AbortSignal
       }) {
         researchPaymentIntentCalls.push(entry)
+        sideEffectOrder.push(`intent:${entry.source}`)
         if (paymentRecorderImpl) return paymentRecorderImpl(entry)
         if (failPayment) {
           throw Object.assign(new Error('ARC receipt failed'), { code: 'PAYMENT_INTENT_FAILED' })
@@ -215,7 +267,7 @@ const mockState = vi.hoisted(() => {
           txStatus: 'pending' as const,
           chainId: null,
           blockNumber: null,
-          requestId: entry.requestId ?? `call-${txCounter}`,
+          requestId: entry.paymentIntentId ?? entry.requestId ?? `call-${txCounter}`,
           errorMessage: null,
           createdAt: new Date('2026-06-25T00:00:00.000Z'),
         }
@@ -266,9 +318,15 @@ const mockState = vi.hoisted(() => {
           id,
           address: '0xabc',
           topic: 'SHOULD I BUY PEPE?',
-          budgetUsdc: '0.01',
+          budgetUsdc: record.budgetUsdc ?? '0.01',
           spentUsdc: record.spentUsdc,
           status: record.status,
+          activationPhase: record.activationPhase ?? 'active',
+          finalizationState: record.finalizationState ?? 'open',
+          cancelRequestedAt: record.cancelRequestedAt ?? null,
+          expectedExpiresAt: Object.prototype.hasOwnProperty.call(record, 'expectedExpiresAt')
+            ? record.expectedExpiresAt ?? null
+            : new Date(Date.now() + 24 * 60 * 60 * 1000),
           reportMd: record.reportMd,
           errorMessage: record.errorMessage,
           startedAt: new Date('2026-06-25T00:00:00.000Z'),
@@ -277,17 +335,17 @@ const mockState = vi.hoisted(() => {
       },
       async appendSpent(id: string, deltaUsdc: string) {
         appendSpentEntries.push({ id, deltaUsdc })
-        const record = researchRecords.get(id) ?? { spentUsdc: '0', status: 'running', reportMd: null, errorMessage: null }
+        const record = researchRecords.get(id) ?? runningResearchRecord()
         record.spentUsdc = (Number(record.spentUsdc) + Number(deltaUsdc)).toFixed(4)
         researchRecords.set(id, record)
       },
       async setReport(id: string, reportMd: string) {
-        const record = researchRecords.get(id) ?? { spentUsdc: '0', status: 'running', reportMd: null, errorMessage: null }
+        const record = researchRecords.get(id) ?? runningResearchRecord()
         record.reportMd = reportMd
         researchRecords.set(id, record)
       },
       async completeIfRunning(id: string, reportMd: string) {
-        const record = researchRecords.get(id) ?? { spentUsdc: '0', status: 'running', reportMd: null, errorMessage: null }
+        const record = researchRecords.get(id) ?? runningResearchRecord()
         if (cancelBeforeComplete) {
           record.status = 'cancelled'
           record.errorMessage = 'Research cancelled'
@@ -301,7 +359,7 @@ const mockState = vi.hoisted(() => {
         return true
       },
       async updateStatusIfCurrent(id: string, expectedStatus: string, status: string, errorMessage?: string) {
-        const record = researchRecords.get(id) ?? { spentUsdc: '0', status: 'running', reportMd: null, errorMessage: null }
+        const record = researchRecords.get(id) ?? runningResearchRecord()
         if (completeBeforeFailureStatusUpdate) {
           completeBeforeFailureStatusUpdate = false
           record.status = 'completed'
@@ -322,12 +380,27 @@ const mockState = vi.hoisted(() => {
         return true
       },
       async updateStatus(id: string, status: string, errorMessage?: string) {
-        const record = researchRecords.get(id) ?? { spentUsdc: '0', status: 'running', reportMd: null, errorMessage: null }
+        const record = researchRecords.get(id) ?? runningResearchRecord()
         record.status = status
         record.errorMessage = errorMessage ?? null
         researchRecords.set(id, record)
       },
     },
+  }
+
+  function runningResearchRecord(overrides: Partial<MockResearchRecord> = {}): MockResearchRecord {
+    return {
+      spentUsdc: '0',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'open',
+      cancelRequestedAt: null,
+      expectedExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      reportMd: null,
+      errorMessage: null,
+      ...overrides,
+    }
   }
 })
 
@@ -338,6 +411,14 @@ vi.mock('@/lib/llm/deepseek', () => ({
 
 vi.mock('@/lib/db', () => ({
   researchRepo: mockState.researchRepo,
+}))
+
+vi.mock('@/lib/data/mock-sources', () => ({
+  buildKlinePatternData: (token: string) => mockDataSource('kline-pattern', token),
+  buildNewsData: (token: string) => mockDataSource('news', token),
+  buildSentimentData: (token: string) => mockDataSource('sentiment', token),
+  buildTwitterSignalsData: (token: string) => mockDataSource('twitter-signals', token),
+  buildWhaleWatchData: (token: string) => mockDataSource('whale-watch', token),
 }))
 
 vi.mock('@/lib/x402/payment-recorder', () => ({
@@ -382,11 +463,302 @@ async function collectEventsWithOptions(opts?: { budgetUsdc?: string; signal?: A
   return events
 }
 
+async function collectEscrowEvents() {
+  const { runResearchAgent } = await import('./research-agent')
+  const events = []
+  if (!mockState.researchRecords.has('research-1')) {
+    mockState.researchRecords.set('research-1', {
+      spentUsdc: '0',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'open',
+      cancelRequestedAt: null,
+      reportMd: null,
+      errorMessage: null,
+    })
+  }
+  for await (const event of runResearchAgent({
+    researchId: 'research-1',
+    address: '0xabc',
+    topic: 'SHOULD I BUY PEPE?',
+    budgetUsdc: '0.01',
+    escrowPayment: escrowPaymentContext(),
+  } as never)) {
+    events.push(event)
+  }
+  return events
+}
+
+function mockDataSource(source: string, token: string) {
+  mockState.dataSourceCalls.push({ source, token })
+  mockState.sideEffectOrder.push(`data:${source}`)
+  return { source, token, snapshot: 'mock-data' }
+}
+
+function escrowPaymentContext() {
+  return {
+    researchKey: `0x${'42'.repeat(32)}`,
+    escrowAddress: '0x4444444444444444444444444444444444444444',
+    registrySnapshots: {
+      sentiment: {
+        registryRevision: '7',
+        expectedPayout: '0x5555555555555555555555555555555555555555',
+        maxUnitPrice: '100',
+        registryReadBlock: '1999998700',
+      },
+    },
+  }
+}
+
+function runningEscrowRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    spentUsdc: '0',
+    budgetUsdc: '0.01',
+    status: 'running',
+    activationPhase: 'active',
+    finalizationState: 'open',
+    cancelRequestedAt: null,
+    expectedExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    reportMd: null,
+    errorMessage: null,
+    ...overrides,
+  }
+}
+
 function mergedReportChunks(events: Array<{ type: string; delta?: string }>) {
   return events.filter((event) => event.type === 'report_chunk').map((event) => event.delta ?? '').join('')
 }
 
 describe('runResearchAgent', () => {
+  it('records a stable escrow payment intent snapshot before executing a paid data source', async () => {
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Use one source.',
+        tool_calls: [mockState.makeToolCall('volatile-llm-call-id', 'sentiment')],
+      },
+    ])
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toContainEqual({ type: 'tool_call', name: 'sentiment', args: { token: 'PEPE' }, callId: 'volatile-llm-call-id' })
+    expect(mockState.sideEffectOrder.slice(0, 2)).toEqual([
+      'intent:sentiment',
+      'data:sentiment',
+    ])
+    expect(mockState.dataSourceCalls).toEqual([{ source: 'sentiment', token: 'PEPE' }])
+    expect(mockState.researchPaymentIntentCalls[0]).toMatchObject({
+      address: '0xabc',
+      source: 'sentiment',
+      amount: '0.0001',
+      researchId: 'research-1',
+      paymentIntentId: expect.any(String),
+      toolOrdinal: 0,
+      researchKey: `0x${'42'.repeat(32)}`,
+      escrowAddress: '0x4444444444444444444444444444444444444444',
+      registryRevision: '7',
+      expectedPayout: '0x5555555555555555555555555555555555555555',
+      maxUnitPrice: '100',
+      registryReadBlock: '1999998700',
+      payload: {
+        tool: 'sentiment',
+        args: { token: 'PEPE' },
+      },
+    })
+    expect(mockState.researchPaymentIntentCalls[0]?.requestId).not.toBe('volatile-llm-call-id')
+    expect(mockState.researchPaymentIntentCalls[0]?.paymentIntentId).not.toBe('volatile-llm-call-id')
+  })
+
+  it('does not execute a paid data source when escrow payment intent persistence fails', async () => {
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Use one source.',
+        tool_calls: [mockState.makeToolCall('volatile-failing-call-id', 'sentiment')],
+      },
+    ])
+    mockState.setPaymentRecorderImpl(async () => {
+      throw Object.assign(new Error('intent persistence failed'), { code: 'INTENT_PERSISTENCE_FAILED' })
+    })
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([
+      { type: 'thinking', text: 'Use one source.' },
+      { type: 'tool_call', name: 'sentiment', args: { token: 'PEPE' }, callId: 'volatile-failing-call-id' },
+      { type: 'error', message: 'intent persistence failed' },
+    ])
+    expect(mockState.sideEffectOrder).toEqual(['intent:sentiment'])
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+    expect(events.some((event) => event.type === 'tool_result' || event.type === 'budget' || event.type === 'final')).toBe(false)
+  })
+
+  it('does not create an escrow payment intent once the research is closing', async () => {
+    mockState.researchRecords.set('research-1', {
+      spentUsdc: '0',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'closing',
+      cancelRequestedAt: null,
+      reportMd: null,
+      errorMessage: null,
+    })
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Use one source.',
+        tool_calls: [mockState.makeToolCall('closing-call-id', 'sentiment')],
+      },
+    ])
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([{ type: 'error', message: 'Escrow research is not open for new payment intents' }])
+    expect(mockState.client.chat.completions.create).not.toHaveBeenCalled()
+    expect(mockState.researchPaymentIntentCalls).toEqual([])
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+  })
+
+  it('does not reserve an escrow payment intent that would exceed the initial budget', async () => {
+    mockState.researchRecords.set('research-1', {
+      spentUsdc: '0.00995',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'open',
+      cancelRequestedAt: null,
+      reportMd: null,
+      errorMessage: null,
+    })
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Use one source.',
+        tool_calls: [mockState.makeToolCall('budget-call-id', 'sentiment')],
+      },
+    ])
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([
+      { type: 'thinking', text: 'Use one source.' },
+      { type: 'tool_call', name: 'sentiment', args: { token: 'PEPE' }, callId: 'budget-call-id' },
+      { type: 'error', message: 'Escrow budget reservation exceeds initial budget' },
+    ])
+    expect(mockState.researchPaymentIntentCalls).toEqual([])
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+  })
+
+  it('checks durable cancellation before the next LLM request in escrow mode', async () => {
+    mockState.researchRecords.set('research-1', {
+      spentUsdc: '0',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'open',
+      cancelRequestedAt: new Date('2026-07-11T06:05:00.000Z'),
+      reportMd: null,
+      errorMessage: null,
+    })
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'This LLM call should not happen.',
+        tool_calls: [mockState.makeToolCall('cancelled-before-llm', 'sentiment')],
+      },
+    ])
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([{ type: 'error', message: 'Research cancelled' }])
+    expect(mockState.client.chat.completions.create).not.toHaveBeenCalled()
+    expect(mockState.researchPaymentIntentCalls).toEqual([])
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+  })
+
+  it('stops before requesting tools when escrow expiry is inside the settlement safety window', async () => {
+    mockState.researchRecords.set('research-1', {
+      spentUsdc: '0',
+      budgetUsdc: '0.01',
+      status: 'running',
+      activationPhase: 'active',
+      finalizationState: 'open',
+      cancelRequestedAt: null,
+      expectedExpiresAt: new Date(Date.now() + 14 * 60 * 1000),
+      reportMd: null,
+      errorMessage: null,
+    })
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'This LLM call should not happen because expiry is too close.',
+        tool_calls: [mockState.makeToolCall('expiry-window-call', 'sentiment')],
+      },
+    ])
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([{ type: 'error', message: 'ESCROW_EXPIRY_SAFETY_WINDOW' }])
+    expect(mockState.client.chat.completions.create).not.toHaveBeenCalled()
+    expect(mockState.researchPaymentIntentCalls).toEqual([])
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+  })
+
+  it('checks durable cancellation after an escrow intent is persisted and before tool side effects', async () => {
+    mockState.setAssistantMessages([
+      {
+        role: 'assistant',
+        content: 'Use one source.',
+        tool_calls: [mockState.makeToolCall('cancel-after-intent', 'sentiment')],
+      },
+    ])
+    mockState.setPaymentRecorderImpl(async (entry) => {
+      mockState.researchRecords.set('research-1', runningEscrowRecord({
+        status: 'cancelled',
+        finalizationState: 'closing',
+        cancelRequestedAt: new Date('2026-07-11T06:06:00.000Z'),
+        errorMessage: 'Research cancelled',
+      }))
+      return {
+        id: 'tx-cancel-after-intent',
+        address: entry.address,
+        source: entry.source,
+        amount: entry.amount,
+        txHash: null,
+        txStatus: 'pending',
+        chainId: null,
+        blockNumber: null,
+        requestId: entry.paymentIntentId ?? 'cancel-after-intent',
+        errorMessage: null,
+        createdAt: new Date('2026-07-11T06:06:00.000Z'),
+      }
+    })
+
+    const events = await collectEscrowEvents()
+
+    expect(events).toEqual([
+      { type: 'thinking', text: 'Use one source.' },
+      { type: 'tool_call', name: 'sentiment', args: { token: 'PEPE' }, callId: 'cancel-after-intent' },
+      { type: 'error', message: 'Research cancelled' },
+    ])
+    expect(mockState.sideEffectOrder).toEqual(['intent:sentiment'])
+    expect(mockState.researchPaymentIntentCalls).toHaveLength(1)
+    expect(mockState.dataSourceCalls).toEqual([])
+    expect(mockState.appendSpentEntries).toEqual([])
+    await vi.waitFor(() => {
+      expect(mockState.settlementCalls).toEqual([
+        { address: '0xabc', researchId: 'research-1' },
+      ])
+    })
+  })
+
   it('runs tool calls, records payments, streams report chunks, and finalizes research', async () => {
     const events = await collectEvents('0.01')
     const reportText = mergedReportChunks(events)

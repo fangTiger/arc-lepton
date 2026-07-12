@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "name": "arc-lepton escrow amount conversion v1 vectors",
+  "units": {
+    "scale8Base": "100000000",
+    "erc20Decimals": 6,
+    "erc20Base": "1000000",
+    "nativeDecimals": 18,
+    "nativePerUnit6": "1000000000000",
+    "scale8PerUnit6": "100"
+  },
+  "valid": [
+    {
+      "label": "minimum non-zero unit",
+      "decimal": "0.000001",
+      "scale8": "100",
+      "units6": "1",
+      "native18": "1000000000000"
+    },
+    {
+      "label": "six decimal precision",
+      "decimal": "1.234567",
+      "scale8": "123456700",
+      "units6": "1234567",
+      "native18": "1234567000000000000"
+    },
+    {
+      "label": "whole unit",
+      "decimal": "1",
+      "scale8": "100000000",
+      "units6": "1000000",
+      "native18": "1000000000000000000"
+    }
+  ],
+  "invalid": {
+    "scale8": [
+      { "label": "zero", "value": "0", "reason": "ZERO_AMOUNT" },
+      { "label": "below unit6 precision", "value": "1", "reason": "SCALE8_TRUNCATION" },
+      { "label": "non-divisible scale8", "value": "101", "reason": "SCALE8_TRUNCATION" }
+    ],
+    "units6": [
+      { "label": "zero", "value": "0", "reason": "ZERO_AMOUNT" },
+      {
+        "label": "units6 to scale8 overflow",
+        "value": "1157920892373161954235709850086879078532699846656405640394575840079131296400",
+        "reason": "UINT256_OVERFLOW"
+      },
+      {
+        "label": "units6 to native18 overflow",
+        "value": "115792089237316195423570985008687907853269984665640564039457584008",
+        "reason": "UINT256_OVERFLOW"
+      }
+    ],
+    "native18": [
+      { "label": "zero", "value": "0", "reason": "ZERO_AMOUNT" },
+      { "label": "below unit6 precision", "value": "1", "reason": "NATIVE18_TRUNCATION" },
+      { "label": "non-divisible native18", "value": "1000000000001", "reason": "NATIVE18_TRUNCATION" }
+    ],
+    "decimal": [
+      { "label": "zero decimal", "value": "0", "reason": "ZERO_AMOUNT" },
+      { "label": "scale8 below unit6 precision", "value": "0.00000001", "reason": "SCALE8_TRUNCATION" },
+      { "label": "more than six decimals", "value": "1.23456789", "reason": "SCALE8_TRUNCATION" },
+      { "label": "exponent notation", "value": "1e-6", "reason": "NON_CANONICAL_DECIMAL" },
+      { "label": "negative", "value": "-1", "reason": "NON_CANONICAL_DECIMAL" }
+    ]
+  }
+}

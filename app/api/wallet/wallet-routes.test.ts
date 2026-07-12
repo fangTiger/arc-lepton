@@ -8,33 +8,73 @@ const mockStore = vi.hoisted(() => {
     address: string
     source: string
     amount: string
+    researchId: string | null
     txHash: string | null
     txStatus: 'mock' | 'pending' | 'confirmed' | 'failed'
     chainId: number | null
     blockNumber: string | null
     settlementId: string | null
     requestId: string
+    backend?: 'mock' | 'arc' | 'escrow' | null
+    version?: number | null
+    paymentIntentId?: string | null
+    toolOrdinal?: number | null
+    requestKey?: string | null
+    sourceId?: string | null
+    amountUnits?: string | null
+    registryRevision?: string | null
+    expectedPayout?: string | null
+    maxUnitPrice?: string | null
+    registryReadBlock?: string | null
+    payloadHash?: string | null
+    escrowAddress?: string | null
+    researchKey?: string | null
     errorMessage: string | null
     createdAt: Date
   }> = []
+  const operations = new Map<string, {
+    operationKey: string
+    type: 'SETTLE'
+    phase: 'queued' | 'running' | 'broadcasting' | 'reconciling' | 'succeeded' | 'failed' | 'manual'
+    txHash: string | null
+    chainId: number | null
+    blockNumber: string | null
+    lastError: string | null
+  }>()
 
   return {
     entries,
     reset() {
       counter = 0
       entries.length = 0
+      operations.clear()
     },
     txLogRepo: {
       async record(entry: {
         address: string
         source: string
         amount: string
+        researchId?: string | null
         txHash?: string | null
         txStatus?: 'mock' | 'pending' | 'confirmed' | 'failed'
         chainId?: number | null
         blockNumber?: string | null
         settlementId?: string | null
         requestId?: string
+        backend?: 'mock' | 'arc' | 'escrow' | null
+        version?: number | null
+        paymentIntentId?: string | null
+        toolOrdinal?: number | null
+        requestKey?: string | null
+        sourceId?: string | null
+        amountUnits?: string | null
+        registryRevision?: string | null
+        expectedPayout?: string | null
+        maxUnitPrice?: string | null
+        registryReadBlock?: string | null
+        payloadHash?: string | null
+        escrowAddress?: string | null
+        researchKey?: string | null
         errorMessage?: string | null
       }) {
         counter += 1
@@ -43,12 +83,27 @@ const mockStore = vi.hoisted(() => {
           address: entry.address,
           source: entry.source,
           amount: entry.amount,
+          researchId: entry.researchId ?? null,
           txHash: entry.txHash ?? (entry.txStatus === 'failed' ? null : `0x${counter.toString(16).padStart(64, '0')}`),
           txStatus: entry.txStatus ?? 'mock',
           chainId: entry.chainId ?? null,
           blockNumber: entry.blockNumber ?? null,
           settlementId: entry.settlementId ?? null,
           requestId: entry.requestId ?? `req-${counter}`,
+          backend: entry.backend ?? null,
+          version: entry.version ?? null,
+          paymentIntentId: entry.paymentIntentId ?? null,
+          toolOrdinal: entry.toolOrdinal ?? null,
+          requestKey: entry.requestKey ?? null,
+          sourceId: entry.sourceId ?? null,
+          amountUnits: entry.amountUnits ?? null,
+          registryRevision: entry.registryRevision ?? null,
+          expectedPayout: entry.expectedPayout ?? null,
+          maxUnitPrice: entry.maxUnitPrice ?? null,
+          registryReadBlock: entry.registryReadBlock ?? null,
+          payloadHash: entry.payloadHash ?? null,
+          escrowAddress: entry.escrowAddress ?? null,
+          researchKey: entry.researchKey ?? null,
           errorMessage: entry.errorMessage ?? null,
           createdAt: new Date(Date.UTC(2026, 5, 25, 0, counter, 0)),
         }
@@ -65,11 +120,34 @@ const mockStore = vi.hoisted(() => {
           .toFixed(4)
       },
     },
+    workflowOutboxRepo: {
+      async findByOperationKey(operationKey: string) {
+        return operations.get(operationKey) ?? null
+      },
+    },
+    setOperation(operation: {
+      operationKey: string
+      type: 'SETTLE'
+      phase: 'queued' | 'running' | 'broadcasting' | 'reconciling' | 'succeeded' | 'failed' | 'manual'
+      txHash?: string | null
+      chainId?: number | null
+      blockNumber?: string | null
+      lastError?: string | null
+    }) {
+      operations.set(operation.operationKey, {
+        txHash: null,
+        chainId: null,
+        blockNumber: null,
+        lastError: null,
+        ...operation,
+      })
+    },
   }
 })
 
 vi.mock('@/lib/db', () => ({
   txLogRepo: mockStore.txLogRepo,
+  workflowOutboxRepo: mockStore.workflowOutboxRepo,
 }))
 
 beforeAll(() => {
@@ -126,6 +204,65 @@ describe('wallet tx log APIs', () => {
       settlementId: 'settlement-1',
       requestId: 'req-confirmed',
       errorMessage: null,
+    })
+  })
+
+  it('keeps escrow operation broadcast facts separate from reconciled wallet payment facts', async () => {
+    await mockStore.txLogRepo.record({
+      address: '0xabcdef000000000000000000000000000000c1d3',
+      source: 'news',
+      amount: '0.0003',
+      researchId: 'research-escrow',
+      txHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      txStatus: 'pending',
+      chainId: 5_042_002,
+      blockNumber: '999',
+      settlementId: 'settlement-pending',
+      requestId: 'req-escrow-pending',
+      backend: 'escrow',
+      version: 1,
+      paymentIntentId: 'intent-1',
+      toolOrdinal: 1,
+      requestKey: `0x${'01'.repeat(32)}`,
+      sourceId: `0x${'02'.repeat(32)}`,
+      amountUnits: '300',
+      registryRevision: '7',
+      expectedPayout: '0xf000000000000000000000000000000000000001',
+      maxUnitPrice: '300',
+      registryReadBlock: '123',
+      payloadHash: `0x${'03'.repeat(32)}`,
+      escrowAddress: '0x4444444444444444444444444444444444444444',
+      researchKey: `0x${'04'.repeat(32)}`,
+    })
+    mockStore.setOperation({
+      operationKey: 'SETTLE:research-escrow',
+      type: 'SETTLE',
+      phase: 'broadcasting',
+      txHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      chainId: 5_042_002,
+      blockNumber: '999',
+    })
+    const { GET } = await import('./tx-log/route')
+
+    const res = await GET(await authedRequest('/api/wallet/tx-log'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.entries[0]).toMatchObject({
+      backend: 'escrow',
+      txStatus: 'pending',
+      txHash: null,
+      chainId: null,
+      blockNumber: null,
+      operationPhase: 'broadcasting',
+      operationTxHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      escrow: expect.objectContaining({
+        operationKey: 'SETTLE:research-escrow',
+        operationPhase: 'broadcasting',
+        operationTxHash: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        confirmed: false,
+        requestKey: `0x${'01'.repeat(32)}`,
+      }),
     })
   })
 

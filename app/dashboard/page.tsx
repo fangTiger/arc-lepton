@@ -15,8 +15,9 @@ type WalletStats = {
 }
 
 type QuotaStatus = {
-  wallet: { used: number; limit: number; remaining: number; resetAt: string }
-  global: { used: number; limit: number; remaining: number; resetAt: string }
+  wallet: { consumed?: number; reserved?: number; used: number; limit: number; remaining: number; resetAt: string }
+  global: { consumed?: number; reserved?: number; used: number; limit: number; remaining: number; resetAt: string }
+  backend?: string
 }
 
 function shortAddress(address: string | null | undefined) {
@@ -44,10 +45,31 @@ function FieldRow({ label, value }: { label: string; value: string }) {
 }
 
 function statusLabel(status: ResearchRecord['status']) {
+  if (status === 'funding') return 'FUNDING'
+  if (status === 'funding_expired') return 'FUNDING EXPIRED'
   if (status === 'completed') return '● DONE'
   if (status === 'running') return 'RUNNING'
   if (status === 'cancelled') return 'CANCEL'
   return 'FAILED'
+}
+
+function statusTone(status: ResearchRecord['status']) {
+  if (status === 'completed') return 'text-green'
+  if (status === 'running') return 'text-cyan'
+  if (status === 'funding') return 'text-amber'
+  return 'text-red'
+}
+
+function quotaConsumed(bucket: QuotaStatus['wallet'] | QuotaStatus['global'] | undefined) {
+  return bucket ? bucket.consumed ?? bucket.used : 0
+}
+
+function quotaReserved(bucket: QuotaStatus['wallet'] | QuotaStatus['global'] | undefined) {
+  return bucket?.reserved ?? 0
+}
+
+function quotaStateLabel(state: ResearchRecord['quotaReservationState'] | null | undefined) {
+  return state ? state.toUpperCase() : 'N/A'
 }
 
 export default function DashboardPage() {
@@ -139,7 +161,13 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-3 px-4 py-4">
               <FieldRow label="WALLET" value={quota ? `${quota.wallet.used}/${quota.wallet.limit}` : '...'} />
+              <FieldRow label="W USED" value={quota ? `CONSUMED ${quotaConsumed(quota.wallet)}` : '...'} />
+              <FieldRow label="W RSV" value={quota ? `RESERVED ${quotaReserved(quota.wallet)}` : '...'} />
+              <FieldRow label="W LEFT" value={quota ? `REMAINING ${quota.wallet.remaining}` : '...'} />
               <FieldRow label="GLOBAL" value={quota ? `${quota.global.used}/${quota.global.limit}` : '...'} />
+              <FieldRow label="G USED" value={quota ? `CONSUMED ${quotaConsumed(quota.global)}` : '...'} />
+              <FieldRow label="G RSV" value={quota ? `RESERVED ${quotaReserved(quota.global)}` : '...'} />
+              <FieldRow label="MODE" value={quota?.backend ? `BACKEND ${quota.backend}` : 'BACKEND N/A'} />
             </div>
           </section>
         </div>
@@ -155,6 +183,7 @@ export default function DashboardPage() {
                   <th className="border-b border-border px-3 py-2 text-left">#</th>
                   <th className="border-b border-border px-3 py-2 text-left">TOPIC</th>
                   <th className="border-b border-border px-3 py-2 text-left">STATUS</th>
+                  <th className="border-b border-border px-3 py-2 text-left">QUOTA</th>
                   <th className="border-b border-border px-3 py-2 text-left">COST</th>
                 </tr>
               </thead>
@@ -170,14 +199,15 @@ export default function DashboardPage() {
                     <td className="max-w-[520px] truncate border-b border-border px-3 py-2 text-text-primary">
                       <a href={`/research/${research.id}`} className="block">{research.topic}</a>
                     </td>
-                    <td className={`border-b border-border px-3 py-2 ${research.status === 'completed' ? 'text-green' : research.status === 'running' ? 'text-cyan' : 'text-red'}`}>
+                    <td className={`border-b border-border px-3 py-2 ${statusTone(research.status)}`}>
                       {statusLabel(research.status)}
                     </td>
+                    <td className="border-b border-border px-3 py-2 text-text-secondary">{quotaStateLabel(research.quotaReservationState)}</td>
                     <td className="border-b border-border px-3 py-2 tabular-nums text-amber">{research.spentUsdc}</td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-text-secondary">
+                    <td colSpan={5} className="px-3 py-8 text-text-secondary">
                       NO RESEARCH YET. CLICK [START NEW RESEARCH] ABOVE.
                     </td>
                   </tr>

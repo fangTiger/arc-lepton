@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { PRODUCT_NAME } from '@/lib/brand'
 import { getDeepSeekClient, DEEPSEEK_MODEL } from '@/lib/llm/deepseek'
 import { researchRepo } from '@/lib/db'
@@ -89,7 +90,21 @@ type CompletedToolResult = {
   preview: string
 }
 
+type EscrowRegistrySnapshot = {
+  registryRevision: bigint | number | string
+  expectedPayout: string
+  maxUnitPrice: bigint | number | string
+  registryReadBlock: bigint | number | string
+}
+
+export type EscrowPaymentContext = {
+  researchKey: string
+  escrowAddress: string
+  registrySnapshots: Record<string, EscrowRegistrySnapshot>
+}
+
 const MIN_TOOL_AMOUNT = '0.0001'
+export const MIN_SETTLEMENT_SAFETY_WINDOW_MS = 15 * 60 * 1000
 export const MAX_PAID_TOOL_CALLS = 3
 const MAX_TOOL_TURNS = 6
 const INVALID_REPORT_PATTERNS = [
@@ -216,6 +231,67 @@ function buildToolDedupMeta(call: ToolCall) {
   }
 }
 
+function stablePaymentIntentId(input: {
+  researchId: string
+  toolOrdinal: number
+  source: string
+  args: unknown
+}) {
+  return `0x${createHash('sha256').update(JSON.stringify(sortToolArgumentValue(input))).digest('hex')}`
+}
+
+function escrowRegistrySnapshot(context: EscrowPaymentContext, source: string) {
+  const snapshot = context.registrySnapshots[source]
+  if (!snapshot) throw new Error(`Escrow registry snapshot missing for ${source}`)
+  return snapshot
+}
+
+async function assertEscrowPaymentIntentAllowed(researchId: string, nextAmount: string) {
+  const research = await researchRepo.findById(researchId)
+  if (research?.cancelRequestedAt || research?.status === 'cancelled') {
+    throw new Error('Research cancelled')
+  }
+  if (
+    !research
+    || research.status !== 'running'
+    || research.activationPhase !== 'active'
+    || research.finalizationState !== 'open'
+    || research.cancelRequestedAt
+  ) {
+    throw new Error('Escrow research is not open for new payment intents')
+  }
+  assertEscrowExpirySafetyWindow(research.expectedExpiresAt)
+
+  if (decimalToUnits(research.spentUsdc) + decimalToUnits(nextAmount) > decimalToUnits(research.budgetUsdc)) {
+    throw new Error('Escrow budget reservation exceeds initial budget')
+  }
+}
+
+async function assertEscrowAgentCanRequestModel(researchId: string) {
+  const research = await researchRepo.findById(researchId)
+  if (research?.cancelRequestedAt || research?.status === 'cancelled') {
+    throw new Error('Research cancelled')
+  }
+  if (
+    !research
+    || research.status !== 'running'
+    || research.activationPhase !== 'active'
+    || research.finalizationState !== 'open'
+  ) {
+    throw new Error('Escrow research is not open for new payment intents')
+  }
+  assertEscrowExpirySafetyWindow(research.expectedExpiresAt)
+}
+
+function assertEscrowExpirySafetyWindow(expectedExpiresAt: Date | null | undefined) {
+  if (!(expectedExpiresAt instanceof Date) || Number.isNaN(expectedExpiresAt.getTime())) {
+    throw new Error('ESCROW_EXPIRY_SAFETY_WINDOW')
+  }
+  if (expectedExpiresAt.getTime() - Date.now() < MIN_SETTLEMENT_SAFETY_WINDOW_MS) {
+    throw new Error('ESCROW_EXPIRY_SAFETY_WINDOW')
+  }
+}
+
 function dataPreview(data: unknown) {
   return JSON.stringify(data).slice(0, 500)
 }
@@ -252,14 +328,36 @@ async function executeTool(
   call: ToolCall,
   signal?: AbortSignal,
   onPaymentIntentRecorded?: () => void,
+  escrowPayment?: EscrowPaymentContext,
+  toolOrdinal?: number,
 ) {
   assertNotAborted(signal)
   const tool = localTools[call.function.name as keyof typeof localTools]
   if (!tool) return null
 
   const args = parseToolArgs(call.function.arguments)
-  const data = tool.buildData(args.token)
-  const tx = await recordResearchPaymentIntent({
+  if (escrowPayment) await assertEscrowPaymentIntentAllowed(researchId, tool.amount)
+  const tx = await recordResearchPaymentIntent(escrowPayment ? {
+    address,
+    source: tool.source,
+    amount: tool.amount,
+    researchId,
+    paymentIntentId: stablePaymentIntentId({
+      researchId,
+      toolOrdinal: toolOrdinal ?? 0,
+      source: tool.source,
+      args,
+    }),
+    toolOrdinal: toolOrdinal ?? 0,
+    researchKey: escrowPayment.researchKey,
+    escrowAddress: escrowPayment.escrowAddress,
+    ...escrowRegistrySnapshot(escrowPayment, tool.source),
+    payload: {
+      tool: call.function.name,
+      args,
+    },
+    signal,
+  } : {
     address,
     source: tool.source,
     amount: tool.amount,
@@ -268,7 +366,9 @@ async function executeTool(
     signal,
   })
   onPaymentIntentRecorded?.()
+  if (escrowPayment) await assertEscrowAgentCanRequestModel(researchId)
   assertNotAborted(signal)
+  const data = tool.buildData(args.token)
 
   return {
     tool,
@@ -410,6 +510,7 @@ export async function* runResearchAgent(opts: {
   topic: string
   budgetUsdc: string
   signal?: AbortSignal
+  escrowPayment?: EscrowPaymentContext
 }): AsyncGenerator<AgentEvent> {
   const client = getDeepSeekClient()
   const budgetUnits = decimalToUnits(opts.budgetUsdc)
@@ -429,6 +530,7 @@ export async function* runResearchAgent(opts: {
   try {
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn += 1) {
       assertNotAborted(opts.signal)
+      if (opts.escrowPayment) await assertEscrowAgentCanRequestModel(opts.researchId)
       if (remaining(budgetUnits, spentUnits) < minToolUnits) break
       if (totalCalls >= MAX_PAID_TOOL_CALLS) break
 
@@ -498,7 +600,7 @@ export async function* runResearchAgent(opts: {
         try {
           result = await executeTool(opts.address, opts.researchId, call, opts.signal, () => {
             hasPaymentIntent = true
-          })
+          }, opts.escrowPayment, totalCalls)
         } catch (error) {
           pushToolMessage(messages, call, {
             status: 'error',
@@ -574,6 +676,7 @@ export async function* runResearchAgent(opts: {
     }
 
     assertNotAborted(opts.signal)
+    if (opts.escrowPayment) await assertEscrowAgentCanRequestModel(opts.researchId)
     const rawReportChunks: string[] = []
     let reportStreamRejected = false
     for await (const delta of streamReport(client, messages, opts.signal)) {
@@ -607,11 +710,11 @@ export async function* runResearchAgent(opts: {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Research agent failed'
-    const status = opts.signal?.aborted ? 'cancelled' : 'failed'
+    const status = opts.signal?.aborted || message === 'Research cancelled' ? 'cancelled' : 'failed'
     const shouldSettlePaymentIntents = shouldAttemptSettlement || hasPaymentIntent || totalCalls > 0
     const updated = await researchRepo.updateStatusIfCurrent(opts.researchId, 'running', status, message)
     if (!updated) {
-      if (opts.signal?.aborted) {
+      if (opts.signal?.aborted || message === 'Research cancelled') {
         const latest = await researchRepo.findById(opts.researchId)
         if (latest?.status === 'cancelled') {
           if (shouldSettlePaymentIntents) {

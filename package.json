@@ -10,7 +10,17 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:push": "drizzle-kit push",
+    "contracts:tooling:test": "node --test contracts/scripts/*.node-test.mjs",
+    "contracts:fmt": "FOUNDRY_OFFLINE=true forge fmt --root contracts --check",
+    "contracts:build": "FOUNDRY_OFFLINE=true forge build --root contracts",
+    "contracts:test:unit": "node contracts/scripts/run-forge-test-profile.mjs unit",
+    "contracts:test:fuzz": "node contracts/scripts/run-forge-test-profile.mjs fuzz",
+    "contracts:test:invariant": "node contracts/scripts/run-forge-test-profile.mjs invariant",
+    "contracts:coverage": "FOUNDRY_OFFLINE=true forge coverage --root contracts --report summary",
+    "contracts:slither": "node contracts/scripts/run-slither.mjs",
+    "contracts:artifacts:check": "FOUNDRY_OFFLINE=true forge clean --root contracts && FOUNDRY_OFFLINE=true forge build --root contracts --force && node contracts/scripts/check-artifact-consistency.mjs"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",

@@ -23,6 +23,23 @@ describe('drizzle config', () => {
     ]))
   })
 
+  it('includes escrow workflow and durable event schemas for expand migrations', async () => {
+    const config = (await import('./drizzle.config')).default
+
+    expect(config.schema).toEqual(expect.arrayContaining([
+      './lib/db/schema/workflow-outbox.ts',
+      './lib/db/schema/research-event.ts',
+    ]))
+  })
+
+  it('includes the research quota schema for shadow quota migrations', async () => {
+    const config = (await import('./drizzle.config')).default
+
+    expect(config.schema).toEqual(expect.arrayContaining([
+      './lib/db/schema/research-quota.ts',
+    ]))
+  })
+
   it('uses POSTGRES_URL when DATABASE_URL is not set', async () => {
     vi.stubEnv('DATABASE_URL', '')
     vi.stubEnv('POSTGRES_URL', 'postgres://example.test/db')

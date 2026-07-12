@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { keccak256, toBytes } from 'viem'
+import { requestKey as deriveRequestKey, sourceId as deriveSourceId } from '@/lib/chain/canonical'
 import { MemoryTxLogRepo } from '@/lib/db/tx-log-repo-memory'
+import vectors from '../../contracts/test/vectors/canonical-vectors.json'
 
 describe('payment-recorder', () => {
   it('records mock receipts without broadcasting', async () => {
@@ -500,6 +503,63 @@ describe('payment-recorder', () => {
     expect(await txLogRepo.listByAddress('0xabc')).toHaveLength(1)
   })
 
+  it('records an escrow research payment intent with canonical keys before any tool side effect', async () => {
+    const { recordResearchPaymentIntent } = await import('./payment-recorder')
+    const txLogRepo = new MemoryTxLogRepo()
+    const recordArcReceipt = vi.fn()
+
+    const payment = await recordResearchPaymentIntent(
+      {
+        address: vectors.inputs.buyer,
+        source: vectors.inputs.source,
+        amount: '0.0001',
+        researchId: vectors.inputs.canonicalResearchId,
+        mode: 'arc',
+        paymentIntentId: vectors.inputs.canonicalPaymentIntentId,
+        toolOrdinal: 0,
+        researchKey: vectors.expected.researchKey,
+        escrowAddress: '0x4444444444444444444444444444444444444444',
+        registryRevision: vectors.inputs.item.registryRevision,
+        expectedPayout: vectors.inputs.item.payout,
+        maxUnitPrice: vectors.inputs.item.maxUnitPrice,
+        registryReadBlock: '1999998700',
+        payload: { window: '1h', token: 'PEPE' },
+      },
+      { txLogRepo, recordArcReceipt },
+    )
+
+    expect(recordArcReceipt).not.toHaveBeenCalled()
+    expect(payment).toMatchObject({
+      address: vectors.inputs.buyer,
+      source: vectors.inputs.source,
+      amount: '0.0001',
+      txHash: null,
+      txStatus: 'pending',
+      chainId: null,
+      blockNumber: null,
+      requestId: vectors.expected.requestKey,
+      paymentIntentId: vectors.inputs.canonicalPaymentIntentId,
+      toolOrdinal: 0,
+      requestKey: vectors.expected.requestKey,
+      sourceId: vectors.expected.sourceId,
+      amountUnits: vectors.inputs.item.amount,
+      registryRevision: vectors.inputs.item.registryRevision,
+      expectedPayout: vectors.inputs.item.payout,
+      maxUnitPrice: vectors.inputs.item.maxUnitPrice,
+      registryReadBlock: '1999998700',
+      payloadHash: stablePayloadHash({ token: 'PEPE', window: '1h' }),
+      escrowAddress: '0x4444444444444444444444444444444444444444',
+      researchKey: vectors.expected.researchKey,
+      backend: 'escrow',
+      version: 1,
+      settlementId: null,
+      errorMessage: null,
+    })
+    expect(payment.requestKey).toBe(deriveRequestKey(vectors.expected.researchKey, vectors.inputs.canonicalPaymentIntentId))
+    expect(payment.sourceId).toBe(deriveSourceId(vectors.inputs.source))
+    expect(await txLogRepo.listByAddress(vectors.inputs.buyer)).toHaveLength(1)
+  })
+
   it('reuses an existing pending research intent for the same payment scope', async () => {
     const { recordResearchPaymentIntent } = await import('./payment-recorder')
     const txLogRepo = new MemoryTxLogRepo()
@@ -598,3 +658,14 @@ describe('payment-recorder', () => {
     })
   })
 })
+
+function stablePayloadHash(value: unknown) {
+  return keccak256(toBytes(stableStringify(value)))
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+  const record = value as Record<string, unknown>
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(',')}}`
+}

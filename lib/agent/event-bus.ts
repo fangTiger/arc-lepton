@@ -1,7 +1,7 @@
 import type { AgentEvent } from './research-agent'
 
 type Subscriber = {
-  onEvent: (event: AgentEvent) => void
+  onEvent: (event: AgentEvent, cursor?: number) => void
   onDone?: () => void
 }
 
@@ -53,11 +53,11 @@ function isTerminalEvent(event: AgentEvent) {
   return event.type === 'error' || event.type === 'final'
 }
 
-export function publishResearchEvent(researchId: string, event: AgentEvent) {
+export function publishResearchEvent(researchId: string, event: AgentEvent, cursor?: number) {
   const state = getState(researchId)
   if (state.done || state.events.some(isTerminalEvent)) return false
   state.events.push(event)
-  for (const subscriber of state.subscribers) subscriber.onEvent(event)
+  for (const subscriber of state.subscribers) subscriber.onEvent(event, cursor)
   return true
 }
 

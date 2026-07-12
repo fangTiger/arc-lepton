@@ -29,9 +29,47 @@ const agentLogHarness = vi.hoisted(() => ({
   onEvent: null as null | ((event: MockAgentEvent) => void),
 }))
 
+const walletMocks = vi.hoisted(() => ({
+  account: {
+    address: '0xAbCdEf000000000000000000000000000000C1d3' as string | undefined,
+    isConnected: true,
+  },
+  chainId: 5_042_002,
+  userAddress: '0xAbCdEf000000000000000000000000000000C1d3' as string | null,
+  readContract: vi.fn(),
+  waitForTransactionReceipt: vi.fn(),
+  writeContractAsync: vi.fn(),
+  signTypedDataAsync: vi.fn(),
+  switchChainAsync: vi.fn(),
+}))
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: navigation.routerPush, replace: navigation.routerReplace }),
   useSearchParams: () => ({ get: (name: string) => (name === 'id' ? navigation.searchId : null) }),
+}))
+
+vi.mock('@/lib/constants', () => ({
+  ARC_CHAIN_ID: 5_042_002,
+}))
+
+vi.mock('wagmi', () => ({
+  useAccount: () => walletMocks.account,
+  useChainId: () => walletMocks.chainId,
+  usePublicClient: () => ({
+    readContract: walletMocks.readContract,
+    waitForTransactionReceipt: walletMocks.waitForTransactionReceipt,
+  }),
+  useSignTypedData: () => ({ signTypedDataAsync: walletMocks.signTypedDataAsync }),
+  useSwitchChain: () => ({ switchChainAsync: walletMocks.switchChainAsync }),
+  useWriteContract: () => ({ writeContractAsync: walletMocks.writeContractAsync }),
+}))
+
+vi.mock('@/hooks/useUser', () => ({
+  useUser: () => ({
+    address: walletMocks.userAddress,
+    isAuthed: Boolean(walletMocks.userAddress),
+    isLoading: false,
+  }),
 }))
 
 vi.mock('@/components/research/AgentLogStream', () => ({
@@ -81,6 +119,70 @@ const expandedPromptPool = [
 ]
 
 const shiftedPromptDeck = [...expandedPromptPool.slice(1), expandedPromptPool[0]]
+const approveTxHash = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+const fundingTxHash = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+const activationSignature = `${'0x'}${'c'.repeat(130)}`
+const storage = new Map<string, string>()
+const localStorageMock = {
+  clear: vi.fn(() => storage.clear()),
+  getItem: vi.fn((key: string) => storage.get(key) ?? null),
+  removeItem: vi.fn((key: string) => storage.delete(key)),
+  setItem: vi.fn((key: string, value: string) => {
+    storage.set(key, value)
+  }),
+}
+
+function quotaResponse() {
+  return {
+    wallet: { consumed: 3, reserved: 1, used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
+    global: { consumed: 60, reserved: 7, used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+  }
+}
+
+function escrowConfig() {
+  return {
+    settlementBackend: 'escrow',
+    fundingUiEnabled: true,
+    dualWriteEnabled: true,
+    readCompareEnabled: false,
+    migrationStage: 'switch',
+    contractMigrationAllowed: false,
+  }
+}
+
+function prepareResponse(overrides: Partial<Record<string, unknown>> = {}) {
+  const response = {
+    researchId: 'research-escrow-1',
+    status: 'funding',
+    activationPhase: 'none',
+    quotaReservationState: 'reserved',
+    buyer: '0xabcdef000000000000000000000000000000c1d3',
+    topic: 'SHOULD I BUY PEPE?',
+    budgetUsdc: '0.01',
+    budgetUnits: '10000',
+    chainId: 5_042_002,
+    factory: '0x3333333333333333333333333333333333333333',
+    implementation: '0x1111111111111111111111111111111111111111',
+    usdc: '0x3600000000000000000000000000000000000000',
+    intentSigner: '0x5555555555555555555555555555555555555555',
+    researchKey: '0x9999999999999999999999999999999999999999999999999999999999999999',
+    expectedEscrowAddress: '0x4444444444444444444444444444444444444444',
+    expectedExpiresAt: '2030-01-02T00:00:00.000Z',
+    fundingDeadline: '2030-01-01T00:15:00.000Z',
+    fundingVoucher: {
+      buyer: '0xabcdef000000000000000000000000000000c1d3',
+      researchKey: '0x9999999999999999999999999999999999999999999999999999999999999999',
+      budgetUnits: '10000',
+      expectedExpiresAt: '1893542400',
+      fundingDeadline: '1893456900',
+      intentSigner: '0x5555555555555555555555555555555555555555',
+      voucherNonce: '12345',
+    },
+    fundingSigner: '0x3aED557D932A8EB5B048BaB0a388Da4Ab0A84bC0',
+    fundingSignature: `${'0x'}${'d'.repeat(130)}`,
+  }
+  return { ...response, ...overrides }
+}
 
 function getQuickPromptLabels() {
   return screen
@@ -94,11 +196,42 @@ describe('ResearchPageClient', () => {
     vi.clearAllMocks()
     navigation.searchId = null
     agentLogHarness.onEvent = null
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      configurable: true,
+    })
+    window.localStorage.clear()
+    walletMocks.account = {
+      address: '0xAbCdEf000000000000000000000000000000C1d3',
+      isConnected: true,
+    }
+    walletMocks.chainId = 5_042_002
+    walletMocks.userAddress = '0xAbCdEf000000000000000000000000000000C1d3'
+    walletMocks.readContract.mockReset()
+    walletMocks.waitForTransactionReceipt.mockReset()
+    walletMocks.writeContractAsync.mockReset()
+    walletMocks.signTypedDataAsync.mockReset()
+    walletMocks.switchChainAsync.mockReset()
+    walletMocks.readContract
+      .mockResolvedValueOnce(0n)
+      .mockResolvedValue(10000n)
+    walletMocks.waitForTransactionReceipt.mockResolvedValue({ transactionHash: fundingTxHash, logs: [{ logIndex: 7 }] })
+    walletMocks.writeContractAsync
+      .mockResolvedValueOnce(approveTxHash)
+      .mockResolvedValue(fundingTxHash)
+    walletMocks.signTypedDataAsync.mockResolvedValue(activationSignature)
+    walletMocks.switchChainAsync.mockResolvedValue(undefined)
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).includes('/api/quota')) {
+      const url = String(input)
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/config')) {
         return Response.json({
-          wallet: { used: 4, limit: 10, remaining: 6, resetAt: '2026-06-26T00:00:00.000Z' },
-          global: { used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+          settlementBackend: 'calldata',
+          fundingUiEnabled: false,
+          dualWriteEnabled: false,
+          readCompareEnabled: false,
+          migrationStage: 'backfill',
+          contractMigrationAllowed: false,
         })
       }
       return Response.json({})
@@ -116,6 +249,11 @@ describe('ResearchPageClient', () => {
     expect(await screen.findByText('DAILY QUOTA')).toBeInTheDocument()
     expect(screen.getByText(/WALLET:/)).toHaveTextContent('4/10')
     expect(screen.getByText(/GLOBAL:/)).toHaveTextContent('67/100')
+    expect(screen.getByText(/WALLET CONSUMED:/)).toHaveTextContent('3')
+    expect(screen.getByText(/WALLET RESERVED:/)).toHaveTextContent('1')
+    expect(screen.getByText(/WALLET REMAINING:/)).toHaveTextContent('6')
+    expect(screen.getByText(/GLOBAL CONSUMED:/)).toHaveTextContent('60')
+    expect(screen.getByText(/GLOBAL RESERVED:/)).toHaveTextContent('7')
     expect(screen.getByText(/ESTIMATED CALLS:/)).toHaveTextContent('ESTIMATED CALLS: 3')
     expect(screen.getByText('Rate limits will be relaxed after mainnet launch.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /\[VIEW HISTORY\]/i })).toHaveAttribute('href', '/dashboard')
@@ -123,13 +261,15 @@ describe('ResearchPageClient', () => {
 
   it('disables research creation when the wallet quota is exhausted', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(Response.json({
-      wallet: { used: 10, limit: 10, remaining: 0, resetAt: '2026-06-26T00:00:00.000Z' },
-      global: { used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
+      wallet: { consumed: 10, reserved: 0, used: 10, limit: 10, remaining: 0, resetAt: '2026-06-26T00:00:00.000Z' },
+      global: { consumed: 60, reserved: 7, used: 67, limit: 100, remaining: 33, resetAt: '2026-06-26T00:00:00.000Z' },
     }))
 
     render(createElement(ResearchPageClient))
 
     await waitFor(() => expect(screen.getByRole('button', { name: /\[ QUOTA EXCEEDED \]/i })).toBeDisabled())
+    expect(screen.getByText(/WALLET CONSUMED:/)).toHaveTextContent('10')
+    expect(screen.getByText(/WALLET RESERVED:/)).toHaveTextContent('0')
   })
 
   it('redirects to login when research creation returns unauthorized', async () => {
@@ -153,6 +293,277 @@ describe('ResearchPageClient', () => {
 
     await waitFor(() => expect(navigation.routerReplace).toHaveBeenCalledWith('/login?redirect=%2Fresearch'))
     expect(screen.getByText(/\[ERR\] Authentication expired\. Please sign in again\./i)).toBeInTheDocument()
+  })
+
+  it('keeps the calldata mock demo start flow walletless when funding UI is disabled', async () => {
+    walletMocks.account = { address: undefined, isConnected: false }
+    walletMocks.userAddress = null
+    const calls: Array<{ url: string; init?: RequestInit }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      calls.push({ url, init })
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/config')) {
+        return Response.json({ settlementBackend: 'calldata', fundingUiEnabled: false })
+      }
+      if (url.includes('/api/research/start')) return Response.json({ researchId: 'research-mock-1' })
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+
+    await waitFor(() => expect(navigation.routerPush).toHaveBeenCalledWith('/research?id=research-mock-1'))
+    expect(calls.some((call) => call.url.includes('/api/research/start'))).toBe(true)
+    expect(calls.some((call) => call.url.includes('/api/research/prepare'))).toBe(false)
+    expect(walletMocks.readContract).not.toHaveBeenCalled()
+    expect(walletMocks.writeContractAsync).not.toHaveBeenCalled()
+    expect(walletMocks.signTypedDataAsync).not.toHaveBeenCalled()
+    expect(screen.queryByText(/escrow funding/i)).not.toBeInTheDocument()
+  })
+
+  it('hides escrow funding UI and uses legacy start when the escrow feature flag is disabled', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      calls.push({ url, init })
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/config')) {
+        return Response.json({ settlementBackend: 'escrow', fundingUiEnabled: false })
+      }
+      if (url.includes('/api/research/start')) return Response.json({ researchId: 'research-flag-off' })
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    expect(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i })).toBeInTheDocument()
+    expect(screen.queryByText(/escrow funding/i)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+
+    await waitFor(() => expect(navigation.routerPush).toHaveBeenCalledWith('/research?id=research-flag-off'))
+    expect(calls.some((call) => call.url.includes('/api/research/start'))).toBe(true)
+    expect(calls.some((call) => call.url.includes('/api/research/prepare'))).toBe(false)
+    expect(walletMocks.writeContractAsync).not.toHaveBeenCalled()
+  })
+
+  it('labels budget controls and shows friendly start failures as an alert', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/config')) return Response.json({ settlementBackend: 'calldata', fundingUiEnabled: false })
+      if (url.includes('/api/research/start')) {
+        return Response.json({ error: 'DATABASE_URL missing\nstack trace' }, { status: 500 })
+      }
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    expect(await screen.findByRole('textbox', { name: /topic/i })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /budget usdc/i })).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: /budget slider/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Research could not be started. Please try again.')
+    expect(alert).not.toHaveTextContent('DATABASE_URL')
+    expect(alert).not.toHaveTextContent('START_FAILED')
+  })
+
+  it('runs the escrow prepare, approve, createAndFund, activation signature, and start flow', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      calls.push({ url, init })
+      if (url.includes('/api/research/config')) return Response.json(escrowConfig())
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/prepare')) return Response.json(prepareResponse())
+      if (url.includes('/api/research/start')) {
+        return Response.json({ researchId: 'research-escrow-1', status: 'running', activationPhase: 'active' })
+      }
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+
+    await waitFor(() => {
+      const prepareCall = calls.find((call) => call.url.includes('/api/research/prepare'))
+      expect(prepareCall?.init?.headers).toEqual(expect.objectContaining({
+        'content-type': 'application/json',
+        'Idempotency-Key': expect.stringMatching(/^research-/),
+      }))
+    })
+    expect(await screen.findByText(/PREDICTED ESCROW/i)).toBeInTheDocument()
+    expect(screen.getByText('0x4444444444444444444444444444444444444444')).toBeInTheDocument()
+    expect(screen.getByText('0x3600000000000000000000000000000000000000')).toBeInTheDocument()
+    expect(screen.getByText('0x5555555555555555555555555555555555555555')).toBeInTheDocument()
+    expect(screen.getByText('reserved')).toBeInTheDocument()
+    expect(screen.getByText('NEEDS APPROVE')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /\[APPROVE USDC\]/i }))
+    await waitFor(() => expect(walletMocks.writeContractAsync).toHaveBeenCalledWith(expect.objectContaining({
+      address: '0x3600000000000000000000000000000000000000',
+      functionName: 'approve',
+      args: ['0x3333333333333333333333333333333333333333', 10000n],
+    })))
+    expect(await screen.findByText('READY TO FUND')).toBeInTheDocument()
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[CREATE AND FUND ESCROW\]/i }))
+    await waitFor(() => expect(walletMocks.writeContractAsync).toHaveBeenCalledWith(expect.objectContaining({
+      address: '0x3333333333333333333333333333333333333333',
+      functionName: 'createAndFund',
+    })))
+    expect(await screen.findByText(/FUNDED RECEIPT OBSERVED/i)).toHaveTextContent(fundingTxHash)
+    expect(screen.getByText('FUNDED')).toBeInTheDocument()
+
+    expect(screen.getByText(/DUAL-KEY TRUST BOUNDARY/i)).toHaveTextContent('intent signer')
+    fireEvent.click(screen.getByRole('button', { name: /\[SIGN ACTIVATION\]/i }))
+
+    await waitFor(() => expect(walletMocks.signTypedDataAsync).toHaveBeenCalledWith(expect.objectContaining({
+      domain: expect.objectContaining({
+        name: 'ArcLeptonResearchEscrow',
+        verifyingContract: '0x4444444444444444444444444444444444444444',
+      }),
+      primaryType: 'ActivationAuthorization',
+    })))
+    await waitFor(() => {
+      const startCall = calls.find((call) => call.url.includes('/api/research/start'))
+      expect(JSON.parse(String(startCall?.init?.body))).toMatchObject({
+        researchId: 'research-escrow-1',
+        fundingTxHash,
+        fundingLogIndex: 7,
+        activationSignature,
+        activationAuthorization: {
+          escrow: '0x4444444444444444444444444444444444444444',
+          researchKey: '0x9999999999999999999999999999999999999999999999999999999999999999',
+          buyer: '0xabcdef000000000000000000000000000000c1d3',
+          intentSigner: '0x5555555555555555555555555555555555555555',
+          initialBudget: '10000',
+          expectedExpiresAt: '1893542400',
+        },
+      })
+    })
+    expect(navigation.routerPush).toHaveBeenCalledWith('/research?id=research-escrow-1')
+  })
+
+  it('stops before escrow funding when the chain changes and lets the user switch back', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/research/config')) return Response.json(escrowConfig())
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/prepare')) return Response.json(prepareResponse())
+      return Response.json({})
+    }))
+    const { rerender } = render(createElement(ResearchPageClient))
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+    await screen.findByRole('button', { name: /\[APPROVE USDC\]/i })
+
+    walletMocks.chainId = 1
+    rerender(createElement(ResearchPageClient))
+    fireEvent.click(screen.getByRole('button', { name: /\[SWITCH TO ARC TESTNET\]/i }))
+
+    await waitFor(() => expect(walletMocks.switchChainAsync).toHaveBeenCalledWith({ chainId: 5_042_002 }))
+    expect(walletMocks.writeContractAsync).not.toHaveBeenCalled()
+    expect(screen.getByText(/\[ERR\]/)).toHaveTextContent('Wallet, session, chain, or voucher changed')
+  })
+
+  it('skips approve when allowance is sufficient and ignores duplicate create clicks', async () => {
+    walletMocks.readContract.mockReset()
+    walletMocks.readContract.mockResolvedValue(10000n)
+    let resolveCreate!: (hash: string) => void
+    walletMocks.writeContractAsync.mockReset()
+    walletMocks.writeContractAsync.mockReturnValue(new Promise((resolve) => {
+      resolveCreate = resolve
+    }))
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/research/config')) return Response.json(escrowConfig())
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/prepare')) return Response.json(prepareResponse())
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+
+    expect(await screen.findByText('READY TO FUND')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /\[APPROVE USDC\]/i })).not.toBeInTheDocument()
+
+    const createButton = screen.getByRole('button', { name: /\[CREATE AND FUND ESCROW\]/i })
+    fireEvent.click(createButton)
+    fireEvent.click(createButton)
+
+    await waitFor(() => expect(walletMocks.writeContractAsync).toHaveBeenCalledTimes(1))
+    expect(walletMocks.writeContractAsync).toHaveBeenCalledWith(expect.objectContaining({
+      functionName: 'createAndFund',
+    }))
+
+    resolveCreate(fundingTxHash)
+    expect(await screen.findByText(/FUNDED RECEIPT OBSERVED/i)).toHaveTextContent(fundingTxHash)
+  })
+
+  it('keeps the funded escrow recoverable after buyer rejects the activation signature', async () => {
+    walletMocks.signTypedDataAsync
+      .mockRejectedValueOnce(new Error('User rejected the request'))
+      .mockResolvedValueOnce(activationSignature)
+    const calls: Array<{ url: string; init?: RequestInit }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      calls.push({ url, init })
+      if (url.includes('/api/research/config')) return Response.json(escrowConfig())
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      if (url.includes('/api/research/prepare')) return Response.json(prepareResponse())
+      if (url.includes('/api/research/start')) {
+        return Response.json({ researchId: 'research-escrow-1', status: 'funding', activationPhase: 'activating' }, { status: 202 })
+      }
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[ ▸ START RESEARCH \]/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /\[APPROVE USDC\]/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /\[CREATE AND FUND ESCROW\]/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /\[SIGN ACTIVATION\]/i }))
+
+    expect(await screen.findByText(/\[ERR\]/)).toHaveTextContent('Activation signature rejected')
+    expect(calls.some((call) => call.url.includes('/api/research/start'))).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: /\[SIGN ACTIVATION\]/i }))
+    await waitFor(() => expect(calls.some((call) => call.url.includes('/api/research/start'))).toBe(true))
+    expect((await screen.findAllByText(/ACTIVATING ON CHAIN/i)).length).toBeGreaterThan(0)
+  })
+
+  it('restores a prepared escrow funding state after page reload without creating a second prepare', async () => {
+    window.localStorage.setItem('arc:research-funding-state', JSON.stringify({
+      prepare: prepareResponse(),
+      topic: 'SHOULD I BUY PEPE?',
+      budget: '0.0100',
+      idempotencyKey: 'research-existing-key',
+      stage: 'needs_create',
+      fundingTxHash,
+      fundingLogIndex: 7,
+    }))
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/research/config')) return Response.json(escrowConfig())
+      if (url.includes('/api/quota')) return Response.json(quotaResponse())
+      return Response.json({})
+    }))
+
+    render(createElement(ResearchPageClient))
+
+    expect(await screen.findByText(/PREDICTED ESCROW/i)).toBeInTheDocument()
+    expect(screen.getByText('0x4444444444444444444444444444444444444444')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /\[SIGN ACTIVATION\]/i })).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalledWith('/api/research/prepare', expect.anything())
   })
 
   it('renders six quick prompts from the expanded randomized pool and rotates through the same deck until the user edits the topic', async () => {

@@ -1,5 +1,14 @@
 import type { ResearchRepo } from './research-repo'
-import type { Research, ResearchStatus } from './research-repo'
+import type {
+  CompleteFundingExpiryInput,
+  CreateFundingQuotaReservationInput,
+  CreateFundingResearchInput,
+  CreateFundingWithQuotaReservationResult,
+  Research,
+  ResearchLifecycle,
+  ResearchLifecyclePatch,
+  ResearchStatus,
+} from './research-repo'
 import { MemoryResearchRepo } from './research-repo-memory'
 import type { ResearchFollowUp, ResearchFollowUpRepo } from './research-follow-up-repo'
 import { MemoryResearchFollowUpRepo } from './research-follow-up-repo-memory'
@@ -15,17 +24,30 @@ import type {
   PaymentSettlementRetryQuery,
 } from './payment-settlement-repo'
 import { MemoryPaymentSettlementRepo } from './payment-settlement-repo-memory'
-import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogScopedEntry } from './tx-log-repo'
+import type { TxLogClaimInput, TxLogClaimResult, TxLogEntry, TxLogReceiptPatch, TxLogRecordInput, TxLogRepo, TxLogResearchPaymentIntentInput, TxLogScopedEntry } from './tx-log-repo'
 import { MemoryTxLogRepo } from './tx-log-repo-memory'
+import type { WorkflowOutboxRepo } from './workflow-outbox-repo'
+import { MemoryWorkflowOutboxRepo } from './workflow-outbox-repo-memory'
+import type { WorkflowManualRecoveryAuditRepo } from './workflow-manual-recovery-audit-repo'
+import { MemoryWorkflowManualRecoveryAuditRepo } from './workflow-manual-recovery-audit-repo-memory'
+import type { ResearchEventRepo } from './research-event-repo'
+import { MemoryResearchEventRepo } from './research-event-repo-memory'
+import type { ResearchQuotaRepo } from './research-quota-repo'
+import { MemoryResearchQuotaRepo, MemoryResearchQuotaStore } from './research-quota-repo-memory'
 import type { UsersRepo } from './users-repo'
 import type { UserRecord } from './users-repo'
 import { MemoryUsersRepo } from './users-repo-memory'
+import { getResearchBackendConfig } from '../research/backend-config'
 
 const usersMemoryFallbackMessage = '⚠ Using in-memory users repo (dev fallback). Data lost on restart.'
 const txLogMemoryFallbackMessage = '⚠ Using in-memory tx_log repo (dev fallback). Data lost on restart.'
 const paymentSettlementMemoryFallbackMessage = '⚠ Using in-memory payment_settlement repo (dev fallback). Data lost on restart.'
 const researchMemoryFallbackMessage = '⚠ Using in-memory research repo (dev fallback). Data lost on restart.'
 const researchFollowUpMemoryFallbackMessage = '⚠ Using in-memory research_follow_up repo (dev fallback). Data lost on restart.'
+const workflowOutboxMemoryFallbackMessage = '⚠ Using in-memory workflow_outbox repo (dev fallback). Data lost on restart.'
+const workflowManualRecoveryAuditMemoryFallbackMessage = '⚠ Using in-memory workflow_manual_recovery_audit repo (dev fallback). Data lost on restart.'
+const researchEventMemoryFallbackMessage = '⚠ Using in-memory research_event repo (dev fallback). Data lost on restart.'
+const researchQuotaMemoryFallbackMessage = '⚠ Using in-memory research_quota repo (dev fallback). Data lost on restart.'
 
 const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonUsersRepo?: UsersRepo
@@ -33,17 +55,30 @@ const memoryRepoGlobal = globalThis as typeof globalThis & {
   __arcLeptonPaymentSettlementRepo?: PaymentSettlementRepo
   __arcLeptonResearchRepo?: ResearchRepo
   __arcLeptonResearchFollowUpRepo?: ResearchFollowUpRepo
+  __arcLeptonWorkflowOutboxRepo?: WorkflowOutboxRepo
+  __arcLeptonWorkflowManualRecoveryAuditRepo?: WorkflowManualRecoveryAuditRepo
+  __arcLeptonResearchEventRepo?: ResearchEventRepo
+  __arcLeptonResearchQuotaRepo?: ResearchQuotaRepo
+  __arcLeptonResearchQuotaStore?: MemoryResearchQuotaStore
   __arcLeptonPgDb?: Promise<unknown>
   __arcLeptonPgUsersRepo?: Promise<UsersRepo>
   __arcLeptonPgTxLogRepo?: Promise<TxLogRepo>
   __arcLeptonPgPaymentSettlementRepo?: Promise<PaymentSettlementRepo>
   __arcLeptonPgResearchRepo?: Promise<ResearchRepo>
   __arcLeptonPgResearchFollowUpRepo?: Promise<ResearchFollowUpRepo>
+  __arcLeptonPgWorkflowOutboxRepo?: Promise<WorkflowOutboxRepo>
+  __arcLeptonPgWorkflowManualRecoveryAuditRepo?: Promise<WorkflowManualRecoveryAuditRepo>
+  __arcLeptonPgResearchEventRepo?: Promise<ResearchEventRepo>
+  __arcLeptonPgResearchQuotaRepo?: Promise<ResearchQuotaRepo>
   __arcLeptonUsersRepoWarned?: boolean
   __arcLeptonTxLogRepoWarned?: boolean
   __arcLeptonPaymentSettlementRepoWarned?: boolean
   __arcLeptonResearchRepoWarned?: boolean
   __arcLeptonResearchFollowUpRepoWarned?: boolean
+  __arcLeptonWorkflowOutboxRepoWarned?: boolean
+  __arcLeptonWorkflowManualRecoveryAuditRepoWarned?: boolean
+  __arcLeptonResearchEventRepoWarned?: boolean
+  __arcLeptonResearchQuotaRepoWarned?: boolean
 }
 
 function envValue(name: string) {
@@ -54,6 +89,34 @@ function envValue(name: string) {
 
 function hasDbEnv() {
   return Boolean(envValue('DATABASE_URL') || envValue('POSTGRES_URL'))
+}
+
+export class DurableDbRequiredError extends Error {
+  readonly code = 'DURABLE_DB_REQUIRED'
+
+  constructor(readonly context: string) {
+    super(`Durable Postgres is required for ${context}`)
+    this.name = 'DurableDbRequiredError'
+  }
+}
+
+export function researchSettlementBackend() {
+  return getResearchBackendConfig().settlementBackend
+}
+
+export function isEscrowSettlementBackend() {
+  return researchSettlementBackend() === 'escrow'
+}
+
+export function assertDurableDbAvailable(context = 'durable research workflow') {
+  if (hasDbEnv()) return
+  if (process.env.NODE_ENV === 'test') return
+  throw new DurableDbRequiredError(context)
+}
+
+export function assertDurableDbAvailableForEscrow(context = 'escrow research') {
+  if (!isEscrowSettlementBackend()) return
+  assertDurableDbAvailable(context)
 }
 
 export function isProductionMemoryDbFallback() {
@@ -120,6 +183,10 @@ class LazyPgTxLogRepo implements TxLogRepo {
 
   async claimRequest(input: TxLogClaimInput): Promise<TxLogClaimResult> {
     return (await this.getRepo()).claimRequest(input)
+  }
+
+  async claimResearchPaymentIntent(input: TxLogResearchPaymentIntentInput): Promise<TxLogClaimResult> {
+    return (await this.getRepo()).claimResearchPaymentIntent(input)
   }
 
   async updateReceipt(id: string, patch: TxLogReceiptPatch): Promise<TxLogEntry> {
@@ -209,6 +276,152 @@ class LazyPgPaymentSettlementRepo implements PaymentSettlementRepo {
   }
 }
 
+class LazyPgWorkflowOutboxRepo implements WorkflowOutboxRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgWorkflowOutboxRepo ??= (async () => {
+      const [{ PgWorkflowOutboxRepo }, db] = await Promise.all([import('./workflow-outbox-repo-pg'), getPgDb()])
+      return new PgWorkflowOutboxRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgWorkflowOutboxRepo
+  }
+
+  async claimOperation(input: Parameters<WorkflowOutboxRepo['claimOperation']>[0]) {
+    return (await this.getRepo()).claimOperation(input)
+  }
+
+  async getProtectedPayload(operationKey: string) {
+    return (await this.getRepo()).getProtectedPayload(operationKey)
+  }
+
+  async renewLease(
+    id: string,
+    fencingToken: number,
+    input: Parameters<WorkflowOutboxRepo['renewLease']>[2],
+  ) {
+    return (await this.getRepo()).renewLease(id, fencingToken, input)
+  }
+
+  async recordCheckpoint(
+    id: string,
+    fencingToken: number,
+    patch: Parameters<WorkflowOutboxRepo['recordCheckpoint']>[2],
+  ) {
+    return (await this.getRepo()).recordCheckpoint(id, fencingToken, patch)
+  }
+
+  async recordBroadcast(
+    id: string,
+    fencingToken: number,
+    patch: Parameters<WorkflowOutboxRepo['recordBroadcast']>[2],
+  ) {
+    return (await this.getRepo()).recordBroadcast(id, fencingToken, patch)
+  }
+
+  async failAndRelease(
+    id: string,
+    fencingToken: number,
+    patch: Parameters<WorkflowOutboxRepo['failAndRelease']>[2],
+  ) {
+    return (await this.getRepo()).failAndRelease(id, fencingToken, patch)
+  }
+
+  async complete(
+    id: string,
+    fencingToken: number,
+    patch?: Parameters<WorkflowOutboxRepo['complete']>[2],
+  ) {
+    return (await this.getRepo()).complete(id, fencingToken, patch)
+  }
+
+  async recoverManualOperation(
+    operationKey: string,
+    patch: Parameters<WorkflowOutboxRepo['recoverManualOperation']>[1],
+  ) {
+    return (await this.getRepo()).recoverManualOperation(operationKey, patch)
+  }
+
+  async findByOperationKey(operationKey: string) {
+    return (await this.getRepo()).findByOperationKey(operationKey)
+  }
+
+  async listDueOperations(query?: Parameters<WorkflowOutboxRepo['listDueOperations']>[0]) {
+    return (await this.getRepo()).listDueOperations(query)
+  }
+
+  async count() {
+    return (await this.getRepo()).count()
+  }
+}
+
+class LazyPgWorkflowManualRecoveryAuditRepo implements WorkflowManualRecoveryAuditRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgWorkflowManualRecoveryAuditRepo ??= (async () => {
+      const [{ PgWorkflowManualRecoveryAuditRepo }, db] = await Promise.all([import('./workflow-manual-recovery-audit-repo-pg'), getPgDb()])
+      return new PgWorkflowManualRecoveryAuditRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgWorkflowManualRecoveryAuditRepo
+  }
+
+  async record(input: Parameters<WorkflowManualRecoveryAuditRepo['record']>[0]) {
+    return (await this.getRepo()).record(input)
+  }
+
+  async listByOperationKey(operationKey: string) {
+    return (await this.getRepo()).listByOperationKey(operationKey)
+  }
+}
+
+class LazyPgResearchEventRepo implements ResearchEventRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgResearchEventRepo ??= (async () => {
+      const [{ PgResearchEventRepo }, db] = await Promise.all([import('./research-event-repo-pg'), getPgDb()])
+      return new PgResearchEventRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgResearchEventRepo
+  }
+
+  async appendEvent(input: Parameters<ResearchEventRepo['appendEvent']>[0]) {
+    return (await this.getRepo()).appendEvent(input)
+  }
+
+  async listByResearch(
+    researchId: string,
+    query?: Parameters<ResearchEventRepo['listByResearch']>[1],
+  ) {
+    return (await this.getRepo()).listByResearch(researchId, query)
+  }
+
+  async recordCheckpoint(input: Parameters<ResearchEventRepo['recordCheckpoint']>[0]) {
+    return (await this.getRepo()).recordCheckpoint(input)
+  }
+
+  async latestCheckpoint(researchId: string) {
+    return (await this.getRepo()).latestCheckpoint(researchId)
+  }
+}
+
+class LazyPgResearchQuotaRepo implements ResearchQuotaRepo {
+  private getRepo() {
+    memoryRepoGlobal.__arcLeptonPgResearchQuotaRepo ??= (async () => {
+      const [{ PgResearchQuotaRepo }, db] = await Promise.all([import('./research-quota-repo-pg'), getPgDb()])
+      return new PgResearchQuotaRepo(db as never)
+    })()
+    return memoryRepoGlobal.__arcLeptonPgResearchQuotaRepo
+  }
+
+  async consume(input: Parameters<ResearchQuotaRepo['consume']>[0]) {
+    return (await this.getRepo()).consume(input)
+  }
+
+  async release(input: Parameters<ResearchQuotaRepo['release']>[0]) {
+    return (await this.getRepo()).release(input)
+  }
+
+  async status(input: Parameters<ResearchQuotaRepo['status']>[0]) {
+    return (await this.getRepo()).status(input)
+  }
+}
+
 class LazyPgResearchRepo implements ResearchRepo {
   private getRepo() {
     memoryRepoGlobal.__arcLeptonPgResearchRepo ??= (async () => {
@@ -220,6 +433,45 @@ class LazyPgResearchRepo implements ResearchRepo {
 
   async create(input: { address: string; topic: string; budgetUsdc: string }): Promise<Research> {
     return (await this.getRepo()).create(input)
+  }
+
+  async createFunding(input: CreateFundingResearchInput): Promise<Research> {
+    return (await this.getRepo()).createFunding(input)
+  }
+
+  async createFundingWithQuotaReservation(
+    input: CreateFundingResearchInput,
+    quota: CreateFundingQuotaReservationInput,
+  ): Promise<CreateFundingWithQuotaReservationResult> {
+    return (await this.getRepo()).createFundingWithQuotaReservation(input, quota)
+  }
+
+  async consumeQuotaReservation(id: string): Promise<boolean> {
+    return (await this.getRepo()).consumeQuotaReservation(id)
+  }
+
+  async releaseQuotaReservation(id: string): Promise<boolean> {
+    return (await this.getRepo()).releaseQuotaReservation(id)
+  }
+
+  async beginActivation(input: Parameters<ResearchRepo['beginActivation']>[0]): Promise<boolean> {
+    return (await this.getRepo()).beginActivation(input)
+  }
+
+  async requestCancellation(input: Parameters<ResearchRepo['requestCancellation']>[0]): Promise<boolean> {
+    return (await this.getRepo()).requestCancellation(input)
+  }
+
+  async requestFinalization(input: Parameters<ResearchRepo['requestFinalization']>[0]): Promise<boolean> {
+    return (await this.getRepo()).requestFinalization(input)
+  }
+
+  async completeFundingExpiry(input: CompleteFundingExpiryInput): Promise<boolean> {
+    return (await this.getRepo()).completeFundingExpiry(input)
+  }
+
+  async findByPrepareRequestId(prepareRequestId: string): Promise<Research | null> {
+    return (await this.getRepo()).findByPrepareRequestId(prepareRequestId)
   }
 
   async findById(id: string): Promise<Research | null> {
@@ -237,6 +489,10 @@ class LazyPgResearchRepo implements ResearchRepo {
     errorMessage?: string,
   ): Promise<boolean> {
     return (await this.getRepo()).updateStatusIfCurrent(id, expectedStatus, status, errorMessage)
+  }
+
+  async transitionLifecycle(id: string, expected: ResearchLifecycle, next: ResearchLifecyclePatch): Promise<boolean> {
+    return (await this.getRepo()).transitionLifecycle(id, expected, next)
   }
 
   async completeIfRunning(id: string, reportMd: string): Promise<boolean> {
@@ -329,6 +585,58 @@ function createPaymentSettlementRepo(): PaymentSettlementRepo {
 
 export const paymentSettlementRepo: PaymentSettlementRepo = createPaymentSettlementRepo()
 
+function createWorkflowOutboxRepo(): WorkflowOutboxRepo {
+  if (hasDbEnv()) return new LazyPgWorkflowOutboxRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonWorkflowOutboxRepoWarned) {
+    console.warn(workflowOutboxMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonWorkflowOutboxRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonWorkflowOutboxRepo ??= new MemoryWorkflowOutboxRepo()
+  return memoryRepoGlobal.__arcLeptonWorkflowOutboxRepo
+}
+
+export const workflowOutboxRepo: WorkflowOutboxRepo = createWorkflowOutboxRepo()
+
+function createWorkflowManualRecoveryAuditRepo(): WorkflowManualRecoveryAuditRepo {
+  if (hasDbEnv()) return new LazyPgWorkflowManualRecoveryAuditRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonWorkflowManualRecoveryAuditRepoWarned) {
+    console.warn(workflowManualRecoveryAuditMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonWorkflowManualRecoveryAuditRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonWorkflowManualRecoveryAuditRepo ??= new MemoryWorkflowManualRecoveryAuditRepo()
+  return memoryRepoGlobal.__arcLeptonWorkflowManualRecoveryAuditRepo
+}
+
+export const workflowManualRecoveryAuditRepo: WorkflowManualRecoveryAuditRepo = createWorkflowManualRecoveryAuditRepo()
+
+function createResearchEventRepo(): ResearchEventRepo {
+  if (hasDbEnv()) return new LazyPgResearchEventRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonResearchEventRepoWarned) {
+    console.warn(researchEventMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonResearchEventRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonResearchEventRepo ??= new MemoryResearchEventRepo()
+  return memoryRepoGlobal.__arcLeptonResearchEventRepo
+}
+
+export const researchEventRepo: ResearchEventRepo = createResearchEventRepo()
+
+function createResearchQuotaRepo(): ResearchQuotaRepo {
+  if (hasDbEnv()) return new LazyPgResearchQuotaRepo()
+
+  if (!memoryRepoGlobal.__arcLeptonResearchQuotaRepoWarned) {
+    console.warn(researchQuotaMemoryFallbackMessage)
+    memoryRepoGlobal.__arcLeptonResearchQuotaRepoWarned = true
+  }
+  memoryRepoGlobal.__arcLeptonResearchQuotaRepo ??= new MemoryResearchQuotaRepo(getMemoryResearchQuotaStore())
+  return memoryRepoGlobal.__arcLeptonResearchQuotaRepo
+}
+
+export const researchQuotaRepo: ResearchQuotaRepo = createResearchQuotaRepo()
+
 function createResearchRepo(): ResearchRepo {
   if (hasDbEnv()) return new LazyPgResearchRepo()
 
@@ -336,11 +644,16 @@ function createResearchRepo(): ResearchRepo {
     console.warn(researchMemoryFallbackMessage)
     memoryRepoGlobal.__arcLeptonResearchRepoWarned = true
   }
-  memoryRepoGlobal.__arcLeptonResearchRepo ??= new MemoryResearchRepo()
+  memoryRepoGlobal.__arcLeptonResearchRepo ??= new MemoryResearchRepo(getMemoryResearchQuotaStore())
   return memoryRepoGlobal.__arcLeptonResearchRepo
 }
 
 export const researchRepo: ResearchRepo = createResearchRepo()
+
+function getMemoryResearchQuotaStore() {
+  memoryRepoGlobal.__arcLeptonResearchQuotaStore ??= new MemoryResearchQuotaStore()
+  return memoryRepoGlobal.__arcLeptonResearchQuotaStore
+}
 
 function createResearchFollowUpRepo(): ResearchFollowUpRepo {
   if (hasDbEnv()) return new LazyPgResearchFollowUpRepo()

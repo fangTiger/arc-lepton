@@ -2,17 +2,88 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Hex } from 'viem'
+import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
 import { TerminalMarkdown } from '@/components/research/TerminalMarkdown'
-import type { ResearchFollowUpRecord, ResearchRecord, TxLogRecord } from '@/components/research/types'
+import type { EscrowPublicConfig, ResearchFollowUpRecord, ResearchRecord, TxLogRecord } from '@/components/research/types'
 import { durationSeconds, isBillablePaymentStatus, paymentStatusLabel, shortHash, shortId, utcDateTime } from '@/components/research/types'
+import { useUser } from '@/hooks/useUser'
+import { ARC_CHAIN_ID } from '@/lib/constants'
 
 type DetailResponse = {
   research: ResearchRecord
+  escrowConfig?: EscrowPublicConfig | null
   txLog: TxLogRecord[]
 }
 
 type FollowUpResponse = {
   followUps: ResearchFollowUpRecord[]
+}
+
+const researchEscrowAbi = [
+  {
+    type: 'function',
+    name: 'cancelUnactivated',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+] as const
+
+function lower(value: string | null | undefined) {
+  return value?.toLowerCase() ?? null
+}
+
+function shortValue(value: string | null | undefined) {
+  if (!value) return 'N/A'
+  if (value.length <= 18) return value
+  return `${value.slice(0, 10)}...${value.slice(-6)}`
+}
+
+function normalizedExplorerBase(config?: EscrowPublicConfig | null) {
+  return (config?.explorerBase ?? process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? '').replace(/\/$/, '')
+}
+
+function explorerHref(explorerBase: string, kind: 'address' | 'tx', value: string) {
+  return `${explorerBase}/${kind}/${value}`
+}
+
+function EscrowValueLink({
+  value,
+  explorerBase,
+  kind,
+}: {
+  value: string | null | undefined
+  explorerBase: string
+  kind: 'address' | 'tx'
+}) {
+  if (!value) return <span className="text-text-secondary">N/A</span>
+  if (!explorerBase) return <span className="text-text-primary">{shortValue(value)}</span>
+  return (
+    <a href={explorerHref(explorerBase, kind, value)} target="_blank" rel="noreferrer" className="text-cyan hover:text-amber">
+      {kind === 'tx' ? shortHash(value) : shortValue(value)} ↗
+    </a>
+  )
+}
+
+function escrowStateLabel(research: ResearchRecord) {
+  if (research.finalizationState === 'closed') return 'Closed'
+  if (research.activationPhase === 'active') return 'Active'
+  if (research.activationPhase === 'funded') return 'Funded'
+  if (research.activationPhase === 'activating') return 'Activating'
+  if (research.activationPhase === 'expired') return 'Expired'
+  if (research.activationPhase === 'cancelled') return 'Closed'
+  return 'Pending funding'
+}
+
+function hasEscrowEvidence(detail: DetailResponse) {
+  return Boolean(
+    detail.escrowConfig
+    || detail.research.researchKey
+    || detail.research.expectedEscrowAddress
+    || detail.research.escrowAddress
+    || detail.txLog.some((entry) => entry.backend === 'escrow' || entry.escrow || entry.operationTxHash),
+  )
 }
 
 function StatusText({ status }: { status: ResearchRecord['status'] }) {
@@ -50,6 +121,12 @@ function detailErrorMessage(status: number) {
 
 export function ResearchDetailClient({ id }: { id: string }) {
   const router = useRouter()
+  const { address: walletAddress } = useAccount()
+  const currentChainId = useChainId()
+  const publicClient = usePublicClient()
+  const { switchChainAsync } = useSwitchChain()
+  const { writeContractAsync } = useWriteContract()
+  const { address: sessionAddress } = useUser()
   const [detail, setDetail] = useState<DetailResponse | null>(null)
   const [detailLoading, setDetailLoading] = useState(true)
   const [followUps, setFollowUps] = useState<ResearchFollowUpRecord[]>([])
@@ -60,9 +137,13 @@ export function ResearchDetailClient({ id }: { id: string }) {
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelTxHash, setCancelTxHash] = useState<Hex | null>(null)
+  const [cancellingFundedEscrow, setCancellingFundedEscrow] = useState(false)
   const followUpSectionRef = useRef<HTMLDivElement | null>(null)
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null)
-  const explorerBase = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL?.replace(/\/$/, '')
+  const cancelInFlightRef = useRef(false)
+  const explorerBase = normalizedExplorerBase(detail?.escrowConfig)
 
   useEffect(() => {
     let cancelled = false
@@ -145,6 +226,58 @@ export function ResearchDetailClient({ id }: { id: string }) {
     window.setTimeout(() => setToast(null), 1800)
   }
 
+  async function cancelFundedEscrow() {
+    if (cancelInFlightRef.current) return
+    if (!detail) return
+    const research = detail.research
+    const escrowAddress = research.escrowAddress ?? research.expectedEscrowAddress
+    const buyerAddress = research.buyer ?? research.address
+    if (research.status !== 'funding' || research.activationPhase !== 'funded' || !escrowAddress) {
+      setCancelError('Only a Funded escrow can be cancelled before activation.')
+      return
+    }
+    if (!walletAddress) {
+      setCancelError('Connect the buyer wallet before cancelling the funded escrow.')
+      return
+    }
+    if (lower(walletAddress) !== lower(buyerAddress)) {
+      setCancelError('Connected wallet does not match the escrow buyer.')
+      return
+    }
+    if (!sessionAddress) {
+      setCancelError('Sign in with the buyer wallet before cancelling the funded escrow.')
+      return
+    }
+    if (lower(sessionAddress) !== lower(buyerAddress)) {
+      setCancelError('Signed-in wallet does not match the escrow buyer.')
+      return
+    }
+
+    const targetChainId = research.chainId ?? detail.escrowConfig?.chainId ?? ARC_CHAIN_ID
+    try {
+      cancelInFlightRef.current = true
+      setCancelError(null)
+      setCancellingFundedEscrow(true)
+      if (targetChainId && currentChainId !== targetChainId) {
+        await switchChainAsync({ chainId: targetChainId })
+      }
+      const txHash = await writeContractAsync({
+        address: escrowAddress as Hex,
+        abi: researchEscrowAbi,
+        functionName: 'cancelUnactivated',
+      })
+      setCancelTxHash(txHash)
+      await publicClient?.waitForTransactionReceipt({ hash: txHash })
+      setToast('[CANCEL TX CONFIRMED] FUNDED ESCROW CLOSED ON-CHAIN; REFRESH AFTER INDEXER RECONCILES')
+      window.setTimeout(() => setToast(null), 4000)
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to cancel the funded escrow.')
+    } finally {
+      cancelInFlightRef.current = false
+      setCancellingFundedEscrow(false)
+    }
+  }
+
   async function submitFollowUp() {
     const question = followUpQuestion.trim()
     if (!question) {
@@ -212,6 +345,42 @@ export function ResearchDetailClient({ id }: { id: string }) {
   }
 
   const detailData = detail
+  const escrowEvidenceVisible = hasEscrowEvidence(detailData)
+  const escrowAddress = detailData.research.escrowAddress ?? detailData.research.expectedEscrowAddress
+  const canCancelFundedEscrow = detailData.research.status === 'funding'
+    && detailData.research.activationPhase === 'funded'
+    && Boolean(escrowAddress)
+  const escrowLifecycleRows = [
+    ['RESEARCH STATUS', detailData.research.status],
+    ['ACTIVATION PHASE', detailData.research.activationPhase],
+    ['FINALIZATION STATE', detailData.research.finalizationState],
+    ['QUOTA RESERVATION', detailData.research.quotaReservationState],
+    ['ESCROW STATE', escrowStateLabel(detailData.research)],
+    ['BUDGET', `$${detailData.research.budgetUsdc} USDC`],
+    ['BUDGET UNITS', detailData.research.budgetUnits ? `${detailData.research.budgetUnits} units` : 'N/A'],
+    ['SPENT', `$${detailData.research.spentUsdc} USDC`],
+  ] as const
+  const escrowAddressRows = [
+    ['OFFICIAL USDC', detailData.escrowConfig?.usdc ?? null, 'address'],
+    ['FACTORY', detailData.escrowConfig?.factory ?? null, 'address'],
+    ['EXPECTED ESCROW', detailData.research.expectedEscrowAddress, 'address'],
+    ['ACTUAL ESCROW', detailData.research.escrowAddress, 'address'],
+    ['BUYER', detailData.research.buyer ?? detailData.research.address, 'address'],
+    ['INTENT SIGNER', detailData.research.intentSigner, 'address'],
+    ['RESEARCH KEY', detailData.research.researchKey, 'hash'],
+  ] as const
+  const escrowTimingRows = [
+    ['CHAIN ID', String(detailData.research.chainId ?? detailData.escrowConfig?.chainId ?? 'N/A')],
+    ['PREPARED', utcDateTime(detailData.research.preparedAt)],
+    ['FUNDING DEADLINE', utcDateTime(detailData.research.fundingDeadline ?? detailData.research.fundingExpiresAt)],
+    ['EXPECTED EXPIRES', utcDateTime(detailData.research.expectedExpiresAt)],
+  ] as const
+  const escrowTxEvidence = detailData.txLog.filter((entry) => (
+    entry.backend === 'escrow'
+    || Boolean(entry.escrow)
+    || Boolean(entry.operationTxHash)
+    || Boolean(entry.escrowAddress)
+  ))
 
   return (
     <main className="min-h-screen bg-bg-base px-3 pb-12 pt-12 text-text-primary md:px-6">
@@ -232,6 +401,119 @@ export function ResearchDetailClient({ id }: { id: string }) {
               ))}
             </div>
           </div>
+
+          {escrowEvidenceVisible ? (
+            <div className="border-b border-border px-4 py-4 font-mono text-[11px] uppercase tracking-[0.05em]">
+              <div className="mb-3 font-bold text-amber">&gt; ESCROW EVIDENCE</div>
+              <div className="grid gap-3 lg:grid-cols-3">
+                <div className="border border-border bg-bg-base">
+                  <div className="border-b border-border px-3 py-2 font-bold text-amber">LIFECYCLE</div>
+                  <div className="grid gap-2 px-3 py-3">
+                    {escrowLifecycleRows.map(([label, value]) => (
+                      <div key={label} className="grid gap-2 md:grid-cols-[150px_1fr]">
+                        <span className="font-bold text-text-secondary">{label}</span>
+                        <span className="text-text-primary">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-border bg-bg-base">
+                  <div className="border-b border-border px-3 py-2 font-bold text-amber">CONTRACTS</div>
+                  <div className="grid gap-2 px-3 py-3">
+                    {escrowAddressRows.map(([label, value, kind]) => (
+                      <div key={label} className="grid gap-2 md:grid-cols-[150px_1fr]">
+                        <span className="font-bold text-text-secondary">{label}</span>
+                        {kind === 'address' ? (
+                          <EscrowValueLink value={value} explorerBase={explorerBase} kind="address" />
+                        ) : (
+                          <span className="text-text-primary">{shortValue(value)}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-border bg-bg-base">
+                  <div className="border-b border-border px-3 py-2 font-bold text-amber">TIMING</div>
+                  <div className="grid gap-2 px-3 py-3">
+                    {escrowTimingRows.map(([label, value]) => (
+                      <div key={label} className="grid gap-2 md:grid-cols-[150px_1fr]">
+                        <span className="font-bold text-text-secondary">{label}</span>
+                        <span className="text-text-primary">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {escrowTxEvidence.length ? (
+                <div className="mt-3 overflow-x-auto border border-border">
+                  <table className="w-full border-collapse text-[11px]">
+                    <thead className="bg-bg-cell text-amber">
+                      <tr>
+                        <th className="border-b border-border px-3 py-2 text-left">SOURCE</th>
+                        <th className="border-b border-border px-3 py-2 text-left">PAYMENT</th>
+                        <th className="border-b border-border px-3 py-2 text-left">OPERATION</th>
+                        <th className="border-b border-border px-3 py-2 text-left">TX / BLOCK</th>
+                        <th className="border-b border-border px-3 py-2 text-left">REQUEST KEY</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {escrowTxEvidence.map((tx) => {
+                        const operationPhase = tx.escrow?.operationPhase ?? tx.operationPhase ?? 'N/A'
+                        const operationTxHash = tx.escrow?.operationTxHash ?? tx.operationTxHash
+                        const operationBlock = tx.escrow?.operationBlockNumber ?? tx.operationBlockNumber
+                        const requestKey = tx.escrow?.requestKey ?? tx.requestKey
+                        return (
+                          <tr key={tx.id} className="hover:bg-bg-hover">
+                            <td className="border-b border-border px-3 py-2 text-text-primary">{tx.source}</td>
+                            <td className="border-b border-border px-3 py-2 text-text-primary">{paymentStatusLabel(tx.txStatus)}</td>
+                            <td className="border-b border-border px-3 py-2 text-text-primary">{operationPhase}</td>
+                            <td className="border-b border-border px-3 py-2">
+                              <div className="flex flex-col gap-1">
+                                <EscrowValueLink value={operationTxHash} explorerBase={explorerBase} kind="tx" />
+                                <span className="text-text-secondary">{operationBlock ? `block ${operationBlock}` : 'block N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="border-b border-border px-3 py-2 text-text-secondary">{shortValue(requestKey)}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
+              {canCancelFundedEscrow ? (
+                <div className="mt-3 border border-amber bg-bg-base px-3 py-3">
+                  <div className="mb-2 text-amber">
+                    Funded but not Active. Buyer can call cancelUnactivated() to recover the full escrow balance.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => cancelFundedEscrow().catch(() => {})}
+                    disabled={cancellingFundedEscrow}
+                    className="terminal-button h-9 px-3 text-[11px] disabled:border-red disabled:text-red"
+                  >
+                    {cancellingFundedEscrow ? '[CANCELLING FUNDED ESCROW...]' : '[CANCEL FUNDED ESCROW]'}
+                  </button>
+                </div>
+              ) : detailData.research.activationPhase === 'active' ? (
+                <div className="mt-3 border border-border bg-bg-base px-3 py-3 text-text-secondary">
+                  Active escrow: buyer refund entry is hidden until the close/finalization path proves funds are refundable.
+                </div>
+              ) : null}
+
+              {cancelTxHash ? (
+                <div className="mt-3 text-text-primary">
+                  <span className="mr-2 font-bold text-amber">CANCEL TX</span>
+                  <EscrowValueLink value={cancelTxHash} explorerBase={explorerBase} kind="tx" />
+                </div>
+              ) : null}
+              {cancelError ? <div className="mt-3 text-red">{cancelError}</div> : null}
+            </div>
+          ) : null}
 
           <div className="border-b border-border px-4 py-6">
             <TerminalMarkdown content={detailData.research.reportMd || '[REPORT NOT READY]'} />

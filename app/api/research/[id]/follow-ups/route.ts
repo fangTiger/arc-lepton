@@ -26,6 +26,10 @@ function followUpConflict(error: 'REPORT_NOT_READY' | 'BUDGET_EXHAUSTED') {
   return Response.json({ error }, { status: 409 })
 }
 
+function isEscrowBoundResearch(research: NonNullable<Awaited<ReturnType<typeof researchRepo.findById>>>) {
+  return Boolean(research.researchKey && research.escrowAddress)
+}
+
 export async function GET(req: Request, { params }: RouteContext) {
   try {
     const { address } = await requireAuth(req)
@@ -52,8 +56,10 @@ export async function POST(req: Request, { params }: RouteContext) {
     if (research.address !== address) return Response.json({ error: 'FORBIDDEN' }, { status: 403 })
     if (research.status !== 'completed' || !research.reportMd?.trim()) return followUpConflict('REPORT_NOT_READY')
 
-    const remainingBudget = decimalToUnits(research.budgetUsdc) - decimalToUnits(research.spentUsdc)
-    if (remainingBudget <= 0n) return followUpConflict('BUDGET_EXHAUSTED')
+    if (!isEscrowBoundResearch(research)) {
+      const remainingBudget = decimalToUnits(research.budgetUsdc) - decimalToUnits(research.spentUsdc)
+      if (remainingBudget <= 0n) return followUpConflict('BUDGET_EXHAUSTED')
+    }
 
     const history = await researchFollowUpRepo.listByResearchId(address, params.id, 50)
     const followUp = await researchFollowUpRepo.create({

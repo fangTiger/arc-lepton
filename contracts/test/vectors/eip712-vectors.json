@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "name": "arc-lepton research escrow EIP-712 v1 vectors",
+  "standard": "EIP-712",
+  "domains": {
+    "factory": {
+      "name": "ArcLeptonResearchEscrowFactory",
+      "version": "1",
+      "chainId": 5042002,
+      "verifyingContract": "0x3333333333333333333333333333333333333333",
+      "separator": "0x73d91d8af8e8d146fb80a16d4f039d0ba03639ff2b96600b75f97ecb85b6b0fb"
+    },
+    "escrow": {
+      "name": "ArcLeptonResearchEscrow",
+      "version": "1",
+      "chainId": 5042002,
+      "verifyingContract": "0x4444444444444444444444444444444444444444",
+      "separator": "0xe157a0fffa62885c5b1c6322e8c521463ee31c1e71a1cd83006996c1fbfab967"
+    }
+  },
+  "types": {
+    "FundingVoucher": {
+      "domain": "factory",
+      "typeString": "FundingVoucher(address buyer,bytes32 researchKey,uint256 budgetUnits,uint64 expectedExpiresAt,uint64 fundingDeadline,address intentSigner,uint256 voucherNonce)",
+      "fields": [
+        { "name": "buyer", "type": "address" },
+        { "name": "researchKey", "type": "bytes32" },
+        { "name": "budgetUnits", "type": "uint256" },
+        { "name": "expectedExpiresAt", "type": "uint64" },
+        { "name": "fundingDeadline", "type": "uint64" },
+        { "name": "intentSigner", "type": "address" },
+        { "name": "voucherNonce", "type": "uint256" }
+      ],
+      "typeHash": "0xb0805892b56f982f2a482c934c8b335b8f03c0c25dbbf41bd3bfcc37e9f31c49"
+    },
+    "ActivationAuthorization": {
+      "domain": "escrow",
+      "typeString": "ActivationAuthorization(address escrow,bytes32 researchKey,address buyer,address intentSigner,uint256 initialBudget,uint64 expectedExpiresAt,uint256 activationNonce,uint64 deadline)",
+      "fields": [
+        { "name": "escrow", "type": "address" },
+        { "name": "researchKey", "type": "bytes32" },
+        { "name": "buyer", "type": "address" },
+        { "name": "intentSigner", "type": "address" },
+        { "name": "initialBudget", "type": "uint256" },
+        { "name": "expectedExpiresAt", "type": "uint64" },
+        { "name": "activationNonce", "type": "uint256" },
+        { "name": "deadline", "type": "uint64" }
+      ],
+      "typeHash": "0xee84862b56bdee65ce26a9db95f7c674354dbcb9ce8e695b627cd3ead1610acb"
+    },
+    "SettlementAuthorization": {
+      "domain": "escrow",
+      "typeString": "SettlementAuthorization(address escrow,bytes32 researchKey,bytes32 settlementKey,bytes32 itemsHash,uint256 total,uint32 itemCount,uint256 nonce,uint64 issuedAt,uint64 deadline)",
+      "fields": [
+        { "name": "escrow", "type": "address" },
+        { "name": "researchKey", "type": "bytes32" },
+        { "name": "settlementKey", "type": "bytes32" },
+        { "name": "itemsHash", "type": "bytes32" },
+        { "name": "total", "type": "uint256" },
+        { "name": "itemCount", "type": "uint32" },
+        { "name": "nonce", "type": "uint256" },
+        { "name": "issuedAt", "type": "uint64" },
+        { "name": "deadline", "type": "uint64" }
+      ],
+      "typeHash": "0xd6023f0cdead08b972e7aecf19e86c43dcfcd7f6e8f04aacd90acc90fe42e160"
+    },
+    "CloseAuthorization": {
+      "domain": "escrow",
+      "typeString": "CloseAuthorization(address escrow,bytes32 researchKey,uint8 closeReason,bytes32 finalLiabilityHash,uint256 spent,uint256 nonce,uint64 issuedAt,uint64 deadline)",
+      "fields": [
+        { "name": "escrow", "type": "address" },
+        { "name": "researchKey", "type": "bytes32" },
+        { "name": "closeReason", "type": "uint8" },
+        { "name": "finalLiabilityHash", "type": "bytes32" },
+        { "name": "spent", "type": "uint256" },
+        { "name": "nonce", "type": "uint256" },
+        { "name": "issuedAt", "type": "uint64" },
+        { "name": "deadline", "type": "uint64" }
+      ],
+      "typeHash": "0xf796cc95366fc26947d8b2475192187551efa93209a231ae85af49aa9b5d0bf5"
+    }
+  },
+  "inputs": {
+    "buyer": "0x1111111111111111111111111111111111111111",
+    "factory": "0x3333333333333333333333333333333333333333",
+    "escrow": "0x4444444444444444444444444444444444444444",
+    "intentSigner": "0x5555555555555555555555555555555555555555",
+    "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+    "settlementKey": "0xd75c2aaf27e02addef0bc1da37cbcbfbed79ae0e15ae5297e10194404da01ca7",
+    "itemsHash": "0x97180eb3603765a7d6b345f882b2e54df6caa90acf6f2a372b7b2197fbd707ea",
+    "finalLiabilityHash": "0x338ee25354eba1e0ea3d435dce293825bc9f8143a25d97c1ecfeb5eb29ad3f2e",
+    "budgetUnits": "1000000",
+    "initialBudget": "1000000",
+    "expectedExpiresAt": "2000000000",
+    "fundingDeadline": "1999996400",
+    "activationCutoff": "1999996400",
+    "activationDeadline": "1999996300",
+    "settlementIssuedAt": "1999998700",
+    "settlementDeadline": "1999999000",
+    "closeIssuedAt": "1999998700",
+    "closeDeadline": "1999999000",
+    "voucherNonce": "7",
+    "activationNonce": "8",
+    "settlementNonce": "9",
+    "closeNonce": "10",
+    "settlementTotal": "100",
+    "settlementItemCount": 1,
+    "closeReason": 1,
+    "spent": "100"
+  },
+  "authorizations": {
+    "FundingVoucher": {
+      "message": {
+        "buyer": "0x1111111111111111111111111111111111111111",
+        "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+        "budgetUnits": "1000000",
+        "expectedExpiresAt": "2000000000",
+        "fundingDeadline": "1999996400",
+        "intentSigner": "0x5555555555555555555555555555555555555555",
+        "voucherNonce": "7"
+      },
+      "structHash": "0x21db817e5e68ebffc24c94b86e0737ca03a3663454148eae494c95aac748a6d0",
+      "digest": "0x8faa9182addb6d5d08af23306436f3306498c84252c9ed09d88f3c6fd8eff95b"
+    },
+    "ActivationAuthorization": {
+      "message": {
+        "escrow": "0x4444444444444444444444444444444444444444",
+        "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+        "buyer": "0x1111111111111111111111111111111111111111",
+        "intentSigner": "0x5555555555555555555555555555555555555555",
+        "initialBudget": "1000000",
+        "expectedExpiresAt": "2000000000",
+        "activationNonce": "8",
+        "deadline": "1999996300"
+      },
+      "structHash": "0xe530ad0fe4e1f8ea3ab712ada561482feb9ca57449d7e5cbea107a1021f57685",
+      "digest": "0xbc1cbf4093c2e740f17393d450269fed5983c790354666867f34bd8a4949e6d7"
+    },
+    "SettlementAuthorization": {
+      "message": {
+        "escrow": "0x4444444444444444444444444444444444444444",
+        "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+        "settlementKey": "0xd75c2aaf27e02addef0bc1da37cbcbfbed79ae0e15ae5297e10194404da01ca7",
+        "itemsHash": "0x97180eb3603765a7d6b345f882b2e54df6caa90acf6f2a372b7b2197fbd707ea",
+        "total": "100",
+        "itemCount": 1,
+        "nonce": "9",
+        "issuedAt": "1999998700",
+        "deadline": "1999999000"
+      },
+      "structHash": "0x9d655b7102e2606ab21533fe9ad912c92926ffd0c6ab6e86bd7dbd3680eb9d1c",
+      "digest": "0xb3b9a8aa53892c97a11bea76829a29d72741f75bc6e0046ae69c0fcdeb3712b2"
+    },
+    "CloseAuthorization": {
+      "message": {
+        "escrow": "0x4444444444444444444444444444444444444444",
+        "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+        "closeReason": 1,
+        "finalLiabilityHash": "0x338ee25354eba1e0ea3d435dce293825bc9f8143a25d97c1ecfeb5eb29ad3f2e",
+        "spent": "100",
+        "nonce": "10",
+        "issuedAt": "1999998700",
+        "deadline": "1999999000"
+      },
+      "structHash": "0x970b65f92a321629d4e92336f5a33d23132f7ede8653fa8ce19c2f19701c38a6",
+      "digest": "0x00b2124a61089fcd6b75eadd2b33a5c8876165709f25ccba22a38a213f5139ba"
+    }
+  }
+}

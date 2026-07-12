@@ -66,6 +66,28 @@ const mockState = vi.hoisted(() => {
       startedAt: new Date('2026-06-25T00:00:00.000Z'),
       completedAt: new Date('2026-06-25T00:00:18.000Z'),
     },
+    {
+      id: 'research-escrow-completed',
+      address: '0xabcdef000000000000000000000000000000c1d3',
+      topic: 'ESCROW BOUND REPORT',
+      budgetUsdc: '0.002',
+      spentUsdc: '0.002',
+      status: 'completed' as const,
+      reportMd: '# Escrow Report\n\nSettlement is already handled asynchronously.',
+      errorMessage: null,
+      startedAt: new Date('2026-06-25T00:00:00.000Z'),
+      completedAt: new Date('2026-06-25T00:00:18.000Z'),
+      backend: 'escrow' as const,
+      researchKey: `0x${'42'.repeat(32)}`,
+      escrowAddress: '0x4444000000000000000000000000000000000001',
+      expectedEscrowAddress: '0x4444000000000000000000000000000000000001',
+      chainId: 5042002,
+      budgetUnits: '2000',
+      quotaReservationState: 'consumed' as const,
+      activationPhase: 'active' as const,
+      finalizationState: 'closing' as const,
+      cancelRequestedAt: null,
+    },
   ]
   let createdCounter = 1
 
@@ -75,12 +97,28 @@ const mockState = vi.hoisted(() => {
     answerResearchFollowUp: vi.fn(),
     recordResearchPaymentIntent: vi.fn(),
     settleResearchPayments: vi.fn(),
+    workflowOutboxRepo: {
+      claimOperation: vi.fn(),
+      createOperation: vi.fn(),
+      findByOperationKey: vi.fn(),
+    },
+    txLogRepo: {
+      listByResearchId: vi.fn(),
+      record: vi.fn(),
+      markResearchSettlementPending: vi.fn(),
+    },
     reset() {
       createdCounter = 1
       followUps.splice(1)
       this.answerResearchFollowUp.mockReset()
       this.recordResearchPaymentIntent.mockReset()
       this.settleResearchPayments.mockReset()
+      this.workflowOutboxRepo.claimOperation.mockReset()
+      this.workflowOutboxRepo.createOperation.mockReset()
+      this.workflowOutboxRepo.findByOperationKey.mockReset()
+      this.txLogRepo.listByResearchId.mockReset()
+      this.txLogRepo.record.mockReset()
+      this.txLogRepo.markResearchSettlementPending.mockReset()
     },
     researchRepo: {
       async findById(id: string) {
@@ -138,6 +176,8 @@ const mockState = vi.hoisted(() => {
 vi.mock('@/lib/db', () => ({
   researchRepo: mockState.researchRepo,
   researchFollowUpRepo: mockState.researchFollowUpRepo,
+  workflowOutboxRepo: mockState.workflowOutboxRepo,
+  txLogRepo: mockState.txLogRepo,
 }))
 
 vi.mock('@/lib/agent/research-follow-up', () => ({
@@ -255,6 +295,55 @@ describe('POST /api/research/[id]/follow-ups', () => {
         },
       ],
       question: 'Does the setup improve if volume expands?',
+    })
+  })
+
+  it('answers escrow-bound completed research follow-ups without touching Escrow or original spending', async () => {
+    mockState.answerResearchFollowUp.mockResolvedValue('## Follow-up Answer\nUse the settled report only.')
+    const originalResearch = mockState.researches.find((research) => research.id === 'research-escrow-completed')
+    expect(originalResearch).toMatchObject({
+      spentUsdc: '0.002',
+      finalizationState: 'closing',
+      escrowAddress: '0x4444000000000000000000000000000000000001',
+    })
+    const { POST } = await import('./route')
+
+    const res = await POST(await authedRequest('/api/research/research-escrow-completed/follow-ups', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Can I ask one follow-up after settlement starts?' }),
+    }), { params: { id: 'research-escrow-completed' } })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.followUp).toEqual(expect.objectContaining({
+      researchId: 'research-escrow-completed',
+      question: 'Can I ask one follow-up after settlement starts?',
+      answerMd: '## Follow-up Answer\nUse the settled report only.',
+      status: 'completed',
+      spentUsdc: '0',
+    }))
+    expect(mockState.recordResearchPaymentIntent).not.toHaveBeenCalled()
+    expect(mockState.settleResearchPayments).not.toHaveBeenCalled()
+    expect(mockState.workflowOutboxRepo.claimOperation).not.toHaveBeenCalled()
+    expect(mockState.workflowOutboxRepo.createOperation).not.toHaveBeenCalled()
+    expect(mockState.workflowOutboxRepo.findByOperationKey).not.toHaveBeenCalled()
+    expect(mockState.txLogRepo.listByResearchId).not.toHaveBeenCalled()
+    expect(mockState.txLogRepo.record).not.toHaveBeenCalled()
+    expect(mockState.txLogRepo.markResearchSettlementPending).not.toHaveBeenCalled()
+    expect(originalResearch).toMatchObject({
+      spentUsdc: '0.002',
+      budgetUsdc: '0.002',
+      finalizationState: 'closing',
+      quotaReservationState: 'consumed',
+      activationPhase: 'active',
+      escrowAddress: '0x4444000000000000000000000000000000000001',
+      expectedEscrowAddress: '0x4444000000000000000000000000000000000001',
+    })
+    expect(mockState.answerResearchFollowUp).toHaveBeenCalledWith({
+      topic: 'ESCROW BOUND REPORT',
+      reportMd: '# Escrow Report\n\nSettlement is already handled asynchronously.',
+      history: [],
+      question: 'Can I ask one follow-up after settlement starts?',
     })
   })
 

@@ -9,12 +9,27 @@ const mockStore = vi.hoisted(() => {
     budgetUsdc: string
     spentUsdc: string
     status: 'running' | 'completed' | 'failed' | 'cancelled'
+    activationPhase?: 'none' | 'active'
+    finalizationState?: 'none' | 'open' | 'closing' | 'closed'
+    quotaReservationState?: 'none' | 'consumed'
+    researchKey?: string | null
+    escrowAddress?: string | null
+    cancelRequestedAt?: Date | null
     reportMd: string | null
     errorMessage: string | null
     startedAt: Date
     completedAt: Date | null
   }>()
   const statusUpdates: Array<{ id: string; status: string; errorMessage?: string }> = []
+  const durableCancelRequests: Array<{
+    id: string
+    closeOperation: {
+      operationKey: string
+      type: string
+      researchId: string
+      escrowAddress?: string | null
+    }
+  }> = []
   const completeOnNextConditionalUpdate = new Set<string>()
 
   function researchRecord(id: string, status: 'running' | 'completed' | 'failed' | 'cancelled') {
@@ -25,6 +40,12 @@ const mockStore = vi.hoisted(() => {
       budgetUsdc: '0.01',
       spentUsdc: status === 'completed' ? '0.0002' : '0',
       status,
+      activationPhase: 'none' as const,
+      finalizationState: status === 'running' ? 'none' as const : 'closed' as const,
+      quotaReservationState: 'none' as const,
+      researchKey: null,
+      escrowAddress: null,
+      cancelRequestedAt: null,
       reportMd: status === 'completed' ? '# Completed report' : null,
       errorMessage: status === 'failed' ? 'Stored failure' : null,
       startedAt: new Date('2026-06-25T00:00:00.000Z'),
@@ -38,8 +59,17 @@ const mockStore = vi.hoisted(() => {
     reset() {
       records.clear()
       statusUpdates.length = 0
+      durableCancelRequests.length = 0
       completeOnNextConditionalUpdate.clear()
       records.set('research-running', researchRecord('research-running', 'running'))
+      records.set('research-escrow-running', {
+        ...researchRecord('research-escrow-running', 'running'),
+        activationPhase: 'active',
+        finalizationState: 'open',
+        quotaReservationState: 'consumed',
+        researchKey: `0x${'42'.repeat(32)}`,
+        escrowAddress: '0x4444444444444444444444444444444444444444',
+      })
       records.set('research-completed', researchRecord('research-completed', 'completed'))
       records.set('research-failed', researchRecord('research-failed', 'failed'))
       records.set('research-cancelled', researchRecord('research-cancelled', 'cancelled'))
@@ -48,9 +78,32 @@ const mockStore = vi.hoisted(() => {
     completeBeforeNextConditionalUpdate(id: string) {
       completeOnNextConditionalUpdate.add(id)
     },
+    durableCancelRequests,
     researchRepo: {
       async findById(id: string) {
         return records.get(id) ?? null
+      },
+      async requestCancellation(input: {
+        id: string
+        closeOperation: {
+          operationKey: string
+          type: string
+          researchId: string
+          escrowAddress?: string | null
+        }
+      }) {
+        const record = records.get(input.id)
+        if (!record || record.status !== 'running' || record.finalizationState !== 'open') return false
+        durableCancelRequests.push(input)
+        records.set(input.id, {
+          ...record,
+          status: 'cancelled',
+          finalizationState: 'closing',
+          cancelRequestedAt: new Date('2026-07-11T06:00:00.000Z'),
+          errorMessage: 'Research cancelled',
+          completedAt: new Date('2026-07-11T06:00:00.000Z'),
+        })
+        return true
       },
       async updateStatusIfCurrent(
         id: string,
@@ -95,6 +148,7 @@ const mockStore = vi.hoisted(() => {
 
 vi.mock('@/lib/db', () => ({
   researchRepo: mockStore.researchRepo,
+  workflowOutboxRepo: {},
 }))
 
 const eventBusGlobal = globalThis as typeof globalThis & {
@@ -138,6 +192,37 @@ describe('POST /api/research/[id]/cancel', () => {
       done: true,
       events: [{ type: 'error', message: 'Research cancelled' }],
     })
+  })
+
+  it('durably records cancelRequestedAt and finalization outbox for an active escrow research', async () => {
+    const { POST } = await import('./route')
+
+    const res = await POST(await authedRequest('research-escrow-running'), { params: { id: 'research-escrow-running' } })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toMatchObject({
+      researchId: 'research-escrow-running',
+      status: 'cancelled',
+      finalizationState: 'closing',
+    })
+    expect(mockStore.durableCancelRequests).toEqual([
+      expect.objectContaining({
+        id: 'research-escrow-running',
+        closeOperation: expect.objectContaining({
+          operationKey: 'CLOSE:research-escrow-running',
+          type: 'CLOSE',
+          researchId: 'research-escrow-running',
+          escrowAddress: '0x4444444444444444444444444444444444444444',
+        }),
+      }),
+    ])
+    expect(mockStore.records.get('research-escrow-running')).toMatchObject({
+      status: 'cancelled',
+      finalizationState: 'closing',
+      cancelRequestedAt: new Date('2026-07-11T06:00:00.000Z'),
+    })
+    expect(mockStore.statusUpdates).toEqual([])
   })
 
   it.each([

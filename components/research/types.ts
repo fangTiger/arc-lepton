@@ -27,12 +27,38 @@ export type ResearchRecord = {
   address: string
   topic: string
   budgetUsdc: string
+  budgetUnits: string | null
   spentUsdc: string
-  status: 'running' | 'completed' | 'failed' | 'cancelled'
+  status: 'funding' | 'funding_expired' | 'running' | 'completed' | 'failed' | 'cancelled'
+  activationPhase: 'none' | 'funded' | 'activating' | 'active' | 'expired' | 'cancelled'
+  finalizationState: 'none' | 'open' | 'closing' | 'closed' | 'manual'
+  quotaReservationState: 'none' | 'reserved' | 'activating' | 'consumed' | 'released'
+  prepareRequestId: string | null
+  buyer: string | null
+  researchKey: string | null
+  expectedEscrowAddress: string | null
+  escrowAddress: string | null
   reportMd: string | null
   errorMessage: string | null
-  startedAt: string
+  createdAt: string
+  preparedAt: string | null
+  fundingExpiresAt: string | null
+  expectedExpiresAt: string | null
+  fundingDeadline: string | null
+  intentSigner: string | null
+  voucherNonce: string | null
+  quotaDate: string | null
+  cancelRequestedAt: string | null
+  chainId: number | null
+  startedAt: string | null
   completedAt: string | null
+}
+
+export type EscrowPublicConfig = {
+  chainId: number | null
+  factory: string | null
+  usdc: string | null
+  explorerBase: string | null
 }
 
 export type ResearchFollowUpRecord = {
@@ -59,6 +85,42 @@ export type TxLogRecord = {
   blockNumber: string | null
   settlementId: string | null
   requestId: string | null
+  backend: 'mock' | 'arc' | 'escrow' | null
+  version: number | null
+  paymentIntentId: string | null
+  toolOrdinal: number | null
+  requestKey: string | null
+  sourceId: string | null
+  amountUnits: string | null
+  registryRevision: string | null
+  expectedPayout: string | null
+  maxUnitPrice: string | null
+  registryReadBlock: string | null
+  payloadHash: string | null
+  escrowAddress: string | null
+  researchKey: string | null
+  operationPhase: 'queued' | 'running' | 'broadcasting' | 'reconciling' | 'succeeded' | 'failed' | 'manual' | null
+  operationTxHash: string | null
+  operationBlockNumber: string | null
+  escrow: {
+    operationKey: string | null
+    operationPhase: 'queued' | 'running' | 'broadcasting' | 'reconciling' | 'succeeded' | 'failed' | 'manual' | null
+    operationTxHash: string | null
+    operationBlockNumber: string | null
+    operationLastError: string | null
+    confirmed: boolean
+    settlementId: string | null
+    researchKey: string | null
+    escrowAddress: string | null
+    requestKey: string | null
+    sourceId: string | null
+    amountUnits: string | null
+    registryRevision: string | null
+    expectedPayout: string | null
+    maxUnitPrice: string | null
+    registryReadBlock: string | null
+    payloadHash: string | null
+  } | null
   errorMessage: string | null
   createdAt: string
 }
@@ -73,16 +135,17 @@ function txLogDataPreview(entry: TxLogRecord) {
 
 export function txLogToToolResultEvent(entry: TxLogRecord): Extract<AgentEvent, { type: 'tool_result' }> {
   const requestId = txLogRequestId(entry)
+  const payment = reconciledTxLogPaymentFacts(entry)
   return {
     type: 'tool_result',
     callId: requestId,
     name: entry.source,
     payment: {
       amount: entry.amount,
-      txHash: entry.txHash,
+      txHash: payment.txHash,
       txStatus: entry.txStatus,
-      chainId: entry.chainId,
-      blockNumber: entry.blockNumber,
+      chainId: payment.chainId,
+      blockNumber: payment.blockNumber,
       requestId,
     },
     dataPreview: txLogDataPreview(entry),
@@ -104,12 +167,13 @@ export function mergeTxLogIntoEvents<T extends AgentEvent>(events: T[], txLog: T
     const txEntry = txLogByRequestId.get(event.payment.requestId)
     if (!txEntry) return event
 
+    const paymentFacts = reconciledTxLogPaymentFacts(txEntry)
     const nextPayment = {
       ...event.payment,
-      txHash: txEntry.txHash,
+      txHash: paymentFacts.txHash,
       txStatus: txEntry.txStatus,
-      chainId: txEntry.chainId,
-      blockNumber: txEntry.blockNumber,
+      chainId: paymentFacts.chainId,
+      blockNumber: paymentFacts.blockNumber,
     }
     if (
       nextPayment.txHash === event.payment.txHash
@@ -143,6 +207,21 @@ export function mergeTxLogIntoEvents<T extends AgentEvent>(events: T[], txLog: T
   ]
 }
 
+function reconciledTxLogPaymentFacts(entry: TxLogRecord) {
+  if (entry.backend === 'escrow' && entry.txStatus !== 'confirmed') {
+    return {
+      txHash: null,
+      chainId: null,
+      blockNumber: null,
+    }
+  }
+  return {
+    txHash: entry.txHash,
+    chainId: entry.chainId,
+    blockNumber: entry.blockNumber,
+  }
+}
+
 export function isBillablePaymentStatus(status: TxStatus) {
   return status === 'mock' || status === 'confirmed'
 }
@@ -172,7 +251,8 @@ export function utcDateTime(value: string | Date | null) {
   return new Date(value).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
 }
 
-export function durationSeconds(startedAt: string, completedAt: string | null) {
+export function durationSeconds(startedAt: string | null, completedAt: string | null) {
+  if (!startedAt) return 'N/A'
   const end = completedAt ? new Date(completedAt).getTime() : Date.now()
   const start = new Date(startedAt).getTime()
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return '0.0s'

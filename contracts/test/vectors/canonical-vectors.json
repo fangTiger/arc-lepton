@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "name": "arc-lepton canonical key/hash v1 vectors",
+  "domains": {
+    "research": "arc-lepton.research-key.v1",
+    "request": "arc-lepton.request-key.v1",
+    "settlement": "arc-lepton.settlement-key.v1",
+    "source": "arc-lepton.source-id.v1",
+    "items": "arc-lepton.items-hash.v1",
+    "settlementResult": "arc-lepton.settlement-result.v1",
+    "finalLiability": "arc-lepton.final-liability.v1"
+  },
+  "abi": {
+    "researchKey": ["bytes32", "uint256", "address", "bytes32"],
+    "requestKey": ["bytes32", "bytes32", "bytes32"],
+    "settlementKey": ["bytes32", "bytes32", "bytes32"],
+    "sourceId": ["bytes32", "bytes32"],
+    "itemsHash": ["bytes32", "uint256", "tuple[]"],
+    "settlementItem": [
+      { "name": "requestKey", "type": "bytes32" },
+      { "name": "sourceId", "type": "bytes32" },
+      { "name": "registryRevision", "type": "uint64" },
+      { "name": "expectedPayout", "type": "address" },
+      { "name": "maxUnitPrice", "type": "uint256" },
+      { "name": "amount", "type": "uint256" }
+    ],
+    "settlementResultDigest": ["bytes32", "bytes32", "bytes32", "uint256", "uint32"],
+    "finalLiabilityHash": ["bytes32", "uint256", "tuple[]"],
+    "liabilityItem": [
+      { "name": "requestKey", "type": "bytes32" },
+      { "name": "amount", "type": "uint256" },
+      { "name": "terminalState", "type": "uint8" },
+      { "name": "settlementKey", "type": "bytes32" },
+      { "name": "terminalEvidenceHash", "type": "bytes32" }
+    ]
+  },
+  "inputs": {
+    "chainId": 5042002,
+    "buyer": "0x1111111111111111111111111111111111111111",
+    "canonicalResearchId": "00000000-0000-4000-8000-000000000001",
+    "canonicalPaymentIntentId": "00000000-0000-4000-8000-000000000002",
+    "canonicalSettlementId": "00000000-0000-4000-8000-000000000003",
+    "source": "whale-flow",
+    "item": {
+      "payout": "0x2222222222222222222222222222222222222222",
+      "registryRevision": "1",
+      "maxUnitPrice": "1000",
+      "amount": "100"
+    },
+    "liabilities": {
+      "empty": [],
+      "singlePaid": [
+        {
+          "requestKey": "0xbb469196cc6b5028360740da10f0e57e763db8971c37fe1a04515283233e32ab",
+          "amount": "100",
+          "terminalState": 1,
+          "settlementKey": "0xd75c2aaf27e02addef0bc1da37cbcbfbed79ae0e15ae5297e10194404da01ca7",
+          "terminalEvidenceHash": "0xb1518f344eeee729e760f0c0d2be569b83fa550833b2309d8e6b7e2cb037b6c4"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "researchKey": "0xfe2db078baed94897122e9aa2fbe0f26040774ca8fe547a9c5fe96b1bca03464",
+    "requestKey": "0xbb469196cc6b5028360740da10f0e57e763db8971c37fe1a04515283233e32ab",
+    "settlementKey": "0xd75c2aaf27e02addef0bc1da37cbcbfbed79ae0e15ae5297e10194404da01ca7",
+    "sourceId": "0xd767053e418a41081f134228cb808336dcb83d2c711e2889289c35f24d75e4d1",
+    "itemsHash": "0x97180eb3603765a7d6b345f882b2e54df6caa90acf6f2a372b7b2197fbd707ea",
+    "settlementResultDigest": "0xb1518f344eeee729e760f0c0d2be569b83fa550833b2309d8e6b7e2cb037b6c4",
+    "emptyFinalLiabilityHash": "0xa700e53730858c2f4b9b5e2287eb6277837358afa904bd8288dccd07809876e4",
+    "singlePaidFinalLiabilityHash": "0x338ee25354eba1e0ea3d435dce293825bc9f8143a25d97c1ecfeb5eb29ad3f2e"
+  }
+}

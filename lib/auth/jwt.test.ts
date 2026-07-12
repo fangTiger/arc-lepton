@@ -14,7 +14,16 @@ describe('jwt', () => {
 
   it('rejects a tampered token', async () => {
     const token = await signSessionJwt('0xabc')
-    const tampered = token.slice(0, -1) + 'X'
+    const segments = token.split('.')
+    expect(segments).toHaveLength(3)
+
+    const [header, payload, signature] = segments
+    expect(header).toBeTruthy()
+    expect(payload).toBeTruthy()
+    expect(signature).toBeTruthy()
+
+    const tamperedSignature = `${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`
+    const tampered = `${header}.${payload}.${tamperedSignature}`
     await expect(verifySessionJwt(tampered)).rejects.toThrow()
   })
 

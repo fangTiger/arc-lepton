@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { txLogRepo as defaultTxLogRepo } from '@/lib/db'
-import type { TxLogEntry, TxLogRepo, TxLogScopedEntry } from '@/lib/db/tx-log-repo'
+import type { TxLogEntry, TxLogRepo, TxLogResearchPaymentIntentInput, TxLogScopedEntry } from '@/lib/db/tx-log-repo'
 import { recordArcReceipt, type ArcReceiptInput, type ArcReceiptMode } from '@/lib/chain/arc-receipt'
 import { isValidIdempotencyKey } from './idempotency-key'
 
@@ -12,6 +12,15 @@ export type PaymentReceiptInput = {
   researchId?: string
   mode?: ArcReceiptMode
   signal?: AbortSignal
+  paymentIntentId?: string
+  toolOrdinal?: number
+  researchKey?: string
+  escrowAddress?: string
+  registryRevision?: bigint | number | string
+  expectedPayout?: string
+  maxUnitPrice?: bigint | number | string
+  registryReadBlock?: bigint | number | string
+  payload?: unknown
 }
 
 type PaymentRecorderDeps = {
@@ -108,6 +117,53 @@ function assertNotAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new Error('Research cancelled')
 }
 
+function hasEscrowPaymentIntentSnapshot(input: PaymentReceiptInput): input is PaymentReceiptInput & TxLogResearchPaymentIntentInput {
+  return (
+    input.paymentIntentId !== undefined
+    || input.toolOrdinal !== undefined
+    || input.researchKey !== undefined
+    || input.escrowAddress !== undefined
+    || input.registryRevision !== undefined
+    || input.expectedPayout !== undefined
+    || input.maxUnitPrice !== undefined
+    || input.registryReadBlock !== undefined
+    || input.payload !== undefined
+  )
+}
+
+function escrowPaymentIntentInput(input: PaymentReceiptInput & Partial<TxLogResearchPaymentIntentInput>): TxLogResearchPaymentIntentInput {
+  if (
+    !input.researchId
+    || input.paymentIntentId === undefined
+    || input.toolOrdinal === undefined
+    || input.researchKey === undefined
+    || input.escrowAddress === undefined
+    || input.registryRevision === undefined
+    || input.expectedPayout === undefined
+    || input.maxUnitPrice === undefined
+    || input.registryReadBlock === undefined
+    || input.payload === undefined
+  ) {
+    throw new Error('Escrow payment intent snapshot is incomplete')
+  }
+
+  return {
+    address: input.address,
+    source: input.source,
+    amount: input.amount,
+    researchId: input.researchId,
+    paymentIntentId: input.paymentIntentId,
+    toolOrdinal: input.toolOrdinal,
+    researchKey: input.researchKey,
+    escrowAddress: input.escrowAddress,
+    registryRevision: input.registryRevision,
+    expectedPayout: input.expectedPayout,
+    maxUnitPrice: input.maxUnitPrice,
+    registryReadBlock: input.registryReadBlock,
+    payload: input.payload,
+  }
+}
+
 export async function recordPaymentReceipt(input: PaymentReceiptInput, deps: PaymentRecorderDeps = {}): Promise<TxLogScopedEntry> {
   assertNotAborted(input.signal)
   const repo = deps.txLogRepo ?? defaultTxLogRepo
@@ -170,6 +226,12 @@ export async function recordPaymentReceipt(input: PaymentReceiptInput, deps: Pay
 export async function recordResearchPaymentIntent(input: PaymentReceiptInput, deps: PaymentRecorderDeps = {}): Promise<TxLogScopedEntry> {
   assertNotAborted(input.signal)
   const repo = deps.txLogRepo ?? defaultTxLogRepo
+  if (hasEscrowPaymentIntentSnapshot(input)) {
+    const claim = await repo.claimResearchPaymentIntent(escrowPaymentIntentInput(input))
+    assertNotAborted(input.signal)
+    return claim.entry
+  }
+
   const requestId = input.requestId === undefined ? (deps.createRequestId ?? randomUUID)() : input.requestId
   assertValidRequestId(requestId)
 

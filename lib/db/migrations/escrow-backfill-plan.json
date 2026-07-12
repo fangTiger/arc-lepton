@@ -1,0 +1,13 @@
+{
+  "id": "20260711_escrow_backfill",
+  "phase": "backfill",
+  "checksum": "sha256:20260711-escrow-backfill-v1",
+  "description": "Backfill legacy research and tx_log compatibility metadata without inventing escrow facts.",
+  "upSql": [
+    "UPDATE research SET created_at = coalesce(created_at, started_at, completed_at, prepared_at, funding_expires_at, TIMESTAMPTZ '1970-01-01T00:00:00Z') WHERE created_at IS NULL",
+    "UPDATE tx_log SET backend = coalesce(backend, CASE WHEN tx_status = 'mock' THEN 'mock' ELSE 'arc' END), version = coalesce(version, 0) WHERE backend IS NULL OR version IS NULL"
+  ],
+  "downSql": [
+    "SELECT 'manual downgrade: retain backfilled created_at/backend/version for audit safety'"
+  ]
+}

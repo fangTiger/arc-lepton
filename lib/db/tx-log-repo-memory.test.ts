@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { keccak256, toBytes } from 'viem'
+import { requestKey as deriveRequestKey, sourceId as deriveSourceId } from '@/lib/chain/canonical'
 import { MemoryTxLogRepo } from './tx-log-repo-memory'
+import vectors from '../../contracts/test/vectors/canonical-vectors.json'
 
 describe('MemoryTxLogRepo', () => {
   afterEach(() => {
@@ -488,4 +491,151 @@ describe('MemoryTxLogRepo', () => {
       }),
     ]))
   })
+
+  it('claims an escrow research payment intent with a canonical immutable snapshot', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-11T02:00:00.000Z'))
+    const repo = new MemoryTxLogRepo()
+    const claimableRepo = repo as MemoryTxLogRepo & {
+      claimResearchPaymentIntent: (input: ReturnType<typeof escrowIntentInput>) => Promise<{
+        status: 'claimed' | 'existing' | 'pending' | 'failed'
+        entry: Record<string, unknown>
+      }>
+    }
+
+    const input = escrowIntentInput()
+    const claimed = await claimableRepo.claimResearchPaymentIntent(input)
+
+    expect(claimed.status).toBe('claimed')
+    expect(claimed.entry).toMatchObject({
+      address: input.address,
+      researchId: input.researchId,
+      source: input.source,
+      amount: '0.0001',
+      txHash: null,
+      txStatus: 'pending',
+      chainId: null,
+      blockNumber: null,
+      settlementId: null,
+      requestId: vectors.expected.requestKey,
+      paymentIntentId: vectors.inputs.canonicalPaymentIntentId,
+      toolOrdinal: 0,
+      requestKey: vectors.expected.requestKey,
+      sourceId: vectors.expected.sourceId,
+      amountUnits: vectors.inputs.item.amount,
+      registryRevision: vectors.inputs.item.registryRevision,
+      expectedPayout: vectors.inputs.item.payout,
+      maxUnitPrice: vectors.inputs.item.maxUnitPrice,
+      registryReadBlock: '1999998700',
+      payloadHash: stablePayloadHash({ token: 'PEPE', window: '1h' }),
+      escrowAddress: '0x4444444444444444444444444444444444444444',
+      researchKey: vectors.expected.researchKey,
+      backend: 'escrow',
+      version: 1,
+      errorMessage: null,
+      createdAt: new Date('2026-07-11T02:00:00.000Z'),
+    })
+    expect(claimed.entry.requestKey).toBe(deriveRequestKey(input.researchKey, input.paymentIntentId))
+    expect(claimed.entry.sourceId).toBe(deriveSourceId(input.source))
+  })
+
+  it('reuses the same escrow intent retry but rejects immutable snapshot drift', async () => {
+    const repo = new MemoryTxLogRepo()
+    const claimableRepo = repo as MemoryTxLogRepo & {
+      claimResearchPaymentIntent: (input: ReturnType<typeof escrowIntentInput>) => Promise<{
+        status: 'claimed' | 'existing' | 'pending' | 'failed'
+        entry: Record<string, unknown>
+      }>
+    }
+    const input = escrowIntentInput()
+
+    const first = await claimableRepo.claimResearchPaymentIntent(input)
+    const retry = await claimableRepo.claimResearchPaymentIntent(input)
+
+    expect(retry).toMatchObject({
+      status: 'pending',
+      entry: {
+        id: first.entry.id,
+        requestId: vectors.expected.requestKey,
+        requestKey: vectors.expected.requestKey,
+        paymentIntentId: vectors.inputs.canonicalPaymentIntentId,
+        toolOrdinal: 0,
+      },
+    })
+    expect(await repo.listByAddress(input.address)).toHaveLength(1)
+
+    await expect(claimableRepo.claimResearchPaymentIntent({
+      ...input,
+      maxUnitPrice: '1001',
+    })).rejects.toMatchObject({
+      code: 'PAYMENT_IDEMPOTENCY_CONFLICT',
+      requestId: vectors.expected.requestKey,
+    })
+
+    await expect(claimableRepo.claimResearchPaymentIntent({
+      ...input,
+      paymentIntentId: '00000000-0000-4000-8000-000000000004',
+    })).rejects.toMatchObject({
+      code: 'PAYMENT_IDEMPOTENCY_CONFLICT',
+    })
+  })
+
+  it('does not let legacy request claiming reuse an escrow payment intent requestKey', async () => {
+    const repo = new MemoryTxLogRepo()
+    const input = escrowIntentInput()
+    await repo.claimResearchPaymentIntent(input)
+
+    await expect(repo.claimRequest({
+      address: input.address,
+      source: input.source,
+      amount: input.amount,
+      requestId: vectors.expected.requestKey,
+      researchId: input.researchId,
+    })).rejects.toMatchObject({
+      code: 'PAYMENT_IDEMPOTENCY_CONFLICT',
+      requestId: vectors.expected.requestKey,
+    })
+  })
+
+  it('rejects escrow intent amounts that cannot be represented as six-decimal USDC units', async () => {
+    const repo = new MemoryTxLogRepo() as MemoryTxLogRepo & {
+      claimResearchPaymentIntent: (input: ReturnType<typeof escrowIntentInput>) => Promise<unknown>
+    }
+
+    await expect(repo.claimResearchPaymentIntent({
+      ...escrowIntentInput(),
+      amount: '0.00000001',
+    })).rejects.toMatchObject({
+      code: 'SCALE8_TRUNCATION',
+    })
+  })
 })
+
+function escrowIntentInput() {
+  return {
+    address: vectors.inputs.buyer,
+    researchId: vectors.inputs.canonicalResearchId,
+    source: vectors.inputs.source,
+    amount: '0.0001',
+    paymentIntentId: vectors.inputs.canonicalPaymentIntentId,
+    toolOrdinal: 0,
+    researchKey: vectors.expected.researchKey,
+    escrowAddress: '0x4444444444444444444444444444444444444444',
+    registryRevision: vectors.inputs.item.registryRevision,
+    expectedPayout: vectors.inputs.item.payout,
+    maxUnitPrice: vectors.inputs.item.maxUnitPrice,
+    registryReadBlock: '1999998700',
+    payload: { window: '1h', token: 'PEPE' },
+  }
+}
+
+function stablePayloadHash(value: unknown) {
+  return keccak256(toBytes(stableStringify(value)))
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+  const record = value as Record<string, unknown>
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(',')}}`
+}

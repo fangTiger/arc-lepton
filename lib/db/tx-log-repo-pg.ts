@@ -9,18 +9,22 @@ import type {
   TxLogEntry,
   TxLogReceiptPatch,
   TxLogRecordInput,
+  TxLogResearchPaymentIntentInput,
   TxLogRepo,
   TxLogScopedEntry,
   TxLogSettlementConfirmInput,
   TxLogSettlementFailInput,
+  TxLogBackend,
   TxStatus,
 } from './tx-log-repo'
 import {
   BILLABLE_TX_STATUSES,
   PaymentIdempotencyConflictError,
+  canonicalResearchPaymentIntentSnapshot,
   normalizeDecimalString,
   normalizeResearchId,
   sameRequestScope,
+  sameResearchPaymentIntentScope,
 } from './tx-log-repo'
 
 type DbClient = VercelPgDatabase<typeof schema>
@@ -39,6 +43,7 @@ function toTxLogEntry(row: typeof txLog.$inferSelect): TxLogEntry {
   return {
     ...row,
     requestId: row.requestId ?? null,
+    backend: row.backend as TxLogBackend | null,
     txStatus: row.txStatus as TxStatus,
   }
 }
@@ -66,6 +71,20 @@ export class PgTxLogRepo implements TxLogRepo {
         blockNumber: entry.blockNumber ?? null,
         settlementId: entry.settlementId ?? null,
         requestId: entry.requestId ?? randomUUID(),
+        backend: entry.backend ?? null,
+        version: entry.version ?? null,
+        paymentIntentId: entry.paymentIntentId ?? null,
+        toolOrdinal: entry.toolOrdinal ?? null,
+        requestKey: entry.requestKey ?? null,
+        sourceId: entry.sourceId ?? null,
+        amountUnits: entry.amountUnits ?? null,
+        registryRevision: entry.registryRevision ?? null,
+        expectedPayout: entry.expectedPayout ?? null,
+        maxUnitPrice: entry.maxUnitPrice ?? null,
+        registryReadBlock: entry.registryReadBlock ?? null,
+        payloadHash: entry.payloadHash ?? null,
+        escrowAddress: entry.escrowAddress ?? null,
+        researchKey: entry.researchKey ?? null,
         errorMessage: entry.errorMessage ?? null,
       })
       .returning()
@@ -88,6 +107,20 @@ export class PgTxLogRepo implements TxLogRepo {
         blockNumber: null,
         settlementId: null,
         requestId: input.requestId,
+        backend: null,
+        version: null,
+        paymentIntentId: null,
+        toolOrdinal: null,
+        requestKey: null,
+        sourceId: null,
+        amountUnits: null,
+        registryRevision: null,
+        expectedPayout: null,
+        maxUnitPrice: null,
+        registryReadBlock: null,
+        payloadHash: null,
+        escrowAddress: null,
+        researchKey: null,
         errorMessage: null,
       })
       .onConflictDoNothing({ target: [txLog.address, txLog.requestId] })
@@ -97,8 +130,99 @@ export class PgTxLogRepo implements TxLogRepo {
 
     const existing = await this.findByRequestId(input.address, input.requestId)
     if (!existing) throw new Error(`Failed to resolve tx_log claim for ${input.address}:${input.requestId}`)
+    if (existing.backend === 'escrow') {
+      throw new PaymentIdempotencyConflictError(input.requestId, existing)
+    }
     if (!sameRequestScope(existing, input)) {
       throw new PaymentIdempotencyConflictError(input.requestId, existing)
+    }
+    if (existing.txStatus === 'pending') return { status: 'pending', entry: existing }
+    if (existing.txStatus === 'failed') return { status: 'failed', entry: existing }
+    return { status: 'existing', entry: existing }
+  }
+
+  async claimResearchPaymentIntent(input: TxLogResearchPaymentIntentInput): Promise<TxLogClaimResult> {
+    const snapshot = canonicalResearchPaymentIntentSnapshot(input)
+    const existingForToolOrdinal = await this.findByResearchToolOrdinal(
+      snapshot.address,
+      snapshot.researchId,
+      snapshot.toolOrdinal,
+    )
+    if (existingForToolOrdinal) return this.resolveExistingResearchPaymentIntent(existingForToolOrdinal, snapshot)
+
+    const [claimed] = await this.database
+      .insert(txLog)
+      .values({
+        address: snapshot.address,
+        source: snapshot.source,
+        amount: snapshot.amount,
+        researchId: snapshot.researchId,
+        txHash: null,
+        txStatus: 'pending',
+        chainId: null,
+        blockNumber: null,
+        settlementId: null,
+        requestId: snapshot.requestId,
+        backend: snapshot.backend,
+        version: snapshot.version,
+        paymentIntentId: snapshot.paymentIntentId,
+        toolOrdinal: snapshot.toolOrdinal,
+        requestKey: snapshot.requestKey,
+        sourceId: snapshot.sourceId,
+        amountUnits: snapshot.amountUnits,
+        registryRevision: snapshot.registryRevision,
+        expectedPayout: snapshot.expectedPayout,
+        maxUnitPrice: snapshot.maxUnitPrice,
+        registryReadBlock: snapshot.registryReadBlock,
+        payloadHash: snapshot.payloadHash,
+        escrowAddress: snapshot.escrowAddress,
+        researchKey: snapshot.researchKey,
+        errorMessage: null,
+      })
+      .onConflictDoNothing()
+      .returning()
+
+    if (claimed) return { status: 'claimed', entry: toTxLogScopedEntry(claimed) }
+
+    const existing = await this.findByRequestId(snapshot.address, snapshot.requestId)
+    if (existing) return this.resolveExistingResearchPaymentIntent(existing, snapshot)
+
+    const existingToolOrdinal = await this.findByResearchToolOrdinal(
+      snapshot.address,
+      snapshot.researchId,
+      snapshot.toolOrdinal,
+    )
+    if (existingToolOrdinal) return this.resolveExistingResearchPaymentIntent(existingToolOrdinal, snapshot)
+
+    throw new Error(`Failed to resolve payment intent claim for ${snapshot.address}:${snapshot.requestId}`)
+  }
+
+  private async findByResearchToolOrdinal(
+    address: string,
+    researchId: string,
+    toolOrdinal: number,
+  ): Promise<TxLogScopedEntry | null> {
+    const [row] = await this.database
+      .select()
+      .from(txLog)
+      .where(and(
+        eq(txLog.address, address),
+        eq(txLog.researchId, researchId),
+        eq(txLog.toolOrdinal, toolOrdinal),
+        isNotNull(txLog.requestId),
+      ))
+      .orderBy(desc(txLog.createdAt))
+      .limit(1)
+
+    return row ? toTxLogScopedEntry(row) : null
+  }
+
+  private resolveExistingResearchPaymentIntent(
+    existing: TxLogScopedEntry,
+    snapshot: ReturnType<typeof canonicalResearchPaymentIntentSnapshot>,
+  ): TxLogClaimResult {
+    if (!sameResearchPaymentIntentScope(existing, snapshot)) {
+      throw new PaymentIdempotencyConflictError(snapshot.requestId, existing)
     }
     if (existing.txStatus === 'pending') return { status: 'pending', entry: existing }
     if (existing.txStatus === 'failed') return { status: 'failed', entry: existing }

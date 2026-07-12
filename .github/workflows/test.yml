@@ -1,4 +1,6 @@
 name: test
+permissions:
+  contents: read
 on:
   push: { branches: [main] }
   pull_request:
@@ -25,3 +27,34 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test --run
       - run: pnpm build
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1
+        with: { version: v1.5.1 }
+      - name: Bootstrap exact OpenZeppelin source
+        working-directory: contracts
+        run: forge install --no-git openzeppelin-contracts=OpenZeppelin/openzeppelin-contracts@tag=v5.6.1
+      - name: Verify dependency lock is unchanged
+        working-directory: contracts
+        run: git diff --exit-code -- foundry.lock
+      - name: Cache exact Solc 0.8.30
+        run: forge build --root contracts
+      - run: npm run contracts:tooling:test
+      - run: npm run contracts:fmt
+      - run: npm run contracts:build
+      - run: npm run contracts:test:unit
+      - run: npm run contracts:test:fuzz
+      - run: npm run contracts:test:invariant
+      - run: npm run contracts:coverage
+      - run: npm run contracts:artifacts:check
+      - name: Install Slither 0.11.5
+        run: python -m pip install slither-analyzer==0.11.5
+      - name: Verify Slither version
+        run: test "$(slither --version)" = "0.11.5"
+      - run: npm run contracts:slither

@@ -5,6 +5,7 @@ import type {
   TxLogEntry,
   TxLogReceiptPatch,
   TxLogRecordInput,
+  TxLogResearchPaymentIntentInput,
   TxLogRepo,
   TxLogScopedEntry,
   TxLogSettlementConfirmInput,
@@ -12,10 +13,12 @@ import type {
 } from './tx-log-repo'
 import {
   PaymentIdempotencyConflictError,
+  canonicalResearchPaymentIntentSnapshot,
   decimalToUnits,
   isBillableTxStatus,
   normalizeResearchId,
   sameRequestScope,
+  sameResearchPaymentIntentScope,
   unitsToDecimal,
 } from './tx-log-repo'
 
@@ -32,9 +35,14 @@ function resolveTxHash(entry: TxLogRecordInput) {
 export class MemoryTxLogRepo implements TxLogRepo {
   private entries = new Map<string, TxLogEntry>()
   private requestIndex = new Map<string, string>()
+  private researchToolOrdinalIndex = new Map<string, string>()
 
   private requestKey(address: string, requestId: string) {
     return `${address}::${requestId}`
+  }
+
+  private researchToolOrdinalKey(address: string, researchId: string, toolOrdinal: number) {
+    return `${address}::${researchId}::${toolOrdinal}`
   }
 
   private cloneEntry<T extends TxLogEntry>(entry: T): T {
@@ -68,6 +76,20 @@ export class MemoryTxLogRepo implements TxLogRepo {
       blockNumber: entry.blockNumber ?? null,
       settlementId: entry.settlementId ?? null,
       requestId,
+      backend: entry.backend ?? null,
+      version: entry.version ?? null,
+      paymentIntentId: entry.paymentIntentId ?? null,
+      toolOrdinal: entry.toolOrdinal ?? null,
+      requestKey: entry.requestKey ?? null,
+      sourceId: entry.sourceId ?? null,
+      amountUnits: entry.amountUnits ?? null,
+      registryRevision: entry.registryRevision ?? null,
+      expectedPayout: entry.expectedPayout ?? null,
+      maxUnitPrice: entry.maxUnitPrice ?? null,
+      registryReadBlock: entry.registryReadBlock ?? null,
+      payloadHash: entry.payloadHash ?? null,
+      escrowAddress: entry.escrowAddress ?? null,
+      researchKey: entry.researchKey ?? null,
       errorMessage: entry.errorMessage ?? null,
       createdAt: new Date(),
     }
@@ -81,6 +103,9 @@ export class MemoryTxLogRepo implements TxLogRepo {
     const researchId = normalizeResearchId(input.researchId)
     const existing = this.entryForRequest(input.address, input.requestId)
     if (existing) {
+      if (existing.backend === 'escrow') {
+        throw new PaymentIdempotencyConflictError(input.requestId, this.cloneEntry(existing))
+      }
       if (!sameRequestScope(existing, { ...input, researchId })) {
         throw new PaymentIdempotencyConflictError(input.requestId, this.cloneEntry(existing))
       }
@@ -105,6 +130,64 @@ export class MemoryTxLogRepo implements TxLogRepo {
     if (!entry.requestId) throw new Error(`tx_log ${entry.id} is missing requestId`)
 
     return { status: 'claimed', entry: entry as TxLogScopedEntry }
+  }
+
+  async claimResearchPaymentIntent(input: TxLogResearchPaymentIntentInput): Promise<TxLogClaimResult> {
+    const snapshot = canonicalResearchPaymentIntentSnapshot(input)
+    const toolOrdinalKey = this.researchToolOrdinalKey(snapshot.address, snapshot.researchId, snapshot.toolOrdinal)
+    const existingToolOrdinalId = this.researchToolOrdinalIndex.get(toolOrdinalKey)
+    if (existingToolOrdinalId) {
+      const existing = this.entries.get(existingToolOrdinalId) as TxLogScopedEntry | undefined
+      if (existing) return this.resolveExistingResearchPaymentIntent(existing, snapshot)
+    }
+
+    const existing = this.entryForRequest(snapshot.address, snapshot.requestId)
+    if (existing) {
+      this.researchToolOrdinalIndex.set(toolOrdinalKey, existing.id)
+      return this.resolveExistingResearchPaymentIntent(existing, snapshot)
+    }
+
+    const entry = await this.record({
+      address: snapshot.address,
+      source: snapshot.source,
+      amount: snapshot.amount,
+      researchId: snapshot.researchId,
+      requestId: snapshot.requestId,
+      txHash: null,
+      txStatus: 'pending',
+      chainId: null,
+      blockNumber: null,
+      settlementId: null,
+      backend: snapshot.backend,
+      version: snapshot.version,
+      paymentIntentId: snapshot.paymentIntentId,
+      toolOrdinal: snapshot.toolOrdinal,
+      requestKey: snapshot.requestKey,
+      sourceId: snapshot.sourceId,
+      amountUnits: snapshot.amountUnits,
+      registryRevision: snapshot.registryRevision,
+      expectedPayout: snapshot.expectedPayout,
+      maxUnitPrice: snapshot.maxUnitPrice,
+      registryReadBlock: snapshot.registryReadBlock,
+      payloadHash: snapshot.payloadHash,
+      escrowAddress: snapshot.escrowAddress,
+      researchKey: snapshot.researchKey,
+      errorMessage: null,
+    })
+    this.researchToolOrdinalIndex.set(toolOrdinalKey, entry.id)
+    return { status: 'claimed', entry: entry as TxLogScopedEntry }
+  }
+
+  private resolveExistingResearchPaymentIntent(
+    existing: TxLogScopedEntry,
+    snapshot: ReturnType<typeof canonicalResearchPaymentIntentSnapshot>,
+  ): TxLogClaimResult {
+    if (!sameResearchPaymentIntentScope(existing, snapshot)) {
+      throw new PaymentIdempotencyConflictError(snapshot.requestId, this.cloneEntry(existing))
+    }
+    if (existing.txStatus === 'pending') return { status: 'pending', entry: this.cloneEntry(existing) }
+    if (existing.txStatus === 'failed') return { status: 'failed', entry: this.cloneEntry(existing) }
+    return { status: 'existing', entry: this.cloneEntry(existing) }
   }
 
   async updateReceipt(id: string, patch: TxLogReceiptPatch): Promise<TxLogEntry> {

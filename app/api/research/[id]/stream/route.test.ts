@@ -76,6 +76,31 @@ const mockState = vi.hoisted(() => {
     id: 'research-owner-race',
     topic: 'ONLY ONE STREAM SHOULD RUN THE AGENT',
   }
+  const escrowRunningRecord = {
+    ...record,
+    id: 'research-escrow-running',
+    topic: 'ESCROW RUNNER IS DURABLE',
+    activationPhase: 'active',
+    finalizationState: 'open',
+    quotaReservationState: 'consumed',
+    researchKey: `0x${'42'.repeat(32)}`,
+    expectedEscrowAddress: '0x4444444444444444444444444444444444444444',
+    escrowAddress: '0x4444444444444444444444444444444444444444',
+  }
+  const durableEvents: Array<{
+    id: string
+    researchId: string
+    cursor: number
+    type: string
+    payload: unknown
+    payloadHash: string
+    operationKey: string | null
+    attempt: number | null
+    fencingToken: number | null
+    dedupeKey: string | null
+    createdAt: Date
+  }> = []
+  let terminalCheckpoint: { researchId: string; cursor: number; state: unknown } | null = null
   const statuses: Array<{ id: string; status: string; errorMessage?: string }> = []
   let statusRaceWon = false
   let releaseOwnerRace: (() => void) | null = null
@@ -95,8 +120,14 @@ const mockState = vi.hoisted(() => {
     reset() {
       calls.length = 0
       statuses.length = 0
+      durableEvents.length = 0
+      terminalCheckpoint = null
       statusRaceWon = false
       resetOwnerRaceGate()
+    },
+    durableEvents,
+    setTerminalCheckpoint(value: { researchId: string; cursor: number; state: unknown } | null) {
+      terminalCheckpoint = value
     },
     releaseOwnerRace() {
       releaseOwnerRace?.()
@@ -123,6 +154,7 @@ const mockState = vi.hoisted(() => {
         if (id === externallyCancelledRecord.id) return externallyCancelledRecord
         if (id === terminalHistoryRecord.id) return terminalHistoryRecord
         if (id === ownerRaceRecord.id) return ownerRaceRecord
+        if (id === escrowRunningRecord.id) return escrowRunningRecord
         return null
       },
       async updateStatus(id: string, status: string, errorMessage?: string) {
@@ -135,6 +167,18 @@ const mockState = vi.hoisted(() => {
         }
         statuses.push({ id, status, errorMessage })
         return true
+      },
+    },
+    researchEventRepo: {
+      async listByResearch(id: string, query: { afterCursor?: number; limit?: number } = {}) {
+        const afterCursor = query.afterCursor ?? 0
+        return durableEvents
+          .filter((event) => event.researchId === id && event.cursor > afterCursor)
+          .sort((left, right) => left.cursor - right.cursor)
+          .slice(0, query.limit ?? 500)
+      },
+      async latestCheckpoint(id: string) {
+        return terminalCheckpoint?.researchId === id ? terminalCheckpoint : null
       },
     },
     async *runResearchAgent(opts: {
@@ -173,6 +217,7 @@ const mockState = vi.hoisted(() => {
 
 vi.mock('@/lib/db', () => ({
   researchRepo: mockState.researchRepo,
+  researchEventRepo: mockState.researchEventRepo,
 }))
 
 vi.mock('@/lib/agent/research-agent', () => ({
@@ -187,10 +232,10 @@ beforeEach(() => {
   mockState.reset()
 })
 
-async function authedRequest(id = 'research-1', signal?: AbortSignal) {
+async function authedRequest(id = 'research-1', signal?: AbortSignal, headers: Record<string, string> = {}) {
   const jwt = await signSessionJwt('0xAbCdEf000000000000000000000000000000C1d3')
   return new Request(`http://localhost/api/research/${id}/stream`, {
-    headers: { cookie: `arc_session=${jwt}` },
+    headers: { ...headers, cookie: `arc_session=${jwt}` },
     signal,
   })
 }
@@ -427,4 +472,103 @@ describe('GET /api/research/[id]/stream', () => {
     expect(secondText).toContain('"type":"final"')
     expect(mockState.calls).toHaveLength(1)
   })
+
+  it('does not start a second inline runner for escrow-bound research streams', async () => {
+    const { GET } = await import('./route')
+    const abortController = new AbortController()
+
+    const res = await GET(await authedRequest('research-escrow-running', abortController.signal), {
+      params: { id: 'research-escrow-running' },
+    })
+    const textPromise = res.text()
+
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(mockState.calls).toHaveLength(0)
+    expect(mockState.statuses).toEqual([])
+
+    abortController.abort()
+    const text = await Promise.race([
+      textPromise,
+      new Promise<string>((resolve) => setTimeout(() => resolve('STREAM_DID_NOT_CLOSE'), 50)),
+    ])
+
+    expect(res.status).toBe(200)
+    expect(text).not.toBe('STREAM_DID_NOT_CLOSE')
+  })
+
+  it('replays durable escrow events after Last-Event-ID without starting an inline runner', async () => {
+    const { GET } = await import('./route')
+    mockState.durableEvents.push(
+      durableEvent({
+        cursor: 1,
+        type: 'thinking',
+        payload: { type: 'thinking', text: 'Already seen' },
+      }),
+      durableEvent({
+        cursor: 2,
+        type: 'final',
+        payload: { type: 'final', reportMd: '# Durable report', totalSpentUsdc: '0', totalCalls: 0 },
+      }),
+    )
+    mockState.setTerminalCheckpoint({
+      researchId: 'research-escrow-running',
+      cursor: 3,
+      state: { phase: 'terminal', terminalEventType: 'final', lastEventCursor: 2 },
+    })
+
+    const res = await GET(await authedRequest('research-escrow-running', undefined, { 'Last-Event-ID': '1' }), {
+      params: { id: 'research-escrow-running' },
+    })
+    const text = await res.text()
+
+    expect(res.status).toBe(200)
+    expect(text).not.toContain('id: 1')
+    expect(text).toContain('id: 2')
+    expect(text).not.toContain('Already seen')
+    expect(text).toContain('"type":"final"')
+    expect(text).toContain('# Durable report')
+    expect(mockState.calls).toHaveLength(0)
+  })
+
+  it('recovers a terminal SSE event from the durable final checkpoint on cold start', async () => {
+    const { GET } = await import('./route')
+    mockState.setTerminalCheckpoint({
+      researchId: 'research-escrow-running',
+      cursor: 3,
+      state: {
+        phase: 'terminal',
+        terminalEventType: 'final',
+        lastEventCursor: 2,
+        event: { type: 'final', reportMd: '# Checkpoint report', totalSpentUsdc: '0', totalCalls: 0 },
+      },
+    })
+
+    const res = await GET(await authedRequest('research-escrow-running'), {
+      params: { id: 'research-escrow-running' },
+    })
+    const text = await res.text()
+
+    expect(res.status).toBe(200)
+    expect(text).toContain('id: 2')
+    expect(text).toContain('"type":"final"')
+    expect(text).toContain('# Checkpoint report')
+    expect(mockState.calls).toHaveLength(0)
+  })
 })
+
+function durableEvent(overrides: Partial<(typeof mockState.durableEvents)[number]> = {}) {
+  return {
+    id: `event-${overrides.cursor ?? 1}`,
+    researchId: 'research-escrow-running',
+    cursor: 1,
+    type: 'thinking',
+    payload: { type: 'thinking', text: 'Durable event' },
+    payloadHash: `0x${'aa'.repeat(32)}`,
+    operationKey: 'RUN:research-escrow-running',
+    attempt: 1,
+    fencingToken: 1,
+    dedupeKey: null,
+    createdAt: new Date('2026-07-11T05:30:00.000Z'),
+    ...overrides,
+  }
+}

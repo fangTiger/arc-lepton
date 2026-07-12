@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import path from 'path'
 
 export default defineConfig({
@@ -12,6 +12,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: [],
+    exclude: [
+      ...configDefaults.exclude,
+      'contracts/lib/**',
+      'contracts/out/**',
+      'contracts/cache/**',
+      'contracts/broadcast/**',
+    ],
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, '.') },

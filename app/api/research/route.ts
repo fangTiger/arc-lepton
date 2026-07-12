@@ -4,7 +4,13 @@ import { researchRepo } from '@/lib/db'
 function serializeResearch(record: Awaited<ReturnType<typeof researchRepo.listByAddress>>[number]) {
   return {
     ...record,
-    startedAt: record.startedAt.toISOString(),
+    createdAt: record.createdAt.toISOString(),
+    preparedAt: record.preparedAt?.toISOString() ?? null,
+    fundingExpiresAt: record.fundingExpiresAt?.toISOString() ?? null,
+    expectedExpiresAt: record.expectedExpiresAt?.toISOString() ?? null,
+    fundingDeadline: record.fundingDeadline?.toISOString() ?? null,
+    cancelRequestedAt: record.cancelRequestedAt?.toISOString() ?? null,
+    startedAt: record.startedAt?.toISOString() ?? null,
     completedAt: record.completedAt?.toISOString() ?? null,
   }
 }
