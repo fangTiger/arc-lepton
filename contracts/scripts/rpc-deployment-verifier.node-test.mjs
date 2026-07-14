@@ -141,6 +141,10 @@ function rpcQuantity(value) {
   return `0x${BigInt(value).toString(16)}`;
 }
 
+function parseRpcQuantity(value) {
+  return BigInt(value);
+}
+
 function roleGrantLog({ address, role, account, sender, txHash, blockNumber, transactionIndex, logIndex }) {
   return {
     address: address.toLowerCase(),
@@ -860,7 +864,19 @@ function createRpc(overrides = {}) {
       }
       if (method === "eth_getLogs") {
         const [filter] = params;
-        return logsByAddressTopic.get(roleLogKey(filter.address, filter.topics[0])) ?? [];
+        const fromBlock = parseRpcQuantity(filter.fromBlock ?? "0x0");
+        const toBlock = parseRpcQuantity(filter.toBlock ?? filter.fromBlock ?? "0x0");
+        if (
+          overrides.maxGetLogsRange !== undefined
+          && toBlock - fromBlock > BigInt(overrides.maxGetLogsRange)
+        ) {
+          throw new Error(`eth_getLogs is limited to a ${overrides.maxGetLogsRange} range`);
+        }
+        const logs = logsByAddressTopic.get(roleLogKey(filter.address, filter.topics[0])) ?? [];
+        return logs.filter((log) => {
+          const blockNumber = parseRpcQuantity(log.blockNumber);
+          return fromBlock <= blockNumber && blockNumber <= toBlock;
+        });
       }
       throw new Error(`unexpected RPC method ${method}`);
     },
@@ -1282,6 +1298,44 @@ test("完整 topology verifier 读回 wiring、initializer 锁、clone implement
   assert.equal(report.smokeIdentities.relationships.buyerSensitiveRoleFree, true);
   assert.equal(report.smokeIdentities.payoutDistinctFrom.length, 14);
   assert.equal(report.smokeIdentities.buyerSensitiveRoleFree, true);
+});
+
+test("topology verifier 对角色事件重放按 RPC block range 限制分页", async () => {
+  const rpc = createRpc({
+    codeByAddress: [[CLONE, minimalProxyRuntime(IMPLEMENTATION)]],
+    callByToData: baselineTopologyCalls(),
+    callErrorByToData: [[initializeProbeKey(), initializerLockError()]],
+    maxGetLogsRange: 10_000,
+  });
+  const candidate = topologyManifest({
+    manifest: {
+      finalizedBlock: {
+        blockNumber: 8_025_050,
+        blockHash: HASH_H,
+        timestamp: "2026-07-11T00:02:00.000Z",
+      },
+    },
+  });
+
+  const report = await verifyArcDeploymentTopologyAndRoles({
+    manifest: candidate,
+    rpc,
+    blockTag: "finalized",
+  });
+
+  assert.equal(report.status, "passed");
+  const getLogCalls = rpc.calls.filter((call) => call.method === "eth_getLogs");
+  assert.ok(getLogCalls.length > 6);
+  for (const call of getLogCalls) {
+    const [filter] = call.params;
+    const fromBlock = parseRpcQuantity(filter.fromBlock);
+    const toBlock = parseRpcQuantity(filter.toBlock);
+    assert.ok(toBlock - fromBlock <= 10_000n);
+  }
+  assert.equal(
+    report.roles.grantRevokeProof.authorities.factory.roles.INTENT_SIGNER_ROLE.grants[0].account,
+    INTENT_SIGNER.toLowerCase(),
+  );
 });
 
 test("smoke verifier 要求 payout 与敏感身份和协议地址隔离", async () => {

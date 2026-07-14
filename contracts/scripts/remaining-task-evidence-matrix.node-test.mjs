@@ -13,12 +13,7 @@ const ROOT = resolve(new URL("../../", import.meta.url).pathname);
 const SOURCE_PATH = resolve(ROOT, "contracts/scripts/remaining-task-evidence-matrix.mjs");
 
 const REMAINING_TASK_IDS = Object.freeze([
-  "13.1",
-  "13.2",
-  "13.3",
   "13.4",
-  "13.5",
-  "13.6",
   "14.2",
   "14.3",
   "14.4",
@@ -32,7 +27,7 @@ function validInput(overrides = {}) {
     openspec: {
       change: "onchain-research-escrow",
       totalTasks: 107,
-      completeTasks: 95,
+      completeTasks: 100,
       remainingTaskIds: [...REMAINING_TASK_IDS],
     },
     evidence: {
@@ -43,9 +38,9 @@ function validInput(overrides = {}) {
       specScenarioAudit: true,
       graphify: {
         rebuiltAfterLastCodeChange: true,
-        nodes: 1189,
-        edges: 2573,
-        communities: 39,
+        nodes: 1307,
+        edges: 2754,
+        communities: 47,
       },
       finalAddressesAndCommit: false,
       finalManifest: false,
@@ -69,7 +64,7 @@ test("current readiness evidence cannot complete any remaining external or live 
   const report = buildRemainingTaskEvidenceMatrix(validInput());
 
   assert.equal(report.openspec.change, "onchain-research-escrow");
-  assert.equal(report.summary.totalRemaining, 12);
+  assert.equal(report.summary.totalRemaining, 7);
   assert.equal(report.summary.completeNow, 0);
   assert.equal(report.goalCompleteAllowed, false);
   assert.deepEqual(report.safety, {
@@ -96,7 +91,7 @@ test("current readiness evidence cannot complete any remaining external or live 
 test("readiness artifacts never substitute for authorization, preflight, final verifier, live E2E or rollback", () => {
   const report = buildRemainingTaskEvidenceMatrix(validInput());
 
-  for (const id of ["13.1", "13.2", "13.6", "14.2", "14.3", "14.4", "14.9"]) {
+  for (const id of ["13.4", "14.2", "14.3", "14.4", "14.9"]) {
     const task = taskById(report, id);
     assert.equal(task.canMarkComplete, false);
     assert.ok(
@@ -104,7 +99,7 @@ test("readiness artifacts never substitute for authorization, preflight, final v
       `${id} must record readiness-only evidence`,
     );
     assert.ok(
-      task.missingEvidence.some((entry) => /授权|preflight|verifier|E2E|rollback|rollout|manifest|receipt|smoke/i.test(entry)),
+      task.missingEvidence.some((entry) => /授权|preflight|verifier|E2E|rollback|rollout|manifest|receipt|smoke|Explorer|exact-match|source/i.test(entry)),
       `${id} must keep authoritative evidence missing`,
     );
   }
@@ -130,12 +125,8 @@ test("14.7 remains incomplete while any external live final or rollback task is 
     evidence: {
       ...validInput().evidence,
       specScenarioAudit: true,
-      deployCoreStageAuthorization: true,
-      configureSourcesAndRolesStageAuthorization: true,
-      smokeUsdcSpendStageAuthorization: true,
-      authorizationBoundPreflight: true,
-      coreDeploymentReceipts: true,
       sourceAndRoleExecution: true,
+      explorerExactMatch: true,
       smokeUsdcSpendEvidence: true,
       publicVerifierReport: true,
       finalManifest: true,
@@ -166,16 +157,12 @@ test("claimed authoritative evidence still cannot make the local matrix a task c
       specScenarioAudit: true,
       graphify: {
         rebuiltAfterLastCodeChange: true,
-        nodes: 1189,
-        edges: 2573,
-        communities: 39,
+        nodes: 1307,
+        edges: 2754,
+        communities: 47,
       },
-      deployCoreStageAuthorization: true,
-      configureSourcesAndRolesStageAuthorization: true,
-      smokeUsdcSpendStageAuthorization: true,
-      authorizationBoundPreflight: true,
-      coreDeploymentReceipts: true,
       sourceAndRoleExecution: true,
+      explorerExactMatch: true,
       smokeUsdcSpendEvidence: true,
       finalAddressesAndCommit: true,
       finalManifest: true,
@@ -189,9 +176,9 @@ test("claimed authoritative evidence still cannot make the local matrix a task c
     },
   }));
 
-  assert.equal(report.summary.authoritativeEvidenceSatisfiedCount, 12);
+  assert.equal(report.summary.authoritativeEvidenceSatisfiedCount, 7);
   assert.equal(report.summary.completeNow, 0);
-  assert.equal(report.summary.blockedCount, 12);
+  assert.equal(report.summary.blockedCount, 7);
   assert.equal(report.goalCompleteAllowed, false);
   assert.equal(report.safety.notTaskCompletionAuthority, true);
   for (const task of report.tasks) {
@@ -218,7 +205,7 @@ test("unknown, missing or duplicate remaining task ids fail closed", () => {
     () => buildRemainingTaskEvidenceMatrix(validInput({
       openspec: {
         ...validInput().openspec,
-        remainingTaskIds: REMAINING_TASK_IDS.filter((id) => id !== "13.5"),
+        remainingTaskIds: REMAINING_TASK_IDS.filter((id) => id !== "13.4"),
       },
     })),
     (error) => error instanceof RemainingTaskEvidenceMatrixError
@@ -230,7 +217,7 @@ test("unknown, missing or duplicate remaining task ids fail closed", () => {
     () => buildRemainingTaskEvidenceMatrix(validInput({
       openspec: {
         ...validInput().openspec,
-        remainingTaskIds: [...REMAINING_TASK_IDS.slice(0, -1), "13.1"],
+        remainingTaskIds: [...REMAINING_TASK_IDS.slice(0, -1), "13.4"],
       },
     })),
     (error) => error instanceof RemainingTaskEvidenceMatrixError
@@ -295,7 +282,7 @@ test("CLI reads stdin JSON and prints the local evidence matrix", async () => {
   assert.equal(code, 0);
   assert.equal(stderr, "");
   const report = JSON.parse(stdout);
-  assert.equal(report.summary.totalRemaining, 12);
+  assert.equal(report.summary.totalRemaining, 7);
   assert.equal(report.summary.completeNow, 0);
   assert.equal(report.goalCompleteAllowed, false);
 });

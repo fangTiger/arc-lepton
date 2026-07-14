@@ -32,6 +32,7 @@ const ROLE_EVENT_TOPICS = [
   { type: "revoked", topic: ROLE_REVOKED_TOPIC, name: "RoleRevoked" },
   { type: "adminChanged", topic: ROLE_ADMIN_CHANGED_TOPIC, name: "RoleAdminChanged" },
 ];
+const ROLE_EVENT_LOG_BLOCK_SPAN = 9_999;
 const FACTORY_VIEW_ABI = parseAbi([
   "function implementation() view returns (address)",
   "function registry() view returns (address)",
@@ -682,25 +683,38 @@ async function loadRoleEvents(rpc, authority, scope, fromBlock, toBlock) {
   const events = [];
   for (const eventTopic of ROLE_EVENT_TOPICS) {
     const path = `roles.${scope}.events.${eventTopic.name}`;
-    const logs = requireRoleLogArray(
-      await rpcRequest(
-        rpc,
-        "eth_getLogs",
-        [
-          {
-            address: authority,
-            fromBlock: toRpcQuantity(fromBlock),
-            toBlock: toRpcQuantity(toBlock),
-            topics: [eventTopic.topic],
-          },
-        ],
+    let chunkIndex = 0;
+    for (let chunkFrom = fromBlock; chunkFrom <= toBlock; chunkFrom += ROLE_EVENT_LOG_BLOCK_SPAN + 1) {
+      const chunkTo = Math.min(chunkFrom + ROLE_EVENT_LOG_BLOCK_SPAN, toBlock);
+      const logs = requireRoleLogArray(
+        await rpcRequest(
+          rpc,
+          "eth_getLogs",
+          [
+            {
+              address: authority,
+              fromBlock: toRpcQuantity(chunkFrom),
+              toBlock: toRpcQuantity(chunkTo),
+              topics: [eventTopic.topic],
+            },
+          ],
+          path,
+        ),
         path,
-      ),
-      path,
-    );
-    events.push(
-      ...logs.map((log, index) => normalizeRoleEventLog(log, authority, eventTopic.type, index, path)),
-    );
+      );
+      events.push(
+        ...logs.map((log, index) =>
+          normalizeRoleEventLog(
+            log,
+            authority,
+            eventTopic.type,
+            chunkIndex + index,
+            path,
+          ),
+        ),
+      );
+      chunkIndex += logs.length;
+    }
   }
 
   return events.sort(

@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "publicRpcNetwork": "arc-testnet-public-rpc",
+  "generatedAt": "2026-07-13T14:18:32.252Z",
+  "finalizedBlock": {
+    "blockNumber": 51618436,
+    "blockHash": "0x28ba6518e1237d8a34fc1463898f38a632fea769958d5c75c72b487fc2f51b5f",
+    "timestamp": "2026-07-13T14:18:25.000Z"
+  },
+  "repository": {
+    "name": "arc-lepton",
+    "remote": "local-workspace-no-push"
+  },
+  "git": {
+    "commit": "7141fae64465f44e4ebc2ce3648787e0b45c54fb",
+    "clean": true,
+    "statusPorcelain": "",
+    "submoduleStatus": ""
+  },
+  "deployer": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+  "generator": {
+    "version": "arc-lepton-deployment-manifest/1"
+  },
+  "addresses": {
+    "registry": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+    "implementation": "0x0995d09b27681b02651de3936f46245832c5d712",
+    "factory": "0x352b064d831f1ee8a6005a186971011fa0c5f8dd"
+  },
+  "build": {
+    "compiler": {
+      "solidityVersion": "0.8.30",
+      "foundryVersion": "1.5.1-stable",
+      "foundryCommit": "b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2",
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "viaIR": false,
+        "evmVersion": "prague",
+        "metadata": {
+          "bytecodeHash": "ipfs",
+          "useLiteralContent": false,
+          "appendCBOR": true
+        },
+        "remappings": [
+          "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+        ]
+      },
+      "settingsHash": "0x72bd766f71ccfa7e2302ce9740a8cbd52266a6608315e50fdad52f87d7700844"
+    },
+    "dependencies": {
+      "openZeppelin": {
+        "tag": "v5.6.1",
+        "revision": "9fd0264492a51d33f01f3dff30b286dda1baee34"
+      },
+      "lockfileHash": "0xc9ec097be0127bca4e2e162d5bf3532867d58b19fe0347bfe1e1aa12bcf7f323",
+      "buildCommand": "FOUNDRY_OFFLINE=true forge build --root contracts --force"
+    }
+  },
+  "roles": {
+    "factoryGovernance": "0x308e6752c8b7db104a5083065b5f334683fe3fa1",
+    "registryGovernance": "0xa2269a9f3dfe98bbfe337f39becdc48d5009da92",
+    "sourceAdmin": "0xaccac6ede23eae0b33675d3c7cb05fcbca98fd30",
+    "fundingSigner": "0xfb90f049d04faa1550fc6f581fbda314879978d8",
+    "intentSigner": "0x9924fcfbde78adcb33693c0e233bb336038a9b72",
+    "settler": "0x851f3d207f19c75e9c3ef5c236f6d3b19b48101f",
+    "smokeBuyer": "0xc0b4a7a1dd468a34ed475695b0123f86779b215d",
+    "smokePayout": "0xbc41577e3a045605eddbeef93013e35b170e4571"
+  },
+  "registryBinding": {
+    "txHash": "0xc16578eb4a9a06b8e9bd1a0f468628e83de8fb2aa2c86db2a0e3fd5c2d85dd32",
+    "blockNumber": 51581093,
+    "blockHash": "0x086d7f403ab1089260180b6849e888f909553a4eb8647b2b70843324d6d2c8f5",
+    "logIndex": 38
+  },
+  "contracts": {
+    "registry": {
+      "name": "DataSourceRegistry",
+      "type": "registry",
+      "address": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+      "creator": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+      "deployment": {
+        "txHash": "0xa373f4ae831e60a99b3efb2a23e777b60594604c3c7c60ee1baf2aa627cd00f7",
+        "status": "success",
+        "blockNumber": 51581081,
+        "blockHash": "0x15fbdeb17fb4c80f42f6740cba2f8e9c7fc800077beb6adfe6d084d9398f660b",
+        "transactionIndex": 10
+      },
+      "artifact": {
+        "fullyQualifiedName": "src/registry/DataSourceRegistry.sol:DataSourceRegistry",
+        "sourceFile": "src/registry/DataSourceRegistry.sol"
+      },
+      "constructorArguments": {
+        "raw": "0x",
+        "decoded": {
+          "initialAdmin": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b"
+        }
+      },
+      "artifactHashes": {
+        "initCodeHash": "0xeae70069d59689cfc108fd5036d48e58a7e13952c7a3045cc3204dfbc9e9cb25",
+        "creationBytecodeHash": "0xeae70069d59689cfc108fd5036d48e58a7e13952c7a3045cc3204dfbc9e9cb25",
+        "compiledDeployedBytecodeHash": "0xc98d3b53b65e992238ffb34e4f64f8436654d4844870a39427093e441761a25c",
+        "onchainRuntimeBytecodeHash": "0xc98d3b53b65e992238ffb34e4f64f8436654d4844870a39427093e441761a25c",
+        "abiHash": "0x6a928390f1229ad7b5801bb8c175926560dfcb31720f125d0388f7727db1eaf0",
+        "metadataHash": "0xdfa688f58b81e7cef319bf411c067d0dfc5c39b3f933bd49787b5cd4b969b484",
+        "buildInfoHash": "0xdd62acc839743be90f9cc5ef91b582ed14ae3e9b69e6ac65a0e50a1056f088b8",
+        "sourceBundleHash": "0x1800b50243925a04200d7a0576470e442996d97fa3a159b3dbeb4757dd40a089"
+      }
+    },
+    "implementation": {
+      "name": "ResearchEscrow",
+      "type": "implementation",
+      "address": "0x0995d09b27681b02651de3936f46245832c5d712",
+      "creator": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+      "deployment": {
+        "txHash": "0x7f61721d2e702e0bf39bfc229b2132cc0438b6c54e77bfdad917a00eb392a896",
+        "status": "success",
+        "blockNumber": 51581084,
+        "blockHash": "0xa77966f4965bd369831f09033d4d792ba08b5987596aa665afc3611958c0c0e6",
+        "transactionIndex": 21
+      },
+      "artifact": {
+        "fullyQualifiedName": "src/escrow/ResearchEscrow.sol:ResearchEscrow",
+        "sourceFile": "src/escrow/ResearchEscrow.sol"
+      },
+      "constructorArguments": {
+        "raw": "0x",
+        "decoded": {}
+      },
+      "artifactHashes": {
+        "initCodeHash": "0x67a80275e4dc71bcfdf747ce24a67ac446bbe143128a974bc2fba242a20348b5",
+        "creationBytecodeHash": "0x67a80275e4dc71bcfdf747ce24a67ac446bbe143128a974bc2fba242a20348b5",
+        "compiledDeployedBytecodeHash": "0xbe20c23d4d8221d746607f6f293f4edf215e24564c7fb1cc715772e43a7577ab",
+        "onchainRuntimeBytecodeHash": "0xbe20c23d4d8221d746607f6f293f4edf215e24564c7fb1cc715772e43a7577ab",
+        "abiHash": "0x29f9d5bc81a0034f9ac86e27ee0ec78a03191bb85934279872ef1ad8fb85654d",
+        "metadataHash": "0x4e2f23ea8c4215aaec88240123677a4186920fdda4cecf622bc80ff0710db4cc",
+        "buildInfoHash": "0xdd62acc839743be90f9cc5ef91b582ed14ae3e9b69e6ac65a0e50a1056f088b8",
+        "sourceBundleHash": "0x43e8709382f72a79494ffac4bc926e620ab9bc41cc8df9cdd21ffa6641068760"
+      },
+      "initializerArguments": {
+        "locked": true,
+        "raw": "0x",
+        "decoded": {}
+      }
+    },
+    "factory": {
+      "name": "ResearchEscrowFactory",
+      "type": "factory",
+      "address": "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
+      "creator": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+      "deployment": {
+        "txHash": "0x60bf910b2ea5ba4ed0b8844d09f35090842c91190d1a096e15144ce79afee376",
+        "status": "success",
+        "blockNumber": 51581087,
+        "blockHash": "0x276ac8d78acf9664c1f81efe90a8530ae68ea3f1f66d1ec8b9a08bc766ab2f6b",
+        "transactionIndex": 6
+      },
+      "artifact": {
+        "fullyQualifiedName": "src/factory/ResearchEscrowFactory.sol:ResearchEscrowFactory",
+        "sourceFile": "src/factory/ResearchEscrowFactory.sol"
+      },
+      "constructorArguments": {
+        "raw": "0x",
+        "decoded": {
+          "implementation": "0x0995d09b27681b02651de3936f46245832c5d712",
+          "registry": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+          "initialAdmin": "0x81d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b"
+        }
+      },
+      "artifactHashes": {
+        "initCodeHash": "0x8e8afea655c38826c79dc53e2f5426f37ff044386626c9a0bf61a69b1eac1441",
+        "creationBytecodeHash": "0x8e8afea655c38826c79dc53e2f5426f37ff044386626c9a0bf61a69b1eac1441",
+        "compiledDeployedBytecodeHash": "0x1589c021fe06ee25d9b0f96a6ee20842ee493ff921a8636d6efd13e7321ed035",
+        "onchainRuntimeBytecodeHash": "0x43a9a95a359f7bfe32ebc7c6d10c2788a9202d38454460e85450993ad2c65415",
+        "abiHash": "0x02d601511ab3a2ab5eece7c5efac4ef9c21f40fb584b680c783f6126fca67d2a",
+        "metadataHash": "0xef6baf9b2fc4d6c1730c110f6280e19c1f20d0a5da274cc30bd4ec3ab0f386b8",
+        "buildInfoHash": "0xdd62acc839743be90f9cc5ef91b582ed14ae3e9b69e6ac65a0e50a1056f088b8",
+        "sourceBundleHash": "0xc76feae9f18897a3d8098988b70d14779586ebedd604113c34a9d631e2fb41d2"
+      }
+    }
+  },
+  "externalDependencies": [
+    {
+      "name": "Arc Testnet official USDC",
+      "type": "erc20",
+      "chainId": 5042002,
+      "authority": "Arc Testnet official USDC/native system token",
+      "finalizedBlockNumber": 51618436,
+      "projectDeployment": false,
+      "address": "0x3600000000000000000000000000000000000000",
+      "decimals": 6,
+      "codeHash": "0xc9987bd3af6b26a030951faa7eacc017b68343aeedf3ce5fe68f821c4b93939d"
+    },
+    {
+      "name": "Arc native USDC system emitter",
+      "type": "system-emitter",
+      "chainId": 5042002,
+      "authority": "Arc native USDC system events",
+      "finalizedBlockNumber": 51618436,
+      "projectDeployment": false,
+      "address": "0xfffffffffffffffffffffffffffffffffffffffe"
+    },
+    {
+      "name": "Arc explorer",
+      "type": "explorer",
+      "chainId": 5042002,
+      "authority": "Arc public explorer",
+      "finalizedBlockNumber": 51618436,
+      "projectDeployment": false,
+      "identifier": "arc-testnet-explorer"
+    },
+    {
+      "name": "Safe v1.4.1 proxy factory",
+      "type": "safe-infrastructure",
+      "chainId": 5042002,
+      "authority": "Safe official deployment",
+      "finalizedBlockNumber": 51618436,
+      "projectDeployment": false,
+      "address": "0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67"
+    }
+  ],
+  "clones": [
+    {
+      "clone": "0x00457075a5989da633410b1f7a92851313177a85",
+      "buyer": "0xc0b4a7a1dd468a34ed475695b0123f86779b215d",
+      "researchKey": "0x8731b9292b700c10710b416fe6b88cd2317a60c2fb11cc1c4ada5fc39172dfba",
+      "factory": "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
+      "implementation": "0x0995d09b27681b02651de3936f46245832c5d712",
+      "registry": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+      "usdc": "0x3600000000000000000000000000000000000000",
+      "salt": "0xea9a429473d22d9e4d2b5ab479c7828319e9ae9477e33c72e6484621026063dc",
+      "predictedAddress": "0x00457075a5989da633410b1f7a92851313177a85",
+      "voucherHash": "0x56e75dba30aacbf75bbc61d38f4e53bb197d6707aa654335fe45c9aa15d5e49f",
+      "voucherNonce": "1783951309",
+      "initializerArguments": {
+        "raw": "0x",
+        "decoded": {
+          "factory": "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
+          "registry": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+          "usdc": "0x3600000000000000000000000000000000000000",
+          "buyer": "0xc0b4a7a1dd468a34ed475695b0123f86779b215d",
+          "researchKey": "0x8731b9292b700c10710b416fe6b88cd2317a60c2fb11cc1c4ada5fc39172dfba",
+          "initialBudget": "1000",
+          "expectedExpiresAt": 1784555100,
+          "activationCutoff": 1784209500,
+          "plannedIntentSigner": "0x9924fcfbde78adcb33693c0e233bb336038a9b72"
+        }
+      },
+      "funding": {
+        "txHash": "0x79bc3ea6f5d0eceb9ee191e8f0b5bfd21d34c6c4a6df770ea813adc10758d06e",
+        "status": "success",
+        "blockNumber": 51616520,
+        "blockHash": "0x962993a5ce1e64f83984a5c2ee2aa1ff72faf0c1d4fe07f85a747f374a016c12",
+        "transactionIndex": 6,
+        "factoryEventLogIndex": 26,
+        "usdcFundingTransferLogIndex": 25,
+        "nonZero": true,
+        "amountUnits": "1000"
+      },
+      "initialBudget": "1000",
+      "activationCutoff": 1784209500,
+      "expectedExpiresAt": 1784555100,
+      "runtimeHash": "0x34a9cd123de6614432c42e6e7ae4ce7ad85d2be95a16a83267eeafb6cd90502d",
+      "state": "Closed",
+      "settlement": {
+        "successful": true,
+        "txHash": "0xd2b8899f1fa3243f7b78d856f7a865dde62f7f70aac128d0350e909e07ca8b6b",
+        "blockNumber": 51616528,
+        "blockHash": "0x36a3e683586f203cc12ddf3229dc8705eab81b93c71086ba2c559a9acbcac1c1",
+        "logIndex": 31
+      }
+    }
+  ],
+  "cloneCounts": {
+    "funded": 1,
+    "settled": 1
+  },
+  "deploymentTopology": {
+    "formula": "3 + R",
+    "coreContracts": 3,
+    "researchCloneR": 1,
+    "totalProjectContracts": 4,
+    "settledResearchClones": 1,
+    "excluded": {
+      "zeroFundingClones": 0,
+      "externalDependencies": 4,
+      "externalDependencyReferences": [
+        {
+          "name": "Arc Testnet official USDC",
+          "type": "erc20",
+          "address": "0x3600000000000000000000000000000000000000"
+        },
+        {
+          "name": "Arc native USDC system emitter",
+          "type": "system-emitter",
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe"
+        },
+        {
+          "name": "Arc explorer",
+          "type": "explorer",
+          "identifier": "arc-testnet-explorer"
+        },
+        {
+          "name": "Safe v1.4.1 proxy factory",
+          "type": "safe-infrastructure",
+          "address": "0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67"
+        }
+      ]
+    }
+  }
+}

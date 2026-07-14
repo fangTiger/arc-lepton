@@ -2,7 +2,9 @@
 
 ## 范围与硬边界
 
-当前 OpenSpec 进度：`onchain-research-escrow` 为 `95/107 tasks`。
+当前 OpenSpec 进度：`onchain-research-escrow` 为 `100/107 tasks`。
+
+本地收尾复核时，13.1–13.3 已根据用户逐阶段授权、`deploy-core-preflight-report.json`、`deploy-core-broadcast-summary.json` 和最终 manifest/verifier 证据关闭。本文档保留为 13.2 授权前 readiness audit 与 fail-closed 设计记录；它仍不是授权记录、不是 preflight 通过证明，也不替代 13.4 的 Explorer source/ABI exact-match 发布证据。
 
 本文档只是 readiness audit，用于在用户授权后快速执行 13.2 preflight；它不是授权记录，不是 preflight 通过证明，也不是进入部署的许可。13.2 只能在 13.1 明确授权后执行：必须先由用户针对当次 `deploy_core_contracts` 的 chain、commit、地址、交易、预计 gas、资金影响和 requestDigest 给出明确同意，才能开始确认 clean Git commit、compiler settings、deployer balance、Factory/Registry Safe code、source payout、funding signer、intent signer EOA、settler、官方 USDC 和 public RPC finalized block。
 
@@ -41,11 +43,11 @@
 - 官方 USDC：chainId 5042002 的官方 USDC 必须为权威配置，不能由 manifest 或 RPC 返回的替代 token 覆盖。
 - public RPC finalized block：必须用公开 RPC 取得 finalized block、chainId 与必要读回；credentialed RPC 只能用于本地私有操作，不能进入公开证据。
 
-## 13.2 前仍缺的公开输入
+## 13.2 授权前曾要求的公开输入
 
-这些缺口存在前，不得把 13.2 视为 ready 或完成：
+这些项目在进入 13.2 时必须由授权、preflight 和公开证据满足；当前 13.1–13.3 已关闭，但本节保留为历史审计清单，不能被复用为新的 source verify、rollout 或 rollback 授权：
 
-- 用户对 `deploy_core_contracts` 的明确授权：当前没有用户针对本次 requestDigest、chain、commit、地址、预计交易、预计 gas 和 `maxUsdcUnits = 0` 的明确授权。
+- 用户对 `deploy_core_contracts` 的明确授权：必须针对本次 requestDigest、chain、commit、地址、预计交易、预计 gas 和 `maxUsdcUnits = 0` 明确授权；历史授权不得跨阶段复用。
 - 真实公开地址值：缺少当次要展示的 deployer、Factory governance Safe、Registry governance Safe、source admin、funding signer、intent signer EOA、settler、source payout 等真实公开地址值。
 - dry-run 预计地址/gas：缺少三个核心合约的 dry-run 预计地址/gas，以及 bind Registry to Factory 的 gas 估计。
 - 公开 RPC finalized block：缺少用 public RPC 取得的 chainId 5042002 finalized block 与关键读回快照。

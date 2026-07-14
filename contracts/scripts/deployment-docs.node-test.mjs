@@ -28,9 +28,11 @@ test("README on-chain escrow section points to the chain and final evidence entr
   requireIncludes(section, "3 + R", "README escrow section");
   requireIncludes(section, "chainId `5042002`", "README escrow section");
   requireIncludes(section, "`deployments/5042002.json`", "README escrow section");
+  requireIncludes(section, "7141fae64465f44e4ebc2ce3648787e0b45c54fb", "README escrow section");
+  requireIncludes(section, "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3", "README escrow section");
   requireIncludes(section, "fresh stage-specific authorization", "README escrow section");
-  requireIncludes(section, "not final deployment evidence", "README escrow section");
-  requireIncludes(section, "13.x/14.8/14.9", "README escrow section");
+  requireIncludes(section, "Explorer exact-match source/ABI verification", "README escrow section");
+  requireIncludes(section, "production rollout/E2E", "README escrow section");
 });
 
 test("contract deployment runbook covers trust, rollout, rollback, and evidence boundaries", () => {
@@ -49,8 +51,10 @@ test("contract deployment runbook covers trust, rollout, rollback, and evidence 
     "## Explorer 证据与 manifest",
     "chainId `5042002`",
     "`deployments/5042002.json`",
+    "7141fae64465f44e4ebc2ce3648787e0b45c54fb",
+    "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
     "未授权时不得广播任何部署、source、角色或 smoke 交易",
-    "只要 `deployments/5042002.json`、Explorer exact-match、独立 verifier 或 smoke evidence 任一项缺失或不一致",
+    "Explorer exact-match 和 live rollout/E2E/rollback 仍是剩余发布门禁",
   ]) {
     requireIncludes(runbook, expected, "deployment runbook");
   }

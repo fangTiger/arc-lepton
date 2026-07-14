@@ -33,10 +33,10 @@ test("spec scenario audit records current progress and keeps 14.7 incomplete", a
   const audit = await readAudit();
 
   for (const phrase of [
-    "95/107 tasks",
+    "100/107 tasks",
     "不建议勾选 14.7",
     "14.7 仍未完成",
-    "13.1–13.6、14.2–14.4、14.7–14.9",
+    "13.4、14.2–14.4、14.7–14.9",
   ]) {
     assert.ok(audit.includes(phrase), `audit must mention ${phrase}`);
   }
@@ -54,6 +54,10 @@ test("spec scenario audit includes the latest readiness evidence paths", async (
       "contracts/scripts/graphify-final-evidence-readiness.node-test.mjs",
       "docs/plans/2026-07-11-onchain-research-escrow-final-public-verifier-readiness.md",
       "contracts/scripts/final-public-verifier-readiness.node-test.mjs",
+      "13.5 test USDC smoke completion",
+      "13.6 final public RPC verifier completion",
+      "manifestDigest 为 `2b403150a6564bdf1b754f194de1512a1867e6e3590d5cef54487edac07ddf2d`",
+      "verifierStatus 为 `passed`",
       "node --test contracts/scripts/deployment-readiness-audit.node-test.mjs contracts/scripts/rollout-e2e-readiness.node-test.mjs contracts/scripts/graphify-final-evidence-readiness.node-test.mjs",
       "12/12 pass",
   ]) {
@@ -104,7 +108,7 @@ test("spec scenario audit and verification sweep include the latest contracts to
   ]) {
     for (const phrase of [
       "最新本地复核",
-      "`npm run contracts:tooling:test` 485/485",
+      "`npm run contracts:tooling:test` 486/486",
       "deployment authorization handoff placeholder boundary",
       "deployment authorization handoff machine-readable safety flags",
       "deployment authorization briefing JSON-like input hygiene",
@@ -153,12 +157,7 @@ test("remaining external/live tasks are still unchecked", async () => {
   const tasks = await readFile(TASKS_PATH, "utf8");
 
   for (const taskId of [
-    "13.1",
-    "13.2",
-    "13.3",
     "13.4",
-    "13.5",
-    "13.6",
     "14.2",
     "14.3",
     "14.4",
@@ -170,6 +169,14 @@ test("remaining external/live tasks are still unchecked", async () => {
       tasks,
       new RegExp(`- \\[ \\] ${taskId.replace(".", "\\.")} `),
       `${taskId} must remain unchecked`,
+    );
+  }
+
+  for (const taskId of ["13.1", "13.2", "13.3", "13.5", "13.6"]) {
+    assert.match(
+      tasks,
+      new RegExp(`- \\[x\\] ${taskId.replace(".", "\\.")} `),
+      `${taskId} must be checked`,
     );
   }
 });

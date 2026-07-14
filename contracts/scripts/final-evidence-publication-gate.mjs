@@ -10,9 +10,9 @@ const CHANGE_NAME = "onchain-research-escrow";
 const ARC_TESTNET_CHAIN_ID = 5042002;
 const STAGE = "final_evidence_publication";
 const GRAPHIFY_SUMMARY = Object.freeze({
-  nodes: 1189,
-  edges: 2573,
-  communities: 39,
+  nodes: 1307,
+  edges: 2754,
+  communities: 47,
   reportPath: "graphify-out/GRAPH_REPORT.md",
 });
 const REQUIRED_DOCUMENT_PATHS = Object.freeze([

@@ -35,7 +35,8 @@ test("source role readiness records 13.4 authorization and evidence boundaries",
     "roleChangeAllowed=false",
     "taskCompleteAllowed=false",
     "候选 manifest 或本地 readiness 不得替代 13.4 真实执行证据",
-    "不得 source verify、不得 source 登记、不得 grant/revoke、不得角色移交",
+    "Explorer exact-match source/ABI 尚未完成",
+    "配置/角色执行证据只覆盖 bindFactory",
     "用户未回应或模糊同意必须停止",
     "request/commit/address/source/role/gas 变化必须重新授权",
   ];
@@ -45,7 +46,7 @@ test("source role readiness records 13.4 authorization and evidence boundaries",
   }
 });
 
-test("source role readiness keeps task 13.4 unchecked until real execution evidence exists", async () => {
+test("source role readiness keeps task 13.4 unchecked until Explorer exact-match evidence exists", async () => {
   const [readiness, tasks] = await Promise.all([readReadiness(), readFile(TASKS_PATH, "utf8")]);
 
   assert.ok(readiness.includes("13.4 仍 pending"), "readiness must not claim 13.4 complete");

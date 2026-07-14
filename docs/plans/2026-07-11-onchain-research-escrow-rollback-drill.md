@@ -28,7 +28,7 @@
 ## 前置条件与安全边界
 
 - OpenSpec change：`onchain-research-escrow`。
-- 当前进度：`openspec list` 显示 `95/107 tasks`，14.9 未完成。
+- 当前进度：`openspec list` 显示 `100/107 tasks`，14.9 未完成。
 - 本地工作树在开始前已有大量未提交/新增/删除文件；本报告只新增当前文件，避免覆盖既有改动。
 - 禁止项：未执行 `forge script --broadcast`、未调用部署脚本、未触碰私钥/keystore/带凭据 RPC、未花费 test USDC、未修改运行时配置。
 - Graphify：已读取 `graphify-out/GRAPH_REPORT.md`，并执行结构查询：
@@ -41,7 +41,7 @@
 - `openspec list --specs`
   - 通过；列出当前 specs。
 - `openspec list`
-  - 通过；`onchain-research-escrow 95/107 tasks`。
+  - 通过；`onchain-research-escrow 100/107 tasks`。
 - `openspec status --change onchain-research-escrow --json`
   - 通过；schema 为 `spec-driven`，repo-local。
 - `openspec instructions apply --change onchain-research-escrow --json`

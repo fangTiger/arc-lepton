@@ -16,8 +16,8 @@ async function readRollbackDrill() {
 test("rollback drill records the current OpenSpec progress", async () => {
   const drill = await readRollbackDrill();
 
-  assert.ok(drill.includes("95/107 tasks"), "rollback drill must mention 95/107 tasks");
-  assert.doesNotMatch(drill, /93\/107 tasks/, "rollback drill must not mention stale 93/107 progress");
+  assert.ok(drill.includes("100/107 tasks"), "rollback drill must mention 100/107 tasks");
+  assert.doesNotMatch(drill, /9[3-7]\/107 tasks/, "rollback drill must not mention stale 93-97/107 progress");
 });
 
 test("rollback drill keeps 14.5 local regression separate from remaining live blockers", async () => {

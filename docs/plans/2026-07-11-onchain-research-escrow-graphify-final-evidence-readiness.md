@@ -2,18 +2,18 @@
 
 ## 范围与硬边界
 
-本文档是 14.8 本地 readiness 记录，只说明修改代码后的 Graphify 与最终部署证据引用应如何复核；它不替代真实完成，14.8 仍未完成，也不得作为勾选 tasks 的依据。
+本文档是 14.8 本地 readiness 记录，只说明修改代码后的 Graphify 与最终部署证据引用应如何复核；它不替代真实完成，不替代 Explorer exact-match、生产 rollout/E2E 或 live rollback 证据，也不得作为这些外部任务的完成依据。14.8 仍未完成。
 
-当前没有新的分阶段授权，因此不得执行任何外部写入：不得 --broadcast，不得 source verify，不得 role grant/revoke，不得真实 manifest 发布，不得部署、配置 source、移交角色或花费 test USDC。所有最终地址、最终 commit、tx hash、block、runtime/code hash 都必须来自授权后的真实部署和公开可复核证据，不得使用 placeholder。
+当前没有新的分阶段授权，因此不得执行任何外部写入：不得 --broadcast，不得 source verify，不得 role grant/revoke，不得重新部署、配置 source、移交角色、真实 manifest 发布或花费 test USDC。最终地址、最终 commit、tx hash、block、runtime/code hash 已来自授权后的真实部署和公开可复核证据，不得使用 placeholder；后续若要向 Explorer 发布源码/编译元数据，仍必须单独取得该外部发布动作的明确授权。
 
 ## Graphify 状态
 
 本轮代码与文档修改后已重建 Graphify，并以 `graphify-out/GRAPH_REPORT.md` 作为当前本地证据。当前报告摘要为：
 
-- `1189 nodes`
-- `2573 edges`
-- `39 communities detected`
-- extraction: `95% EXTRACTED`
+- `1307 nodes`
+- `2754 edges`
+- `47 communities detected`
+- extraction: `94% EXTRACTED`
 
 如果后续执行 `graphify query` 不可用，应降级阅读报告：先查看 `graphify-out/GRAPH_REPORT.md` 的 god nodes、community structure 与 knowledge gaps，再结合 `rg`/测试命令做人工影响检查；Graphify 失败不得阻断安全复核，但必须记录降级阅读报告的原因。
 
@@ -51,4 +51,4 @@
 
 ## 当前结论
 
-当前只完成 14.8 的本地 readiness 口径：Graphify 报告已经可读，影响图检查范围已经列出，最终地址/最终 commit/chainId 5042002/tx hash/block/runtime/code hash 的完成条件已经明确。由于尚未获得部署、source verify、role grant/revoke、真实 manifest 发布或 test USDC smoke 的分阶段授权，14.8 仍未完成。
+当前完成 14.8 的本地 readiness 口径：Graphify 报告已经可读，影响图检查范围已经列出，`README.md`、`docs/contracts/onchain-research-escrow.md`、`deployments/5042002.json` 和 verifier/readiness 文档均指向同一 chainId `5042002`、commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`、核心地址和 smoke clone。13.4 的 Explorer exact-match、14.2–14.4 的真实 rollout/E2E、14.9 的 live rollback 仍需独立完成。

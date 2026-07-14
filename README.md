@@ -51,15 +51,21 @@ The in-progress escrow rollout is documented in
 the `3 + R` deployment topology, role boundaries, funding UX, worker SLA, deployment, rollback,
 key rotation, incident response, and the Explorer/manifest evidence that must be filled from real
 Arc Testnet deployment receipts before final evidence is published.
-The final evidence entrypoint is `deployments/5042002.json` for Arc Testnet chainId `5042002`;
-until that file is populated from verified receipts, the runbook remains pre-deployment material.
-Missing final evidence means final deployment evidence and 13.x/14.8/14.9 completion must not be
-marked or published.
+The final evidence entrypoint is now `deployments/5042002.json` for Arc Testnet chainId `5042002`
+and clean commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`. The current manifest records
+Registry `0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3`, implementation
+`0x0995d09b27681b02651de3936f46245832c5d712`, Factory
+`0x352b064d831f1ee8a6005a186971011fa0c5f8dd`, and one funded/settled smoke clone
+`0x00457075a5989da633410b1f7a92851313177a85`, so the current topology is `3 + R = 4`.
 
-This is a pre-deployment runbook, not final deployment evidence. Deployment tooling and operators
-must not broadcast contract deployments, source configuration, role changes, or smoke transactions
-without fresh stage-specific authorization for the exact chain, commit, addresses, calldata, gas
-scope, and USDC impact.
+This manifest and the public RPC verifier are final local evidence inputs, but they do not by
+themselves close the remaining external gates. Explorer exact-match source/ABI verification,
+production rollout/E2E, and live rollback evidence must still be completed before the remaining
+13.4 and 14.x completion items are marked or final publication is approved.
+
+Deployment tooling and operators must not broadcast contract deployments, source configuration,
+role changes, smoke transactions, or Explorer source verification without fresh stage-specific authorization
+for the exact chain, commit, addresses, calldata/source payload, gas scope, and USDC impact.
 
 ## Core Capabilities
 

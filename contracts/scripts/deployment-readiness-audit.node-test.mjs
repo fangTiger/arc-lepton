@@ -17,7 +17,8 @@ test("deployment readiness audit records 13.2 authorization boundary and local g
   const audit = await readAudit();
 
   for (const phrase of [
-    "95/107 tasks",
+    "100/107 tasks",
+    "13.1–13.3 已根据用户逐阶段授权",
     "13.2 只能在 13.1 明确授权后执行",
     "readiness audit",
     "不是授权记录",
@@ -35,7 +36,7 @@ test("deployment readiness audit records 13.2 authorization boundary and local g
   }
 });
 
-test("deployment readiness audit lists authorization-time confirmations and current blockers", async () => {
+test("deployment readiness audit lists authorization-time confirmations and preserved audit checklist", async () => {
   const audit = await readAudit();
 
   for (const phrase of [
@@ -49,6 +50,7 @@ test("deployment readiness audit lists authorization-time confirmations and curr
     "settler",
     "官方 USDC",
     "public RPC finalized block",
+    "13.2 授权前曾要求的公开输入",
     "用户对 `deploy_core_contracts` 的明确授权",
     "真实公开地址值",
     "dry-run 预计地址/gas",

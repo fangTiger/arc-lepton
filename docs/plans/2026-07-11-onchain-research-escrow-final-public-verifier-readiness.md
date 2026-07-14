@@ -1,6 +1,6 @@
 # Onchain Research Escrow 13.6 final public RPC verifier readiness
 
-日期：2026-07-11
+日期：2026-07-13
 
 范围：OpenSpec change `onchain-research-escrow` 的 13.6：
 
@@ -8,39 +8,44 @@
 
 ## 总结论
 
-13.6 仍 pending。
+13.6 已通过。
 
-本文档只是一份本地 readiness 清单，用于把最终 public verifier 的输入、输出和发布边界整理清楚。当前没有读取真实 public RPC、没有生成最终 `deployments/5042002.json`、没有发布最终 manifest、没有更新 README/docs/contracts 最终地址，也没有把候选 manifest 标记为可交付证据。
+最终 manifest、公开 RPC verifier 报告和 digest 已生成并互相对齐：
 
-13.6 的独立公开 RPC verifier 必须在 13.3 部署、13.4 source/roles/exact-match 和 13.5 `smoke_usdc_spend` 全部真实完成后运行。它必须仅凭公开 RPC、权威 USDC 配置和 manifest 复核事实；不得依赖私有数据库、credentialed RPC、部署脚本内存状态、操作者口头说明或本地 mock evidence。候选 manifest、本地模拟 verifier、readiness 文档不能替代最终 public verifier；authorization package、handoff、briefing、requestDigest 也不是 verifier 成功结果。
+- manifest：`deployments/5042002.json`
+- manifest cache copy：`cache/deployment-candidates/2026-07-13T01-18-06-735Z/final-deployment-manifest.json`
+- verifier report：`cache/deployment-candidates/2026-07-13T01-18-06-735Z/final-public-verifier-report.json`
+- digest：`cache/deployment-candidates/2026-07-13T01-18-06-735Z/final-deployment-manifest-digest.json`
+- manifestDigest：`2b403150a6564bdf1b754f194de1512a1867e6e3590d5cef54487edac07ddf2d`
+- blockTag：`0x313a284`
+- finalizedBlockNumber：`51618436`
+- verifierStatus：`passed`
 
-任一不一致不得发布证据。只要 chainId、地址、role graph、source 配置、runtime hash、Explorer exact-match、smoke、clone count、settled count 或 finalized block 证据缺失、失败、unknown、非 finalized 或互相矛盾，就不得发布最终 manifest，不得更新 README/docs/contracts 最终地址，不得增加项目合约计数，不得宣称部署或 smoke 完成。
+## 13.6 verifier 已复核的公开事实
 
-## 13.6 verifier 必须复核的公开事实
+独立公开 RPC verifier 仅凭公开 RPC、权威 USDC 配置和 manifest 复核：
 
-独立公开 RPC verifier 至少需要覆盖：
-
-1. `deployments/5042002.json` schema、manifest digest、chainId `5042002`、network 标识、目标 commit、clean-tree 证明和 evidence generatedAt。
-2. 权威 USDC 配置：内置官方 USDC `0x3600000000000000000000000000000000000000`、native emitter `0xfffffffffffffffffffffffffffffffffffffffe`、decimals=6、runtime/proxy implementation 和 finalized block 读回。
-3. 三个核心合约：Registry、ResearchEscrow implementation、ResearchEscrowFactory 的部署 tx、creator、block、constructor/init 参数、runtime hash、artifact hash、ABI hash 和 Explorer exact-match。
-4. Registry/Factory wiring：Registry.factory/USDC、Factory.registry/USDC/implementation、一次性 bindFactory 事件、initializer 锁和 clone implementation。
-5. 角色 members/count/admin graph：Factory/Registry DEFAULT_ADMIN、SOURCE_ADMIN、FUNDING_SIGNER、INTENT_SIGNER、SETTLER 的完整成员、role-admin、grant/revoke 事件重放、INTENT_SIGNER EOA code=0 和 deployer 零权限。
-6. source revision/payout/maxUnitPrice/active：五个 source 的 sourceId、revision、payout、maxUnitPrice、active、事件和 finalized readback，payout 不得与敏感身份或协议地址重叠。
-7. `3 + R` 拓扑：三个核心合约加上仅由项目 Factory 非零资助且 runtime/lineage 可复核的 clone；manifest 必须同时列出 `fundedCloneCount` 和 `settledCloneCount`，且 `settledCloneCount <= fundedCloneCount`。
-8. smoke：`smoke_usdc_spend` 的 approve、createAndFund、activate、settleBatch、close/refund txHash、blockHash、logIndex、六位合约差额、18 位 native/gas、两类 emitter Transfer 去重、settlementResultDigest、finalLiabilityHash 和退款守恒。
+1. chainId `5042002`、权威 USDC `0x3600000000000000000000000000000000000000`、native emitter `0xfffffffffffffffffffffffffffffffffffffffe` 和 decimals=6。
+2. 三个核心合约：Registry `0x98C9ff2110843186F5fa55F5B0af010ECa0bF0d3`、ResearchEscrow implementation `0x0995d09B27681B02651De3936f46245832c5d712`、ResearchEscrowFactory `0x352B064d831f1eE8a6005A186971011fa0c5f8Dd` 的 code/runtime hash。
+3. Registry/Factory wiring：Factory implementation/registry/USDC/initialDeployer，Registry factory/USDC。
+4. 角色 members/count/admin graph：Factory/Registry DEFAULT_ADMIN、SOURCE_ADMIN、FUNDING_SIGNER、INTENT_SIGNER、SETTLER，deployer 零权限，intentSigner 为 EOA 且角色互斥。
+5. source revision/payout/maxUnitPrice/active 与 role graph grant/revoke replay。
+6. `3 + R` 拓扑：coreContracts=3、researchCloneR=1、totalProjectContracts=4、settledResearchClones=1。
+7. cloneCounts：fundedCloneCount=1、settledCloneCount=1，且 `settledCloneCount <= fundedCloneCount`。
+8. `smoke_usdc_spend`：Escrow `0x00457075A5989Da633410B1F7A92851313177A85` 已 closed，spent=100、budgetRefund=900、escrow USDC=0、payout received 100。
 
 ## 发布边界
 
-- 不能替代 13.6 真实 public verifier：本 readiness 只列清单，不访问 public RPC，不验证最终链上事实。
-- 候选 manifest、本地模拟 verifier、readiness 文档不能替代最终 public verifier；本地 `rpc-deployment-verifier.node-test.mjs` 只能证明 verifier 逻辑的 fail-closed 行为。
-- 最终 public verifier 必须默认 fail closed；任一字段 missing、unknown、RPC disagreement、非 finalized、Explorer exact-match 缺失、role graph 不一致、source revision drift、smoke 余额不守恒或计数不一致，都必须以非零状态停止发布。
-- 在 13.6 成功前，不得发布最终 manifest，不得更新 README/docs/contracts 最终地址，不得把 Graphify readiness、rollout readiness、rollback drill 或 authorization package 输出当作最终证据。
+- 13.6 通过只证明最终 manifest 与公开 RPC verifier 在 fixed finalized block 上一致；它不授权新的 source verify、role grant/revoke、production rollout、live E2E 或 rollback。
+- 候选 briefing、authorization package、handoff、requestDigest 仍不是授权记录，也不能替代本次保存的 final manifest/verifier 证据。
+- 后续若 README、`docs/contracts/`、Graphify final evidence 或 rollout 文档引用最终地址/commit，必须引用上述 manifest/report/digest，并保持 chainId、地址、clone count、role graph、source 配置和 smoke 证据一致。
+- 14.2–14.4、14.7–14.9 仍需各自的 production rollout/E2E/spec audit/final docs/rollback 证据；13.6 不替代这些任务。
 
-## 当前仍缺
+## 已满足的 13.6 勾选条件
 
-- 13.3 未部署 Registry、implementation、Factory。
-- 13.4 未完成 Explorer exact-match、bindFactory、source 登记、role grant/revoke/移交和 deployer 撤权读回。
-- 13.5 未执行 direct EOA buyer test USDC smoke。
-- 没有最终 `deployments/5042002.json`，也没有 finalized block 上的公开 RPC 复核报告。
-
-因此本文件不改变 `openspec/changes/onchain-research-escrow/tasks.md`；13.6 保持未完成。
+- `deployments/5042002.json` 与 cache manifest 对齐。
+- public verifier report status 为 `passed`。
+- manifestDigest 为 `2b403150a6564bdf1b754f194de1512a1867e6e3590d5cef54487edac07ddf2d`。
+- fixed finalized block 为 `0x313a284` / `51618436`。
+- topology、roles、source、official USDC、clone count 与 smoke readback 均已复核。
+- `openspec/changes/onchain-research-escrow/tasks.md` 中 13.6 已勾选。

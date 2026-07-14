@@ -128,12 +128,12 @@
 
 ## 13. Arc Testnet 外部写入授权门禁
 
-- [ ] 13.1 在任何部署、source 登记、角色 grant/revoke/移交或 test USDC 支出前，向用户列出目标链、地址、角色、预计交易和资金影响，并针对该次写入重新取得明确授权
-- [ ] 13.2 获授权后才确认 clean Git commit、compiler settings、deployer余额、Factory/Registry Safe、source payout、funding signer、intent signer、settler、官方 USDC 和 RPC
-- [ ] 13.3 在 chainId 5042002 部署 Registry、锁定 implementation、Factory，保存成功 receipt/block/code hash；失败或不确定状态先查链上再决定，不得盲目重播
+- [x] 13.1 在任何部署、source 登记、角色 grant/revoke/移交或 test USDC 支出前，向用户列出目标链、地址、角色、预计交易和资金影响，并针对该次写入重新取得明确授权
+- [x] 13.2 获授权后才确认 clean Git commit、compiler settings、deployer余额、Factory/Registry Safe、source payout、funding signer、intent signer、settler、官方 USDC 和 RPC
+- [x] 13.3 在 chainId 5042002 部署 Registry、锁定 implementation、Factory，保存成功 receipt/block/code hash；失败或不确定状态先查链上再决定，不得盲目重播
 - [ ] 13.4 对三个核心合约完成 exact-match source/ABI 验证，先一次性 bindFactory 并读回双向 wiring，再登记五个 source、完成角色移交/deployer撤权并从 finalized block 复核
-- [ ] 13.5 经独立 test USDC 授权后，用 direct EOA buyer（无 AA/paymaster）执行 smoke；记录六位合约差额、18 位 native/gas/`*10^12` 公式、两类 emitter Transfer 去重、摘要和退款
-- [ ] 13.6 独立 verifier 仅凭公开 RPC、权威 USDC 配置和 manifest 复核全部地址、角色、`3 + R`、settled 数量与 smoke；任一不一致不得发布证据
+- [x] 13.5 经独立 test USDC 授权后，用 direct EOA buyer（无 AA/paymaster）执行 smoke；记录六位合约差额、18 位 native/gas/`*10^12` 公式、两类 emitter Transfer 去重、摘要和退款
+- [x] 13.6 独立 verifier 仅凭公开 RPC、权威 USDC 配置和 manifest 复核全部地址、角色、`3 + R`、settled 数量与 smoke；任一不一致不得发布证据
 
 ## 14. Rollout、文档与完成验证
 

@@ -28,9 +28,9 @@ function validInput(overrides = {}) {
     commit,
     manifestDigest,
     graphify: {
-      nodes: 1189,
-      edges: 2573,
-      communities: 39,
+      nodes: 1307,
+      edges: 2754,
+      communities: 47,
       reportPath: "graphify-out/GRAPH_REPORT.md",
     },
     documents: {
@@ -103,9 +103,9 @@ test("complete public final evidence inputs only allow requesting publication re
 test("drifted final evidence fields keep publication review unready", () => {
   const report = buildFinalEvidencePublicationGate(validInput({
     graphify: {
-      nodes: 1188,
-      edges: 2573,
-      communities: 39,
+      nodes: 1306,
+      edges: 2754,
+      communities: 47,
       reportPath: "graphify-out/GRAPH_REPORT.md",
     },
     documents: {
@@ -159,7 +159,7 @@ test("unsafe JSON-like shapes fail closed without executing accessors", () => {
     enumerable: true,
     get() {
       getterExecuted = true;
-      return 1189;
+      return 1307;
     },
   });
 
