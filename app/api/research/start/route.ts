@@ -59,15 +59,11 @@ export async function POST(req: Request) {
     const { address } = await requireAuth(req)
     const rawBody = await req.json().catch(() => null)
     if (getResearchBackendConfig().settlementBackend === 'escrow') {
-      return startEscrowResearch(address, rawBody)
+      return await startEscrowResearch(address, rawBody)
     }
 
     const body = startSchema.safeParse(rawBody)
     if (!body.success) return Response.json({ error: 'INVALID_BODY' }, { status: 400 })
-
-    if (isProductionMemoryDbFallback() && !isMockReceiptMode()) {
-      return Response.json({ error: 'DURABLE_DB_REQUIRED' }, { status: 503 })
-    }
 
     const quota = await consumeQuota(address)
     if (!quota.ok) {
@@ -97,12 +93,15 @@ export async function POST(req: Request) {
     return Response.json({ researchId, status: 'running' })
   } catch (error) {
     if (error instanceof Response) return error
+    if (isDurableDbRequiredError(error)) {
+      return Response.json({ error: 'DURABLE_DB_REQUIRED' }, { status: 503 })
+    }
     throw error
   }
 }
 
-function isMockReceiptMode() {
-  return process.env.ARC_RECEIPT_MODE?.trim().toLowerCase() !== 'arc'
+function isDurableDbRequiredError(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'DURABLE_DB_REQUIRED')
 }
 
 async function startEscrowResearch(address: string, rawBody: unknown) {

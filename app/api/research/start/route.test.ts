@@ -244,18 +244,26 @@ describe('POST /api/research/start', () => {
     expect(body.researchId).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
   })
 
-  it('rejects legacy calldata start in production memory DB fallback instead of issuing a signed run token', async () => {
+  it('keeps legacy ARC calldata backend as a one-step start in production memory DB fallback', async () => {
     mockState.isProductionMemoryDbFallback.mockReturnValue(true)
     process.env.ARC_RECEIPT_MODE = 'arc'
     process.env.ARC_RESEARCH_SETTLEMENT_BACKEND = 'calldata'
     const { POST } = await import('./route')
 
     const res = await POST(await authedRequest({ topic: 'SHOULD I BUY PEPE?', budgetUsdc: '0.01' }))
+    const body = await res.json()
 
-    expect(res.status).toBe(503)
-    await expect(res.json()).resolves.toEqual({ error: 'DURABLE_DB_REQUIRED' })
-    expect(mockState.quota.consumeQuota).not.toHaveBeenCalled()
-    expect(mockState.create).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(body.status).toBe('running')
+    expect(body.researchId).not.toBe('research-1')
+    expect(body.researchId).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
+    expect(mockState.quota.consumeQuota).toHaveBeenCalledWith(buyerAddressLower)
+    expect(mockState.create).toHaveBeenCalledWith({
+      address: buyerAddressLower,
+      topic: 'SHOULD I BUY PEPE?',
+      budgetUsdc: '0.01',
+    })
+    expect(mockState.assertDurableDbAvailableForEscrow).not.toHaveBeenCalled()
   })
 
   it('returns 429 and does not create research when quota is exceeded', async () => {
@@ -284,6 +292,25 @@ describe('POST /api/research/start', () => {
 
     expect(res.status).toBe(400)
     await expect(res.json()).resolves.toEqual({ error: 'ESCROW_START_REQUIRES_FUNDING_RECEIPT' })
+    expect(mockState.quota.consumeQuota).not.toHaveBeenCalled()
+    expect(mockState.create).not.toHaveBeenCalled()
+  })
+
+  it('keeps escrow backend fail-closed when durable DB is unavailable', async () => {
+    process.env.ARC_RESEARCH_SETTLEMENT_BACKEND = 'escrow'
+    const error = new Error('durable DB required') as Error & { code?: string }
+    error.code = 'DURABLE_DB_REQUIRED'
+    mockState.assertDurableDbAvailableForEscrow.mockImplementationOnce(() => {
+      throw error
+    })
+    const { POST } = await import('./route')
+
+    const res = await POST(await authedRequest(escrowStartBody()))
+
+    expect(res.status).toBe(503)
+    await expect(res.json()).resolves.toEqual({ error: 'DURABLE_DB_REQUIRED' })
+    expect(mockState.assertDurableDbAvailableForEscrow).toHaveBeenCalledWith('research start')
+    expect(mockState.findById).not.toHaveBeenCalled()
     expect(mockState.quota.consumeQuota).not.toHaveBeenCalled()
     expect(mockState.create).not.toHaveBeenCalled()
   })

@@ -1,7 +1,7 @@
 # Graph Report - arc-lepton  (2026-07-14)
 
 ## Corpus Check
-- 165 files · ~1,060,499 words
+- 165 files · ~1,060,586 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
