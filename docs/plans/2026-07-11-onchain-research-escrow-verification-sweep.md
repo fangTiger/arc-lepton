@@ -38,7 +38,7 @@
 | 命令 | 结果 | 备注 |
 | --- | --- | --- |
 | `openspec validate onchain-research-escrow --strict --no-interactive` | 通过 | Change valid。 |
-| `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` | 通过 | 最新 `GRAPH_REPORT.md` 摘要：1307 nodes、2754 edges、47 communities detected。 |
+| `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` | 通过 | 最新 `GRAPH_REPORT.md` 摘要：1307 nodes、2753 edges、47 communities detected。 |
 
 ## 最新本地复核
 

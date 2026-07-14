@@ -58,10 +58,9 @@ Registry `0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3`, implementation
 `0x352b064d831f1ee8a6005a186971011fa0c5f8dd`, and one funded/settled smoke clone
 `0x00457075a5989da633410b1f7a92851313177a85`, so the current topology is `3 + R = 4`.
 
-This manifest and the public RPC verifier are final local evidence inputs, but they do not by
-themselves close the remaining external gates. Explorer exact-match source/ABI verification,
-production rollout/E2E, and live rollback evidence must still be completed before the remaining
-13.4 and 14.x completion items are marked or final publication is approved.
+This manifest, the public RPC verifier, and Arcscan exact-match source/ABI evidence now close
+the contract-publication gate for 13.4. Production rollout/E2E and live rollback evidence still
+must be completed before the remaining 14.2–14.4, 14.7, and 14.9 completion items are marked.
 
 Deployment tooling and operators must not broadcast contract deployments, source configuration,
 role changes, smoke transactions, or Explorer source verification without fresh stage-specific authorization

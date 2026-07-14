@@ -35,8 +35,9 @@ test("source role readiness records 13.4 authorization and evidence boundaries",
     "roleChangeAllowed=false",
     "taskCompleteAllowed=false",
     "候选 manifest 或本地 readiness 不得替代 13.4 真实执行证据",
-    "Explorer exact-match source/ABI 尚未完成",
-    "配置/角色执行证据只覆盖 bindFactory",
+    "deployments/5042002.json.sourceVerification",
+    "sha256:f575600e834861c57a53d0c3394ed741732e0e4b43575904a3848c17ad68d39f",
+    "sourceCodePresent/abiPresent/isFullyVerified/url",
     "用户未回应或模糊同意必须停止",
     "request/commit/address/source/role/gas 变化必须重新授权",
   ];
@@ -46,15 +47,15 @@ test("source role readiness records 13.4 authorization and evidence boundaries",
   }
 });
 
-test("source role readiness keeps task 13.4 unchecked until Explorer exact-match evidence exists", async () => {
+test("source role readiness marks 13.4 complete after Explorer exact-match evidence exists", async () => {
   const [readiness, tasks] = await Promise.all([readReadiness(), readFile(TASKS_PATH, "utf8")]);
 
-  assert.ok(readiness.includes("13.4 仍 pending"), "readiness must not claim 13.4 complete");
+  assert.ok(readiness.includes("13.4 已完成"), "readiness must claim 13.4 complete");
   assert.ok(
     tasks.includes(
-      "- [ ] 13.4 对三个核心合约完成 exact-match source/ABI 验证，先一次性 bindFactory 并读回双向 wiring，再登记五个 source、完成角色移交/deployer撤权并从 finalized block 复核",
+      "- [x] 13.4 对三个核心合约完成 exact-match source/ABI 验证，先一次性 bindFactory 并读回双向 wiring，再登记五个 source、完成角色移交/deployer撤权并从 finalized block 复核",
     ),
-    "tasks.md must keep 13.4 unchecked",
+    "tasks.md must check 13.4",
   );
-  assert.doesNotMatch(readiness, /13\.4 已完成|13\.4 complete/i, "readiness must not mark 13.4 complete");
+  assert.doesNotMatch(readiness, /Explorer exact-match source\/ABI 尚未完成/, "readiness must not keep old exact-match blocker");
 });

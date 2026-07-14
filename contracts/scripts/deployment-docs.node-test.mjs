@@ -31,8 +31,8 @@ test("README on-chain escrow section points to the chain and final evidence entr
   requireIncludes(section, "7141fae64465f44e4ebc2ce3648787e0b45c54fb", "README escrow section");
   requireIncludes(section, "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3", "README escrow section");
   requireIncludes(section, "fresh stage-specific authorization", "README escrow section");
-  requireIncludes(section, "Explorer exact-match source/ABI verification", "README escrow section");
-  requireIncludes(section, "production rollout/E2E", "README escrow section");
+  requireIncludes(section, "Arcscan exact-match source/ABI evidence", "README escrow section");
+  requireIncludes(section, "Production rollout/E2E", "README escrow section");
 });
 
 test("contract deployment runbook covers trust, rollout, rollback, and evidence boundaries", () => {
@@ -54,7 +54,8 @@ test("contract deployment runbook covers trust, rollout, rollback, and evidence 
     "7141fae64465f44e4ebc2ce3648787e0b45c54fb",
     "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
     "未授权时不得广播任何部署、source、角色或 smoke 交易",
-    "Explorer exact-match 和 live rollout/E2E/rollback 仍是剩余发布门禁",
+    "sourceVerification",
+    "live rollout/E2E/rollback 仍是剩余发布门禁",
   ]) {
     requireIncludes(runbook, expected, "deployment runbook");
   }

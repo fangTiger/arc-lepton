@@ -29,7 +29,7 @@ function validInput(overrides = {}) {
     manifestDigest,
     graphify: {
       nodes: 1307,
-      edges: 2754,
+      edges: 2753,
       communities: 47,
       reportPath: "graphify-out/GRAPH_REPORT.md",
     },
@@ -104,7 +104,7 @@ test("drifted final evidence fields keep publication review unready", () => {
   const report = buildFinalEvidencePublicationGate(validInput({
     graphify: {
       nodes: 1306,
-      edges: 2754,
+      edges: 2753,
       communities: 47,
       reportPath: "graphify-out/GRAPH_REPORT.md",
     },

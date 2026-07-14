@@ -2,7 +2,7 @@
 
 本文是 `onchain-research-escrow` 的部署与运行手册。它描述合约拓扑、信任边界、角色、funding UX、worker SLA、部署、回滚、密钥轮换、事故处置以及 Explorer 证据与 manifest 的填充规则。
 
-当前 Arc Testnet 证据入口是 `deployments/5042002.json`，chainId `5042002`，clean commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`。该 manifest 已记录真实核心部署、source/role readback、smoke clone 和独立公开 RPC verifier 通过证据；尚未完成的是三个核心合约 Explorer exact-match source/ABI、生产 rollout/E2E 和 live rollback 证据。因此本文可以引用最终 manifest/verifier 地址，但不得把缺失的 external/live gate 伪装为已完成。
+当前 Arc Testnet 证据入口是 `deployments/5042002.json`，chainId `5042002`，clean commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`。该 manifest 已记录真实核心部署、source/role readback、smoke clone、独立公开 RPC verifier 通过证据，以及三个核心合约的 Arcscan Explorer exact-match source/ABI 证据；尚未完成的是生产 rollout/E2E 和 live rollback 证据。因此本文可以引用最终 manifest/verifier/source verification 地址，但不得把缺失的 live gate 伪装为已完成。
 
 当前核心地址：
 
@@ -83,7 +83,7 @@ durable worker 必须以数据库和链上公开事实为准：
 1. 本地 preflight：确认 clean Git commit、Foundry/Solc/compiler settings、deployer gas、官方 USDC、公开 RPC、Factory/Registry Safe、source payout、funding signer、intent signer 和 settler。
 2. 核心部署：部署 `DataSourceRegistry`、锁定 `ResearchEscrow implementation`、部署 `ResearchEscrowFactory`，并保存成功 receipt、block、code hash 和 artifact hash。
 3. Wiring/config：一次性 bind Factory，读回 Registry/Factory 双向 wiring，登记五个 source，完成 role grant/revoke 和 deployer 撤权。
-4. Source verification：对三个核心合约执行 Explorer exact-match source/ABI 验证。当前这是 13.4 的剩余缺口；bindFactory、五个 source、角色移交、deployer 撤权和 finalized readback 已有公开证据，但不能替代 Explorer exact-match。
+4. Source verification：三个核心合约已完成 Explorer exact-match source/ABI 验证。`deployments/5042002.json.sourceVerification` 记录 Arcscan URL、requestDigest `sha256:f575600e834861c57a53d0c3394ed741732e0e4b43575904a3848c17ad68d39f`、compiler/settings、constructor args、sourceCode/ABI present 与 `isFullyVerified=true`。
 5. Smoke：另取明确授权，用 direct EOA buyer、官方 test USDC 和无 AA/paymaster 路径完成 create/fund/activate/settle/close smoke，并记录六位 USDC 与 18 位 native/gas 公式。当前 smoke clone 是 `0x00457075a5989da633410b1f7a92851313177a85`，已由 manifest/verifier 复核为 closed。
 6. 独立 verifier：只凭公开 RPC、权威 USDC 配置和 manifest 复核全部地址、角色、`3 + R`、settled 数量与 smoke。当前 public verifier 已对 `deployments/5042002.json` 通过。
 
@@ -126,13 +126,13 @@ durable worker 必须以数据库和链上公开事实为准：
 - role graph 与 manifest 不一致：停止 funding/activation，重放 RoleGranted/RoleRevoked，查明后再决定是否恢复。
 - USDC 差额不一致：冻结新 settlement，核对 ERC-20 Transfer、native emitter Transfer、余额差和 gas 公式。
 - worker 重试耗尽：进入 manual，记录操作者、原因和 evidence digest。
-- Explorer exact-match 失败：不得发布最终证据；只能保留部署草稿和待修复项。
+- Explorer exact-match 漂移或被撤销：不得发布新的最终完成证据；只能保留已验证记录并进入待修复项。
 
 事故结束后必须补齐 postmortem：影响范围、链上事实、用户影响、修复交易、验证命令和回滚/恢复决定。
 
 ## Explorer 证据与 manifest
 
-最终证据以 `deployments/5042002.json` 为机器可读入口，并由 Explorer exact-match、公开 RPC 和独立 verifier 交叉验证。当前 manifest 已绑定 chainId `5042002`、commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`、三个核心地址、一个 funded/settled clone、finalized block、artifact/runtime hash、role/source readback 和 smoke 证据。manifest 至少包含：
+最终证据以 `deployments/5042002.json` 为机器可读入口，并由 Explorer exact-match、公开 RPC 和独立 verifier 交叉验证。当前 manifest 已绑定 chainId `5042002`、commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`、三个核心地址、一个 funded/settled clone、finalized block、artifact/runtime hash、role/source readback、smoke 证据和 Arcscan exact-match source/ABI 证据。manifest 至少包含：
 
 - 网络、chainId、finalized blockNumber/blockHash。
 - 核心地址、creator、deployment txHash、receipt status、transactionIndex。
@@ -142,4 +142,4 @@ durable worker 必须以数据库和链上公开事实为准：
 
 Explorer contract、source exact-match、ABI、tx、block 和 log 定位必须全部来自公开浏览器或公开 RPC 可复核事实，并与 manifest 中的 transactionIndex、logIndex、runtime hash、ABI hash 和源码验证状态一致。
 
-只要 manifest、Explorer exact-match、独立 verifier 或 smoke evidence 任一项缺失或不一致，就不得将对应的最终部署证据任务标记为完成，也不得发布最终完成证据。当前 manifest/verifier/smoke 已存在；Explorer exact-match 和 live rollout/E2E/rollback 仍是剩余发布门禁。
+只要 manifest、Explorer exact-match、独立 verifier 或 smoke evidence 任一项缺失或不一致，就不得将对应的最终部署证据任务标记为完成，也不得发布最终完成证据。当前 manifest/verifier/smoke/source verification 已存在；live rollout/E2E/rollback 仍是剩余发布门禁。

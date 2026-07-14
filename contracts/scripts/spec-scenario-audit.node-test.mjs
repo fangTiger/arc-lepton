@@ -33,10 +33,10 @@ test("spec scenario audit records current progress and keeps 14.7 incomplete", a
   const audit = await readAudit();
 
   for (const phrase of [
-    "100/107 tasks",
+    "102/107 tasks",
     "不建议勾选 14.7",
     "14.7 仍未完成",
-    "13.4、14.2–14.4、14.7–14.9",
+    "14.2–14.4、14.7、14.9",
   ]) {
     assert.ok(audit.includes(phrase), `audit must mention ${phrase}`);
   }
@@ -59,7 +59,7 @@ test("spec scenario audit includes the latest readiness evidence paths", async (
       "manifestDigest 为 `2b403150a6564bdf1b754f194de1512a1867e6e3590d5cef54487edac07ddf2d`",
       "verifierStatus 为 `passed`",
       "node --test contracts/scripts/deployment-readiness-audit.node-test.mjs contracts/scripts/rollout-e2e-readiness.node-test.mjs contracts/scripts/graphify-final-evidence-readiness.node-test.mjs",
-      "12/12 pass",
+      "17/17 pass",
   ]) {
     assert.ok(audit.includes(phrase), `audit must mention ${phrase}`);
   }
@@ -78,7 +78,7 @@ test("spec scenario audit graphify summary matches the current graph report", as
   assert.ok(audit.includes(`${communities} communities detected`), "audit must include current community count");
 });
 
-test("spec scenario audit keeps 14.8 blocked while recognizing the local Graphify rebuild", async () => {
+test("spec scenario audit records 14.8 complete while keeping live gates blocked", async () => {
   const audit = await readAudit();
 
   assert.ok(
@@ -87,15 +87,17 @@ test("spec scenario audit keeps 14.8 blocked while recognizing the local Graphif
   );
 
   for (const phrase of [
-    "14.8：当前本地 Graphify 已重建",
+    "14.8：Graphify 已重建",
     "最终地址",
     "最终 commit",
     "manifest",
     "verifier",
-    "14.8 仍未完成",
+    "sourceVerification",
   ]) {
     assert.ok(audit.includes(phrase), `audit must mention ${phrase}`);
   }
+
+  assert.doesNotMatch(audit, /14\.8 仍未完成/, "audit must not keep old 14.8 blocker");
 });
 
 test("spec scenario audit and verification sweep include the latest contracts tooling recheck", async () => {
@@ -157,12 +159,10 @@ test("remaining external/live tasks are still unchecked", async () => {
   const tasks = await readFile(TASKS_PATH, "utf8");
 
   for (const taskId of [
-    "13.4",
     "14.2",
     "14.3",
     "14.4",
     "14.7",
-    "14.8",
     "14.9",
   ]) {
     assert.match(
@@ -172,7 +172,7 @@ test("remaining external/live tasks are still unchecked", async () => {
     );
   }
 
-  for (const taskId of ["13.1", "13.2", "13.3", "13.5", "13.6"]) {
+  for (const taskId of ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "14.8"]) {
     assert.match(
       tasks,
       new RegExp(`- \\[x\\] ${taskId.replace(".", "\\.")} `),

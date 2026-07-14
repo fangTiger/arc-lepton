@@ -2,9 +2,9 @@
 
 ## 范围与硬边界
 
-当前 OpenSpec 进度：`onchain-research-escrow` 为 `100/107 tasks`。
+当前 OpenSpec 进度：`onchain-research-escrow` 为 `102/107 tasks`。
 
-本地收尾复核时，13.1–13.3 已根据用户逐阶段授权、`deploy-core-preflight-report.json`、`deploy-core-broadcast-summary.json` 和最终 manifest/verifier 证据关闭。本文档保留为 13.2 授权前 readiness audit 与 fail-closed 设计记录；它仍不是授权记录、不是 preflight 通过证明，也不替代 13.4 的 Explorer source/ABI exact-match 发布证据。
+本地收尾复核时，13.1–13.4 已根据用户逐阶段授权、`deploy-core-preflight-report.json`、`deploy-core-broadcast-summary.json`、Explorer exact-match source/ABI 和最终 manifest/verifier 证据关闭；14.8 也已按 Graphify 与最终引用复核关闭。本文档保留为 13.2 授权前 readiness audit 与 fail-closed 设计记录；它仍不是授权记录、不是 preflight 通过证明，也不替代 14.2–14.4 的真实 rollout/E2E 或 14.9 的 live rollback 证据。
 
 本文档只是 readiness audit，用于在用户授权后快速执行 13.2 preflight；它不是授权记录，不是 preflight 通过证明，也不是进入部署的许可。13.2 只能在 13.1 明确授权后执行：必须先由用户针对当次 `deploy_core_contracts` 的 chain、commit、地址、交易、预计 gas、资金影响和 requestDigest 给出明确同意，才能开始确认 clean Git commit、compiler settings、deployer balance、Factory/Registry Safe code、source payout、funding signer、intent signer EOA、settler、官方 USDC 和 public RPC finalized block。
 

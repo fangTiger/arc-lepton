@@ -310,5 +310,58 @@
         }
       ]
     }
+  },
+  "sourceVerification": {
+    "explorer": "https://testnet.arcscan.app",
+    "verifier": "arcscan-explorer-exact-match",
+    "requestDigest": "sha256:f575600e834861c57a53d0c3394ed741732e0e4b43575904a3848c17ad68d39f",
+    "verifiedAt": "2026-07-14T02:24:00.775885Z",
+    "contracts": {
+      "registry": {
+        "address": "0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3",
+        "name": "DataSourceRegistry",
+        "filePath": "src/registry/DataSourceRegistry.sol",
+        "compiler": "v0.8.30+commit.73712a01",
+        "optimizer": true,
+        "runs": 200,
+        "evm": "prague",
+        "isFullyVerified": true,
+        "sourceCodePresent": true,
+        "abiPresent": true,
+        "constructorArgs": "0x00000000000000000000000081d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+        "verifiedAt": "2026-07-14T02:21:57.070443Z",
+        "url": "https://testnet.arcscan.app/address/0x98c9ff2110843186f5fa55f5b0af010eca0bf0d3?tab=contract"
+      },
+      "implementation": {
+        "address": "0x0995d09b27681b02651de3936f46245832c5d712",
+        "name": "ResearchEscrow",
+        "filePath": "src/escrow/ResearchEscrow.sol",
+        "compiler": "v0.8.30+commit.73712a01",
+        "optimizer": true,
+        "runs": 200,
+        "evm": "prague",
+        "isFullyVerified": true,
+        "sourceCodePresent": true,
+        "abiPresent": true,
+        "constructorArgs": null,
+        "verifiedAt": "2026-07-14T02:21:02.505600Z",
+        "url": "https://testnet.arcscan.app/address/0x0995d09b27681b02651de3936f46245832c5d712?tab=contract"
+      },
+      "factory": {
+        "address": "0x352b064d831f1ee8a6005a186971011fa0c5f8dd",
+        "name": "ResearchEscrowFactory",
+        "filePath": "src/factory/ResearchEscrowFactory.sol",
+        "compiler": "v0.8.30+commit.73712a01",
+        "optimizer": true,
+        "runs": 200,
+        "evm": "prague",
+        "isFullyVerified": true,
+        "sourceCodePresent": true,
+        "abiPresent": true,
+        "constructorArgs": "0x0000000000000000000000000995d09b27681b02651de3936f46245832c5d71200000000000000000000000098c9ff2110843186f5fa55f5b0af010eca0bf0d300000000000000000000000081d48d2c5d0744e8ef7a5c35cdceb0a27a1c707b",
+        "verifiedAt": "2026-07-14T02:24:00.775885Z",
+        "url": "https://testnet.arcscan.app/address/0x352b064d831f1ee8a6005a186971011fa0c5f8dd?tab=contract"
+      }
+    }
   }
 }

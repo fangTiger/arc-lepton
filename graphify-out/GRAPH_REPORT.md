@@ -1,11 +1,11 @@
-# Graph Report - arc-lepton  (2026-07-13)
+# Graph Report - arc-lepton  (2026-07-14)
 
 ## Corpus Check
-- 165 files · ~1,060,588 words
+- 165 files · ~1,060,499 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1307 nodes · 2754 edges · 47 communities detected
+- 1307 nodes · 2753 edges · 47 communities detected
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 159 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -101,32 +101,32 @@ Cohesion: 0.12
 Nodes (52): assertCoreCreators(), assertCoreWiring(), buildDeploymentManifest(), cloneCountsFor(), compareProvidedAddresses(), compareProvidedCloneCounts(), compareProvidedDeploymentTopology(), compareTopologyValue() (+44 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.1
-Nodes (42): assertNoAddressOverlap(), assertUrlHasNoCredentials(), buildDeploymentPreflightReport(), buildDeploymentPreflightReportCore(), cloneSafeJsonLike(), credentialKeyFound(), DeploymentPreflightGateError, fail() (+34 more)
+Cohesion: 0.11
+Nodes (41): assertNoAddressOverlap(), assertUrlHasNoCredentials(), buildDeploymentPreflightReport(), buildDeploymentPreflightReportCore(), cloneSafeJsonLike(), credentialKeyFound(), DeploymentPreflightGateError, fail() (+33 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.06
-Nodes (28): cancelFundedEscrow(), EscrowValueLink(), followUpStatusTone(), load(), lower(), shortValue(), submitFollowUp(), activationAuthorizationFor() (+20 more)
+Nodes (29): cancelFundedEscrow(), EscrowValueLink(), followUpStatusTone(), load(), lower(), shortValue(), submitFollowUp(), activationAuthorizationFor() (+21 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.09
 Nodes (37): artifactHashes(), core(), deployment(), evidencePackage(), manifest(), arrayIndexPath(), assertPublicDataDescriptor(), assertRoleSeparation() (+29 more)
 
 ### Community 7 - "Community 7"
+Cohesion: 0.07
+Nodes (30): artifactHashes(), core(), deployment(), DeploymentArtifact, manifest(), validPackageInput(), artifactHashes(), coreContract() (+22 more)
+
+### Community 8 - "Community 8"
 Cohesion: 0.1
 Nodes (36): buildAuthorizationBriefing(), buildAuthorizationBriefings(), bulletList(), commonLines(), configureLines(), deployCoreLines(), DeploymentAuthorizationBriefingError, exactAuthorizationReplyLines() (+28 more)
 
-### Community 8 - "Community 8"
+### Community 9 - "Community 9"
 Cohesion: 0.11
 Nodes (36): addBlocker(), afterAuthorizationPreflightChecklist(), allowsPublicBytes32Value(), assertJsonSafe(), beforeAuthorizationChecklist(), buildDeploymentNextActionChecklist(), checklistItem(), DeploymentNextActionChecklistError (+28 more)
 
-### Community 9 - "Community 9"
+### Community 10 - "Community 10"
 Cohesion: 0.12
 Nodes (39): buildAuthorizationRequests(), cloneStable(), DeploymentAuthorizationGateError, digestAuthorizationRequest(), fail(), inputInvalid(), isArrayIndexKey(), isPlainJsonRecord() (+31 more)
-
-### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (29): artifactHashes(), core(), deployment(), DeploymentArtifact, manifest(), validPackageInput(), artifactHashes(), coreContract() (+21 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.12
@@ -165,20 +165,20 @@ Cohesion: 0.11
 Nodes (16): assert(), executeRoleChange(), executeSourceChange(), getSource(), hasRole(), normalizeAddress(), roleCount(), roleHash() (+8 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.13
-Nodes (22): commandFailure(), containsCompilationFailure(), defaultExecuteCommand(), defaultListBuildInfoFiles(), main(), captureRejection(), parseAnalysisSummary(), readSlitherOption() (+14 more)
-
-### Community 21 - "Community 21"
 Cohesion: 0.14
 Nodes (22): assertEqual(), assertExactKeys(), assertJsonArrayEqual(), assertPlainObject(), listBuildInfoFiles(), main(), createFixture(), validBuildInfo() (+14 more)
 
-### Community 22 - "Community 22"
+### Community 21 - "Community 21"
 Cohesion: 0.18
 Nodes (21): assertStageOrder(), buildDeploymentAuthorizationPackage(), DeploymentAuthorizationPackageError, fail(), inputInvalid(), isArrayIndexKey(), isPlainJsonRecord(), isRecord() (+13 more)
 
-### Community 23 - "Community 23"
+### Community 22 - "Community 22"
 Cohesion: 0.1
 Nodes (6): buildDeployerNonceAfterCoreCheck(), deriveExpectedAfterCoreNonce(), hasArcNativeUsdcStackUnderflow(), isBlockedByAnvilArcNativeUsdcPrecompile(), normalizeAddressLike(), toSafeNonce()
+
+### Community 23 - "Community 23"
+Cohesion: 0.17
+Nodes (21): commandFailure(), containsCompilationFailure(), defaultExecuteCommand(), defaultListBuildInfoFiles(), main(), parseAnalysisSummary(), readSlitherOption(), requireSlitherOptionsDescriptors() (+13 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.17
@@ -297,11 +297,11 @@ Nodes (2): chainLabel(), NetworkGuard()
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `call()` connect `Community 16` to `Community 1`, `Community 3`, `Community 4`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 11`, `Community 13`, `Community 14`, `Community 15`, `Community 18`, `Community 22`, `Community 24`, `Community 26`?**
+- **Why does `call()` connect `Community 16` to `Community 1`, `Community 3`, `Community 4`, `Community 6`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 13`, `Community 14`, `Community 15`, `Community 18`, `Community 21`, `Community 24`, `Community 26`?**
   _High betweenness centrality (0.077) - this node is a cross-community bridge._
-- **Why does `hasOwn()` connect `Community 1` to `Community 0`, `Community 10`, `Community 16`, `Community 17`, `Community 20`, `Community 21`, `Community 26`?**
+- **Why does `hasOwn()` connect `Community 1` to `Community 0`, `Community 7`, `Community 16`, `Community 17`, `Community 20`, `Community 23`, `Community 26`?**
   _High betweenness centrality (0.071) - this node is a cross-community bridge._
-- **Why does `hasOwn()` connect `Community 26` to `Community 0`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 16`, `Community 17`, `Community 20`, `Community 21`?**
+- **Why does `hasOwn()` connect `Community 26` to `Community 0`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 16`, `Community 17`, `Community 20`, `Community 23`?**
   _High betweenness centrality (0.064) - this node is a cross-community bridge._
 - **Are the 5 inferred relationships involving `buildDeploymentManifest()` (e.g. with `manifest()` and `manifest()`) actually correct?**
   _`buildDeploymentManifest()` has 5 INFERRED edges - model-reasoned connections that need verification._

@@ -504,7 +504,7 @@
       "source_file": "app/research/ResearchPageClient.tsx",
       "source_location": "L370",
       "id": "researchpageclient_mergefollowups",
-      "community": 4,
+      "community": 5,
       "norm_label": "mergefollowups()"
     },
     {
@@ -711,7 +711,7 @@
       "source_file": "app/research/[id]/ResearchDetailClient.tsx",
       "source_location": "L202",
       "id": "researchdetailclient_run",
-      "community": 21,
+      "community": 20,
       "norm_label": "run()"
     },
     {
@@ -1953,7 +1953,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_simulate_and_build_smoke_stage_mjs",
-      "community": 23,
+      "community": 22,
       "norm_label": "simulate-and-build-smoke-stage.mjs"
     },
     {
@@ -1962,7 +1962,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L60",
       "id": "simulate_and_build_smoke_stage_assertaddress",
-      "community": 23,
+      "community": 22,
       "norm_label": "assertaddress()"
     },
     {
@@ -1971,7 +1971,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L162",
       "id": "simulate_and_build_smoke_stage_domain",
-      "community": 23,
+      "community": 22,
       "norm_label": "domain()"
     },
     {
@@ -1980,7 +1980,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L171",
       "id": "simulate_and_build_smoke_stage_uuidlike",
-      "community": 23,
+      "community": 22,
       "norm_label": "uuidlike()"
     },
     {
@@ -1989,7 +1989,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L175",
       "id": "simulate_and_build_smoke_stage_canonicalhash",
-      "community": 23,
+      "community": 22,
       "norm_label": "canonicalhash()"
     },
     {
@@ -1998,7 +1998,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L188",
       "id": "simulate_and_build_smoke_stage_itemshash",
-      "community": 23,
+      "community": 22,
       "norm_label": "itemshash()"
     },
     {
@@ -2007,7 +2007,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L213",
       "id": "simulate_and_build_smoke_stage_settlementresultdigest",
-      "community": 23,
+      "community": 22,
       "norm_label": "settlementresultdigest()"
     },
     {
@@ -2016,7 +2016,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L232",
       "id": "simulate_and_build_smoke_stage_finalliabilityhash",
-      "community": 23,
+      "community": 22,
       "norm_label": "finalliabilityhash()"
     },
     {
@@ -2025,7 +2025,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L256",
       "id": "simulate_and_build_smoke_stage_latesttimestamp",
-      "community": 23,
+      "community": 22,
       "norm_label": "latesttimestamp()"
     },
     {
@@ -2034,7 +2034,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/simulate-and-build-smoke-stage.mjs",
       "source_location": "L261",
       "id": "simulate_and_build_smoke_stage_sendnative",
-      "community": 23,
+      "community": 22,
       "norm_label": "sendnative()"
     },
     {
@@ -2115,7 +2115,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.node-test.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_candidate_script_utils_node_test_mjs",
-      "community": 23,
+      "community": 22,
       "norm_label": "candidate-script-utils.node-test.mjs"
     },
     {
@@ -2232,7 +2232,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_verify_deploy_core_mjs",
-      "community": 23,
+      "community": 22,
       "norm_label": "verify-deploy-core.mjs"
     },
     {
@@ -2241,7 +2241,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L154",
       "id": "verify_deploy_core_hextodecimal",
-      "community": 23,
+      "community": 22,
       "norm_label": "hextodecimal()"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L161",
       "id": "verify_deploy_core_codebytes",
-      "community": 23,
+      "community": 22,
       "norm_label": "codebytes()"
     },
     {
@@ -2259,7 +2259,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L168",
       "id": "verify_deploy_core_normalizeaddressrecord",
-      "community": 23,
+      "community": 22,
       "norm_label": "normalizeaddressrecord()"
     },
     {
@@ -2268,7 +2268,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L172",
       "id": "verify_deploy_core_hasrole",
-      "community": 23,
+      "community": 22,
       "norm_label": "hasrole()"
     },
     {
@@ -2277,7 +2277,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-deploy-core.mjs",
       "source_location": "L181",
       "id": "verify_deploy_core_rolecount",
-      "community": 23,
+      "community": 22,
       "norm_label": "rolecount()"
     },
     {
@@ -2466,7 +2466,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/build-smoke-stage-request.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_build_smoke_stage_request_mjs",
-      "community": 9,
+      "community": 10,
       "norm_label": "build-smoke-stage-request.mjs"
     },
     {
@@ -2475,7 +2475,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/build-smoke-stage-request.mjs",
       "source_location": "L54",
       "id": "build_smoke_stage_request_stableresearchkey",
-      "community": 9,
+      "community": 10,
       "norm_label": "stableresearchkey()"
     },
     {
@@ -2529,7 +2529,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-smoke-stage.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_verify_smoke_stage_mjs",
-      "community": 9,
+      "community": 10,
       "norm_label": "verify-smoke-stage.mjs"
     },
     {
@@ -2538,7 +2538,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-smoke-stage.mjs",
       "source_location": "L22",
       "id": "verify_smoke_stage_assert",
-      "community": 9,
+      "community": 10,
       "norm_label": "assert()"
     },
     {
@@ -2547,7 +2547,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-smoke-stage.mjs",
       "source_location": "L28",
       "id": "verify_smoke_stage_rolehash",
-      "community": 9,
+      "community": 10,
       "norm_label": "rolehash()"
     },
     {
@@ -2556,7 +2556,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/verify-smoke-stage.mjs",
       "source_location": "L35",
       "id": "verify_smoke_stage_findtx",
-      "community": 9,
+      "community": 10,
       "norm_label": "findtx()"
     },
     {
@@ -2565,7 +2565,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L1",
       "id": "cache_deployment_candidates_2026_07_13t01_18_06_735z_candidate_script_utils_mjs",
-      "community": 23,
+      "community": 22,
       "norm_label": "candidate-script-utils.mjs"
     },
     {
@@ -2574,7 +2574,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L6",
       "id": "candidate_script_utils_normalizeaddresslike",
-      "community": 23,
+      "community": 22,
       "norm_label": "normalizeaddresslike()"
     },
     {
@@ -2583,7 +2583,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L10",
       "id": "candidate_script_utils_tosafenonce",
-      "community": 23,
+      "community": 22,
       "norm_label": "tosafenonce()"
     },
     {
@@ -2592,7 +2592,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L18",
       "id": "candidate_script_utils_deriveexpectedaftercorenonce",
-      "community": 23,
+      "community": 22,
       "norm_label": "deriveexpectedaftercorenonce()"
     },
     {
@@ -2601,7 +2601,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L32",
       "id": "candidate_script_utils_builddeployernonceaftercorecheck",
-      "community": 23,
+      "community": 22,
       "norm_label": "builddeployernonceaftercorecheck()"
     },
     {
@@ -2610,7 +2610,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L49",
       "id": "candidate_script_utils_hasarcnativeusdcstackunderflow",
-      "community": 23,
+      "community": 22,
       "norm_label": "hasarcnativeusdcstackunderflow()"
     },
     {
@@ -2619,7 +2619,7 @@
       "source_file": "cache/deployment-candidates/2026-07-13T01-18-06-735Z/candidate-script-utils.mjs",
       "source_location": "L68",
       "id": "candidate_script_utils_isblockedbyanvilarcnativeusdcprecompile",
-      "community": 23,
+      "community": 22,
       "norm_label": "isblockedbyanvilarcnativeusdcprecompile()"
     },
     {
@@ -2979,7 +2979,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_authorization_briefing_mjs",
-      "community": 7,
+      "community": 8,
       "norm_label": "deployment-authorization-briefing.mjs"
     },
     {
@@ -2988,7 +2988,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L15",
       "id": "deployment_authorization_briefing_deploymentauthorizationbriefingerror",
-      "community": 7,
+      "community": 8,
       "norm_label": "deploymentauthorizationbriefingerror"
     },
     {
@@ -2997,7 +2997,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L16",
       "id": "deployment_authorization_briefing_deploymentauthorizationbriefingerror_constructor",
-      "community": 7,
+      "community": 8,
       "norm_label": ".constructor()"
     },
     {
@@ -3006,7 +3006,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L24",
       "id": "deployment_authorization_briefing_fail",
-      "community": 7,
+      "community": 8,
       "norm_label": "fail()"
     },
     {
@@ -3015,7 +3015,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L28",
       "id": "deployment_authorization_briefing_isrecord",
-      "community": 7,
+      "community": 8,
       "norm_label": "isrecord()"
     },
     {
@@ -3024,7 +3024,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L32",
       "id": "deployment_authorization_briefing_hasown",
-      "community": 7,
+      "community": 8,
       "norm_label": "hasown()"
     },
     {
@@ -3033,7 +3033,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L36",
       "id": "deployment_authorization_briefing_isarrayindexkey",
-      "community": 7,
+      "community": 8,
       "norm_label": "isarrayindexkey()"
     },
     {
@@ -3042,7 +3042,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L44",
       "id": "deployment_authorization_briefing_requirerecord",
-      "community": 7,
+      "community": 8,
       "norm_label": "requirerecord()"
     },
     {
@@ -3051,7 +3051,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L51",
       "id": "deployment_authorization_briefing_requirearray",
-      "community": 7,
+      "community": 8,
       "norm_label": "requirearray()"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L58",
       "id": "deployment_authorization_briefing_requirestring",
-      "community": 7,
+      "community": 8,
       "norm_label": "requirestring()"
     },
     {
@@ -3069,7 +3069,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L65",
       "id": "deployment_authorization_briefing_requireinteger",
-      "community": 7,
+      "community": 8,
       "norm_label": "requireinteger()"
     },
     {
@@ -3078,7 +3078,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L72",
       "id": "deployment_authorization_briefing_lastpathsegment",
-      "community": 7,
+      "community": 8,
       "norm_label": "lastpathsegment()"
     },
     {
@@ -3087,7 +3087,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L77",
       "id": "deployment_authorization_briefing_scanpublicstring",
-      "community": 7,
+      "community": 8,
       "norm_label": "scanpublicstring()"
     },
     {
@@ -3096,7 +3096,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L90",
       "id": "deployment_authorization_briefing_scanpublicarray",
-      "community": 7,
+      "community": 8,
       "norm_label": "scanpublicarray()"
     },
     {
@@ -3105,7 +3105,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L119",
       "id": "deployment_authorization_briefing_scanpublicrecord",
-      "community": 7,
+      "community": 8,
       "norm_label": "scanpublicrecord()"
     },
     {
@@ -3114,7 +3114,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L145",
       "id": "deployment_authorization_briefing_scanpublicrequest",
-      "community": 7,
+      "community": 8,
       "norm_label": "scanpublicrequest()"
     },
     {
@@ -3123,7 +3123,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L170",
       "id": "deployment_authorization_briefing_bulletlist",
-      "community": 7,
+      "community": 8,
       "norm_label": "bulletlist()"
     },
     {
@@ -3132,7 +3132,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L174",
       "id": "deployment_authorization_briefing_formattransaction",
-      "community": 7,
+      "community": 8,
       "norm_label": "formattransaction()"
     },
     {
@@ -3141,7 +3141,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L193",
       "id": "deployment_authorization_briefing_exactauthorizationreplylines",
-      "community": 7,
+      "community": 8,
       "norm_label": "exactauthorizationreplylines()"
     },
     {
@@ -3150,7 +3150,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L214",
       "id": "deployment_authorization_briefing_commonlines",
-      "community": 7,
+      "community": 8,
       "norm_label": "commonlines()"
     },
     {
@@ -3159,7 +3159,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L238",
       "id": "deployment_authorization_briefing_deploycorelines",
-      "community": 7,
+      "community": 8,
       "norm_label": "deploycorelines()"
     },
     {
@@ -3168,7 +3168,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L257",
       "id": "deployment_authorization_briefing_configurelines",
-      "community": 7,
+      "community": 8,
       "norm_label": "configurelines()"
     },
     {
@@ -3177,7 +3177,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L279",
       "id": "deployment_authorization_briefing_smokelines",
-      "community": 7,
+      "community": 8,
       "norm_label": "smokelines()"
     },
     {
@@ -3186,7 +3186,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L297",
       "id": "deployment_authorization_briefing_buildauthorizationbriefing",
-      "community": 7,
+      "community": 8,
       "norm_label": "buildauthorizationbriefing()"
     },
     {
@@ -3195,7 +3195,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L314",
       "id": "deployment_authorization_briefing_requestsfrominput",
-      "community": 7,
+      "community": 8,
       "norm_label": "requestsfrominput()"
     },
     {
@@ -3204,7 +3204,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L325",
       "id": "deployment_authorization_briefing_buildauthorizationbriefings",
-      "community": 7,
+      "community": 8,
       "norm_label": "buildauthorizationbriefings()"
     },
     {
@@ -3213,7 +3213,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L331",
       "id": "deployment_authorization_briefing_readjsonfile",
-      "community": 7,
+      "community": 8,
       "norm_label": "readjsonfile()"
     },
     {
@@ -3222,7 +3222,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L346",
       "id": "deployment_authorization_briefing_normalizeclierror",
-      "community": 7,
+      "community": 8,
       "norm_label": "normalizeclierror()"
     },
     {
@@ -3231,7 +3231,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.mjs",
       "source_location": "L357",
       "id": "deployment_authorization_briefing_runcli",
-      "community": 7,
+      "community": 8,
       "norm_label": "runcli()"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_run_slither_mjs",
-      "community": 20,
+      "community": 23,
       "norm_label": "run-slither.mjs"
     },
     {
@@ -3249,7 +3249,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L23",
       "id": "run_slither_commandfailure",
-      "community": 20,
+      "community": 23,
       "norm_label": "commandfailure()"
     },
     {
@@ -3258,7 +3258,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L29",
       "id": "run_slither_slitherrequestfailure",
-      "community": 20,
+      "community": 23,
       "norm_label": "slitherrequestfailure()"
     },
     {
@@ -3267,7 +3267,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L33",
       "id": "run_slither_requireslitheroptionsdescriptors",
-      "community": 20,
+      "community": 23,
       "norm_label": "requireslitheroptionsdescriptors()"
     },
     {
@@ -3276,7 +3276,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L74",
       "id": "run_slither_readslitheroption",
-      "community": 20,
+      "community": 23,
       "norm_label": "readslitheroption()"
     },
     {
@@ -3285,7 +3285,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L82",
       "id": "run_slither_defaultexecutecommand",
-      "community": 20,
+      "community": 23,
       "norm_label": "defaultexecutecommand()"
     },
     {
@@ -3294,7 +3294,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L97",
       "id": "run_slither_defaultlistbuildinfofiles",
-      "community": 20,
+      "community": 23,
       "norm_label": "defaultlistbuildinfofiles()"
     },
     {
@@ -3303,7 +3303,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L113",
       "id": "run_slither_writecommandoutput",
-      "community": 20,
+      "community": 23,
       "norm_label": "writecommandoutput()"
     },
     {
@@ -3312,7 +3312,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L122",
       "id": "run_slither_parseanalysissummary",
-      "community": 20,
+      "community": 23,
       "norm_label": "parseanalysissummary()"
     },
     {
@@ -3321,7 +3321,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L141",
       "id": "run_slither_containscompilationfailure",
-      "community": 20,
+      "community": 23,
       "norm_label": "containscompilationfailure()"
     },
     {
@@ -3330,7 +3330,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L147",
       "id": "run_slither_runslither",
-      "community": 20,
+      "community": 23,
       "norm_label": "runslither()"
     },
     {
@@ -3339,7 +3339,7 @@
       "source_file": "contracts/scripts/run-slither.mjs",
       "source_location": "L233",
       "id": "run_slither_main",
-      "community": 20,
+      "community": 23,
       "norm_label": "main()"
     },
     {
@@ -3760,7 +3760,7 @@
       "label": "RemainingTaskEvidenceMatrixError",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L41",
+      "source_location": "L36",
       "id": "remaining_task_evidence_matrix_remainingtaskevidencematrixerror",
       "community": 1,
       "norm_label": "remainingtaskevidencematrixerror"
@@ -3769,7 +3769,7 @@
       "label": ".constructor()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L42",
+      "source_location": "L37",
       "id": "remaining_task_evidence_matrix_remainingtaskevidencematrixerror_constructor",
       "community": 1,
       "norm_label": ".constructor()"
@@ -3778,7 +3778,7 @@
       "label": "fail()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L50",
+      "source_location": "L45",
       "id": "remaining_task_evidence_matrix_fail",
       "community": 1,
       "norm_label": "fail()"
@@ -3787,7 +3787,7 @@
       "label": "isRecord()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L54",
+      "source_location": "L49",
       "id": "remaining_task_evidence_matrix_isrecord",
       "community": 1,
       "norm_label": "isrecord()"
@@ -3796,7 +3796,7 @@
       "label": "inspectJsonLike()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L58",
+      "source_location": "L53",
       "id": "remaining_task_evidence_matrix_inspectjsonlike",
       "community": 1,
       "norm_label": "inspectjsonlike()"
@@ -3805,7 +3805,7 @@
       "label": "requireRecord()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L116",
+      "source_location": "L111",
       "id": "remaining_task_evidence_matrix_requirerecord",
       "community": 1,
       "norm_label": "requirerecord()"
@@ -3814,7 +3814,7 @@
       "label": "requireString()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L123",
+      "source_location": "L118",
       "id": "remaining_task_evidence_matrix_requirestring",
       "community": 1,
       "norm_label": "requirestring()"
@@ -3823,7 +3823,7 @@
       "label": "requireInteger()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L130",
+      "source_location": "L125",
       "id": "remaining_task_evidence_matrix_requireinteger",
       "community": 1,
       "norm_label": "requireinteger()"
@@ -3832,7 +3832,7 @@
       "label": "bool()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L137",
+      "source_location": "L132",
       "id": "remaining_task_evidence_matrix_bool",
       "community": 1,
       "norm_label": "bool()"
@@ -3841,7 +3841,7 @@
       "label": "normalizeOpenspec()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L141",
+      "source_location": "L136",
       "id": "remaining_task_evidence_matrix_normalizeopenspec",
       "community": 1,
       "norm_label": "normalizeopenspec()"
@@ -3850,7 +3850,7 @@
       "label": "readinessEvidence()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L173",
+      "source_location": "L168",
       "id": "remaining_task_evidence_matrix_readinessevidence",
       "community": 1,
       "norm_label": "readinessevidence()"
@@ -3859,7 +3859,7 @@
       "label": "presentEvidence()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L196",
+      "source_location": "L191",
       "id": "remaining_task_evidence_matrix_presentevidence",
       "community": 1,
       "norm_label": "presentevidence()"
@@ -3868,7 +3868,7 @@
       "label": "makeTask()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L200",
+      "source_location": "L195",
       "id": "remaining_task_evidence_matrix_maketask",
       "community": 1,
       "norm_label": "maketask()"
@@ -3877,7 +3877,7 @@
       "label": "buildTasks()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L216",
+      "source_location": "L211",
       "id": "remaining_task_evidence_matrix_buildtasks",
       "community": 1,
       "norm_label": "buildtasks()"
@@ -3886,7 +3886,7 @@
       "label": "buildRemainingTaskEvidenceMatrix()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L381",
+      "source_location": "L292",
       "id": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "community": 1,
       "norm_label": "buildremainingtaskevidencematrix()"
@@ -3895,7 +3895,7 @@
       "label": "runCli()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L409",
+      "source_location": "L320",
       "id": "remaining_task_evidence_matrix_runcli",
       "community": 1,
       "norm_label": "runcli()"
@@ -3924,7 +3924,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_validate_deployment_config_node_test_mjs",
-      "community": 10,
+      "community": 7,
       "norm_label": "validate-deployment-config.node-test.mjs"
     },
     {
@@ -3933,7 +3933,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.node-test.mjs",
       "source_location": "L14",
       "id": "validate_deployment_config_node_test_validsnapshot",
-      "community": 10,
+      "community": 7,
       "norm_label": "validsnapshot()"
     },
     {
@@ -3942,7 +3942,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.node-test.mjs",
       "source_location": "L35",
       "id": "validate_deployment_config_node_test_expectvalidationerror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectvalidationerror()"
     },
     {
@@ -3951,7 +3951,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.node-test.mjs",
       "source_location": "L42",
       "id": "validate_deployment_config_node_test_expectsnapshotvalidationerror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectsnapshotvalidationerror()"
     },
     {
@@ -3960,7 +3960,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.node-test.mjs",
       "source_location": "L55",
       "id": "validate_deployment_config_node_test_customrecord",
-      "community": 10,
+      "community": 7,
       "norm_label": "customrecord"
     },
     {
@@ -3996,7 +3996,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_authorization_briefing_node_test_mjs",
-      "community": 7,
+      "community": 8,
       "norm_label": "deployment-authorization-briefing.node-test.mjs"
     },
     {
@@ -4005,7 +4005,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L48",
       "id": "deployment_authorization_briefing_node_test_artifacthashes",
-      "community": 7,
+      "community": 8,
       "norm_label": "artifacthashes()"
     },
     {
@@ -4014,7 +4014,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L61",
       "id": "deployment_authorization_briefing_node_test_deployment",
-      "community": 7,
+      "community": 8,
       "norm_label": "deployment()"
     },
     {
@@ -4023,7 +4023,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L71",
       "id": "deployment_authorization_briefing_node_test_core",
-      "community": 7,
+      "community": 8,
       "norm_label": "core()"
     },
     {
@@ -4032,7 +4032,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L88",
       "id": "deployment_authorization_briefing_node_test_manifest",
-      "community": 7,
+      "community": 8,
       "norm_label": "manifest()"
     },
     {
@@ -4041,7 +4041,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L204",
       "id": "deployment_authorization_briefing_node_test_evidence",
-      "community": 7,
+      "community": 8,
       "norm_label": "evidence()"
     },
     {
@@ -4050,7 +4050,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L226",
       "id": "deployment_authorization_briefing_node_test_requests",
-      "community": 7,
+      "community": 8,
       "norm_label": "requests()"
     },
     {
@@ -4059,7 +4059,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L230",
       "id": "deployment_authorization_briefing_node_test_requestbystage",
-      "community": 7,
+      "community": 8,
       "norm_label": "requestbystage()"
     },
     {
@@ -4068,7 +4068,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L234",
       "id": "deployment_authorization_briefing_node_test_expectbriefingerror",
-      "community": 7,
+      "community": 8,
       "norm_label": "expectbriefingerror()"
     },
     {
@@ -4077,7 +4077,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L247",
       "id": "deployment_authorization_briefing_node_test_expectbriefingerrordetails",
-      "community": 7,
+      "community": 8,
       "norm_label": "expectbriefingerrordetails()"
     },
     {
@@ -4086,7 +4086,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L267",
       "id": "deployment_authorization_briefing_node_test_withjsonfixture",
-      "community": 7,
+      "community": 8,
       "norm_label": "withjsonfixture()"
     },
     {
@@ -4095,7 +4095,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L279",
       "id": "deployment_authorization_briefing_node_test_runbriefingcli",
-      "community": 7,
+      "community": 8,
       "norm_label": "runbriefingcli()"
     },
     {
@@ -4104,7 +4104,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L290",
       "id": "deployment_authorization_briefing_node_test_assertclifailure",
-      "community": 7,
+      "community": 8,
       "norm_label": "assertclifailure()"
     },
     {
@@ -4113,7 +4113,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L301",
       "id": "deployment_authorization_briefing_node_test_assertexactauthorizationreplytemplate",
-      "community": 7,
+      "community": 8,
       "norm_label": "assertexactauthorizationreplytemplate()"
     },
     {
@@ -4122,7 +4122,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L384",
       "id": "deployment_authorization_briefing_node_test_get",
-      "community": 7,
+      "community": 8,
       "norm_label": "get()"
     },
     {
@@ -4131,7 +4131,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L612",
       "id": "deployment_authorization_briefing_node_test_requestrecord",
-      "community": 7,
+      "community": 8,
       "norm_label": "requestrecord"
     },
     {
@@ -4140,7 +4140,7 @@
       "source_file": "contracts/scripts/deployment-authorization-briefing.node-test.mjs",
       "source_location": "L613",
       "id": "deployment_authorization_briefing_node_test_requestrecord_constructor",
-      "community": 7,
+      "community": 8,
       "norm_label": ".constructor()"
     },
     {
@@ -4977,7 +4977,7 @@
       "source_file": "contracts/scripts/run-slither.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_run_slither_node_test_mjs",
-      "community": 20,
+      "community": 7,
       "norm_label": "run-slither.node-test.mjs"
     },
     {
@@ -4986,7 +4986,7 @@
       "source_file": "contracts/scripts/run-slither.node-test.mjs",
       "source_location": "L9",
       "id": "run_slither_node_test_createharness",
-      "community": 20,
+      "community": 7,
       "norm_label": "createharness()"
     },
     {
@@ -4995,7 +4995,7 @@
       "source_file": "contracts/scripts/run-slither.node-test.mjs",
       "source_location": "L47",
       "id": "run_slither_node_test_capturerejection",
-      "community": 20,
+      "community": 7,
       "norm_label": "capturerejection()"
     },
     {
@@ -5004,7 +5004,7 @@
       "source_file": "contracts/scripts/run-slither.node-test.mjs",
       "source_location": "L196",
       "id": "run_slither_node_test_get",
-      "community": 20,
+      "community": 7,
       "norm_label": "get()"
     },
     {
@@ -5778,7 +5778,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_next_action_checklist_node_test_mjs",
-      "community": 8,
+      "community": 9,
       "norm_label": "deployment-next-action-checklist.node-test.mjs"
     },
     {
@@ -5787,7 +5787,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L17",
       "id": "deployment_next_action_checklist_node_test_withjsonfixture",
-      "community": 8,
+      "community": 9,
       "norm_label": "withjsonfixture()"
     },
     {
@@ -5796,7 +5796,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L28",
       "id": "deployment_next_action_checklist_node_test_deployrequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "deployrequest()"
     },
     {
@@ -5805,7 +5805,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L58",
       "id": "deployment_next_action_checklist_node_test_smokerequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "smokerequest()"
     },
     {
@@ -5814,7 +5814,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L91",
       "id": "deployment_next_action_checklist_node_test_configurerequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "configurerequest()"
     },
     {
@@ -5823,7 +5823,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L139",
       "id": "deployment_next_action_checklist_node_test_expectedexactauthorizationreply",
-      "community": 8,
+      "community": 9,
       "norm_label": "expectedexactauthorizationreply()"
     },
     {
@@ -5832,7 +5832,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L143",
       "id": "deployment_next_action_checklist_node_test_expectsanitizedchecklisterror",
-      "community": 8,
+      "community": 9,
       "norm_label": "expectsanitizedchecklisterror()"
     },
     {
@@ -5841,7 +5841,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.node-test.mjs",
       "source_location": "L356",
       "id": "deployment_next_action_checklist_node_test_get",
-      "community": 8,
+      "community": 9,
       "norm_label": "get()"
     },
     {
@@ -5958,7 +5958,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_evidence_package_node_test_mjs",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployment-evidence-package.node-test.mjs"
     },
     {
@@ -5967,7 +5967,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L47",
       "id": "deployment_evidence_package_node_test_artifacthashes",
-      "community": 10,
+      "community": 7,
       "norm_label": "artifacthashes()"
     },
     {
@@ -5976,7 +5976,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L60",
       "id": "deployment_evidence_package_node_test_deployment",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployment()"
     },
     {
@@ -5985,7 +5985,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L70",
       "id": "deployment_evidence_package_node_test_core",
-      "community": 10,
+      "community": 7,
       "norm_label": "core()"
     },
     {
@@ -5994,7 +5994,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L87",
       "id": "deployment_evidence_package_node_test_manifest",
-      "community": 10,
+      "community": 7,
       "norm_label": "manifest()"
     },
     {
@@ -6003,7 +6003,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L203",
       "id": "deployment_evidence_package_node_test_validpackageinput",
-      "community": 10,
+      "community": 7,
       "norm_label": "validpackageinput()"
     },
     {
@@ -6012,7 +6012,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L225",
       "id": "deployment_evidence_package_node_test_expectsecurityerror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectsecurityerror()"
     },
     {
@@ -6021,7 +6021,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L239",
       "id": "deployment_evidence_package_node_test_expectinputinvalid",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectinputinvalid()"
     },
     {
@@ -6030,7 +6030,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L375",
       "id": "deployment_evidence_package_node_test_get",
-      "community": 10,
+      "community": 7,
       "norm_label": "get()"
     },
     {
@@ -6039,7 +6039,7 @@
       "source_file": "contracts/scripts/deployment-evidence-package.node-test.mjs",
       "source_location": "L485",
       "id": "deployment_evidence_package_node_test_deploymentartifact",
-      "community": 10,
+      "community": 7,
       "norm_label": "deploymentartifact"
     },
     {
@@ -6696,7 +6696,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_tooling_config_node_test_mjs",
-      "community": 20,
+      "community": 23,
       "norm_label": "tooling-config.node-test.mjs"
     },
     {
@@ -6705,7 +6705,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L95",
       "id": "tooling_config_node_test_extractjob",
-      "community": 20,
+      "community": 23,
       "norm_label": "extractjob()"
     },
     {
@@ -6714,7 +6714,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L108",
       "id": "tooling_config_node_test_extracttoplevelblock",
-      "community": 20,
+      "community": 23,
       "norm_label": "extracttoplevelblock()"
     },
     {
@@ -6723,7 +6723,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L120",
       "id": "tooling_config_node_test_requirecondition",
-      "community": 20,
+      "community": 23,
       "norm_label": "requirecondition()"
     },
     {
@@ -6732,7 +6732,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L126",
       "id": "tooling_config_node_test_stripinlinecomment",
-      "community": 20,
+      "community": 23,
       "norm_label": "stripinlinecomment()"
     },
     {
@@ -6741,7 +6741,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L147",
       "id": "tooling_config_node_test_activeyamllines",
-      "community": 20,
+      "community": 23,
       "norm_label": "activeyamllines()"
     },
     {
@@ -6750,7 +6750,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L155",
       "id": "tooling_config_node_test_parseactivesteps",
-      "community": 20,
+      "community": 23,
       "norm_label": "parseactivesteps()"
     },
     {
@@ -6759,7 +6759,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L208",
       "id": "tooling_config_node_test_stepvalues",
-      "community": 20,
+      "community": 23,
       "norm_label": "stepvalues()"
     },
     {
@@ -6768,7 +6768,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L214",
       "id": "tooling_config_node_test_requireorderedunique",
-      "community": 20,
+      "community": 23,
       "norm_label": "requireorderedunique()"
     },
     {
@@ -6777,7 +6777,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L227",
       "id": "tooling_config_node_test_isstaticallyfalse",
-      "community": 20,
+      "community": 23,
       "norm_label": "isstaticallyfalse()"
     },
     {
@@ -6786,7 +6786,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L232",
       "id": "tooling_config_node_test_validatecontractsworkflow",
-      "community": 20,
+      "community": 23,
       "norm_label": "validatecontractsworkflow()"
     },
     {
@@ -6795,7 +6795,7 @@
       "source_file": "contracts/scripts/tooling-config.node-test.mjs",
       "source_location": "L314",
       "id": "tooling_config_node_test_replaceonce",
-      "community": 20,
+      "community": 23,
       "norm_label": "replaceonce()"
     },
     {
@@ -6804,7 +6804,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_next_action_checklist_mjs",
-      "community": 8,
+      "community": 9,
       "norm_label": "deployment-next-action-checklist.mjs"
     },
     {
@@ -6813,7 +6813,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L61",
       "id": "deployment_next_action_checklist_deploymentnextactionchecklisterror",
-      "community": 8,
+      "community": 9,
       "norm_label": "deploymentnextactionchecklisterror"
     },
     {
@@ -6822,7 +6822,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L62",
       "id": "deployment_next_action_checklist_deploymentnextactionchecklisterror_constructor",
-      "community": 8,
+      "community": 9,
       "norm_label": ".constructor()"
     },
     {
@@ -6831,7 +6831,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L70",
       "id": "deployment_next_action_checklist_fail",
-      "community": 8,
+      "community": 9,
       "norm_label": "fail()"
     },
     {
@@ -6840,7 +6840,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L74",
       "id": "deployment_next_action_checklist_isrecord",
-      "community": 8,
+      "community": 9,
       "norm_label": "isrecord()"
     },
     {
@@ -6849,7 +6849,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L78",
       "id": "deployment_next_action_checklist_hasown",
-      "community": 8,
+      "community": 9,
       "norm_label": "hasown()"
     },
     {
@@ -6858,7 +6858,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L82",
       "id": "deployment_next_action_checklist_normalizekeyforsensitivity",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizekeyforsensitivity()"
     },
     {
@@ -6867,7 +6867,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L86",
       "id": "deployment_next_action_checklist_issensitivekeyname",
-      "community": 8,
+      "community": 9,
       "norm_label": "issensitivekeyname()"
     },
     {
@@ -6876,7 +6876,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L90",
       "id": "deployment_next_action_checklist_isarrayindexkey",
-      "community": 8,
+      "community": 9,
       "norm_label": "isarrayindexkey()"
     },
     {
@@ -6885,7 +6885,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L98",
       "id": "deployment_next_action_checklist_allowspublicbytes32value",
-      "community": 8,
+      "community": 9,
       "norm_label": "allowspublicbytes32value()"
     },
     {
@@ -6894,7 +6894,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L102",
       "id": "deployment_next_action_checklist_issecretshapedstring",
-      "community": 8,
+      "community": 9,
       "norm_label": "issecretshapedstring()"
     },
     {
@@ -6903,7 +6903,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L107",
       "id": "deployment_next_action_checklist_assertjsonsafe",
-      "community": 8,
+      "community": 9,
       "norm_label": "assertjsonsafe()"
     },
     {
@@ -6912,7 +6912,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L183",
       "id": "deployment_next_action_checklist_requirerecord",
-      "community": 8,
+      "community": 9,
       "norm_label": "requirerecord()"
     },
     {
@@ -6921,7 +6921,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L190",
       "id": "deployment_next_action_checklist_requirestring",
-      "community": 8,
+      "community": 9,
       "norm_label": "requirestring()"
     },
     {
@@ -6930,7 +6930,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L197",
       "id": "deployment_next_action_checklist_optionalstring",
-      "community": 8,
+      "community": 9,
       "norm_label": "optionalstring()"
     },
     {
@@ -6939,7 +6939,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L204",
       "id": "deployment_next_action_checklist_requireinteger",
-      "community": 8,
+      "community": 9,
       "norm_label": "requireinteger()"
     },
     {
@@ -6948,7 +6948,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L211",
       "id": "deployment_next_action_checklist_requireboolean",
-      "community": 8,
+      "community": 9,
       "norm_label": "requireboolean()"
     },
     {
@@ -6957,7 +6957,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L218",
       "id": "deployment_next_action_checklist_requiredecimal",
-      "community": 8,
+      "community": 9,
       "norm_label": "requiredecimal()"
     },
     {
@@ -6966,7 +6966,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L226",
       "id": "deployment_next_action_checklist_requiredigest",
-      "community": 8,
+      "community": 9,
       "norm_label": "requiredigest()"
     },
     {
@@ -6975,7 +6975,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L234",
       "id": "deployment_next_action_checklist_requireaddress",
-      "community": 8,
+      "community": 9,
       "norm_label": "requireaddress()"
     },
     {
@@ -6984,7 +6984,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L246",
       "id": "deployment_next_action_checklist_requirearray",
-      "community": 8,
+      "community": 9,
       "norm_label": "requirearray()"
     },
     {
@@ -6993,7 +6993,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L253",
       "id": "deployment_next_action_checklist_addblocker",
-      "community": 8,
+      "community": 9,
       "norm_label": "addblocker()"
     },
     {
@@ -7002,7 +7002,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L257",
       "id": "deployment_next_action_checklist_fieldpresent",
-      "community": 8,
+      "community": 9,
       "norm_label": "fieldpresent()"
     },
     {
@@ -7011,7 +7011,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L267",
       "id": "deployment_next_action_checklist_checklistitem",
-      "community": 8,
+      "community": 9,
       "norm_label": "checklistitem()"
     },
     {
@@ -7020,7 +7020,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L276",
       "id": "deployment_next_action_checklist_exactauthorizationreply",
-      "community": 8,
+      "community": 9,
       "norm_label": "exactauthorizationreply()"
     },
     {
@@ -7029,7 +7029,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L280",
       "id": "deployment_next_action_checklist_normalizecommonrequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizecommonrequest()"
     },
     {
@@ -7038,7 +7038,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L302",
       "id": "deployment_next_action_checklist_normalizestagespecificrequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizestagespecificrequest()"
     },
     {
@@ -7047,7 +7047,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L352",
       "id": "deployment_next_action_checklist_normalizerequest",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizerequest()"
     },
     {
@@ -7056,7 +7056,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L358",
       "id": "deployment_next_action_checklist_explicitauthorizationmatches",
-      "community": 8,
+      "community": 9,
       "norm_label": "explicitauthorizationmatches()"
     },
     {
@@ -7065,7 +7065,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L371",
       "id": "deployment_next_action_checklist_normalizeauthorization",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizeauthorization()"
     },
     {
@@ -7074,7 +7074,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L414",
       "id": "deployment_next_action_checklist_beforeauthorizationchecklist",
-      "community": 8,
+      "community": 9,
       "norm_label": "beforeauthorizationchecklist()"
     },
     {
@@ -7083,7 +7083,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L452",
       "id": "deployment_next_action_checklist_afterauthorizationpreflightchecklist",
-      "community": 8,
+      "community": 9,
       "norm_label": "afterauthorizationpreflightchecklist()"
     },
     {
@@ -7092,7 +7092,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L464",
       "id": "deployment_next_action_checklist_normalizepreflight",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizepreflight()"
     },
     {
@@ -7101,7 +7101,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L488",
       "id": "deployment_next_action_checklist_determinenextaction",
-      "community": 8,
+      "community": 9,
       "norm_label": "determinenextaction()"
     },
     {
@@ -7110,7 +7110,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L498",
       "id": "deployment_next_action_checklist_builddeploymentnextactionchecklist",
-      "community": 8,
+      "community": 9,
       "norm_label": "builddeploymentnextactionchecklist()"
     },
     {
@@ -7119,7 +7119,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L534",
       "id": "deployment_next_action_checklist_readjsonfile",
-      "community": 8,
+      "community": 9,
       "norm_label": "readjsonfile()"
     },
     {
@@ -7128,7 +7128,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L548",
       "id": "deployment_next_action_checklist_normalizeclierror",
-      "community": 8,
+      "community": 9,
       "norm_label": "normalizeclierror()"
     },
     {
@@ -7137,7 +7137,7 @@
       "source_file": "contracts/scripts/deployment-next-action-checklist.mjs",
       "source_location": "L559",
       "id": "deployment_next_action_checklist_runcli",
-      "community": 8,
+      "community": 9,
       "norm_label": "runcli()"
     },
     {
@@ -7146,7 +7146,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_preflight_gate_node_test_mjs",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployment-preflight-gate.node-test.mjs"
     },
     {
@@ -7155,7 +7155,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L35",
       "id": "deployment_preflight_gate_node_test_deployrequest",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployrequest()"
     },
     {
@@ -7164,7 +7164,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L69",
       "id": "deployment_preflight_gate_node_test_authorizationfor",
-      "community": 10,
+      "community": 7,
       "norm_label": "authorizationfor()"
     },
     {
@@ -7173,7 +7173,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L82",
       "id": "deployment_preflight_gate_node_test_source",
-      "community": 10,
+      "community": 7,
       "norm_label": "source()"
     },
     {
@@ -7182,7 +7182,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L92",
       "id": "deployment_preflight_gate_node_test_validsources",
-      "community": 10,
+      "community": 7,
       "norm_label": "validsources()"
     },
     {
@@ -7191,7 +7191,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L102",
       "id": "deployment_preflight_gate_node_test_validinput",
-      "community": 10,
+      "community": 7,
       "norm_label": "validinput()"
     },
     {
@@ -7200,7 +7200,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L174",
       "id": "deployment_preflight_gate_node_test_expectpreflighterror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectpreflighterror()"
     },
     {
@@ -7209,7 +7209,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L412",
       "id": "deployment_preflight_gate_node_test_get",
-      "community": 10,
+      "community": 7,
       "norm_label": "get()"
     },
     {
@@ -7218,7 +7218,7 @@
       "source_file": "contracts/scripts/deployment-preflight-gate.node-test.mjs",
       "source_location": "L460",
       "id": "deployment_preflight_gate_node_test_value",
-      "community": 10,
+      "community": 7,
       "norm_label": "value()"
     },
     {
@@ -7731,7 +7731,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_authorization_package_mjs",
-      "community": 22,
+      "community": 21,
       "norm_label": "deployment-authorization-package.mjs"
     },
     {
@@ -7740,7 +7740,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L28",
       "id": "deployment_authorization_package_deploymentauthorizationpackageerror",
-      "community": 22,
+      "community": 21,
       "norm_label": "deploymentauthorizationpackageerror"
     },
     {
@@ -7749,7 +7749,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L29",
       "id": "deployment_authorization_package_deploymentauthorizationpackageerror_constructor",
-      "community": 22,
+      "community": 21,
       "norm_label": ".constructor()"
     },
     {
@@ -7758,7 +7758,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L37",
       "id": "deployment_authorization_package_fail",
-      "community": 22,
+      "community": 21,
       "norm_label": "fail()"
     },
     {
@@ -7767,7 +7767,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L41",
       "id": "deployment_authorization_package_isrecord",
-      "community": 22,
+      "community": 21,
       "norm_label": "isrecord()"
     },
     {
@@ -7776,7 +7776,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L45",
       "id": "deployment_authorization_package_requirerecord",
-      "community": 22,
+      "community": 21,
       "norm_label": "requirerecord()"
     },
     {
@@ -7785,7 +7785,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L52",
       "id": "deployment_authorization_package_requirestring",
-      "community": 22,
+      "community": 21,
       "norm_label": "requirestring()"
     },
     {
@@ -7794,7 +7794,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L59",
       "id": "deployment_authorization_package_inputinvalid",
-      "community": 22,
+      "community": 21,
       "norm_label": "inputinvalid()"
     },
     {
@@ -7803,7 +7803,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L63",
       "id": "deployment_authorization_package_propertypath",
-      "community": 22,
+      "community": 21,
       "norm_label": "propertypath()"
     },
     {
@@ -7812,7 +7812,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L67",
       "id": "deployment_authorization_package_arrayindexpath",
-      "community": 22,
+      "community": 21,
       "norm_label": "arrayindexpath()"
     },
     {
@@ -7821,7 +7821,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L71",
       "id": "deployment_authorization_package_isplainjsonrecord",
-      "community": 22,
+      "community": 21,
       "norm_label": "isplainjsonrecord()"
     },
     {
@@ -7830,7 +7830,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L75",
       "id": "deployment_authorization_package_isarrayindexkey",
-      "community": 22,
+      "community": 21,
       "norm_label": "isarrayindexkey()"
     },
     {
@@ -7839,7 +7839,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L83",
       "id": "deployment_authorization_package_requiredatadescriptor",
-      "community": 22,
+      "community": 21,
       "norm_label": "requiredatadescriptor()"
     },
     {
@@ -7848,7 +7848,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L96",
       "id": "deployment_authorization_package_safejsonclonearray",
-      "community": 22,
+      "community": 21,
       "norm_label": "safejsonclonearray()"
     },
     {
@@ -7857,7 +7857,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L116",
       "id": "deployment_authorization_package_safejsonclonerecord",
-      "community": 22,
+      "community": 21,
       "norm_label": "safejsonclonerecord()"
     },
     {
@@ -7866,7 +7866,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L133",
       "id": "deployment_authorization_package_safejsonclone",
-      "community": 22,
+      "community": 21,
       "norm_label": "safejsonclone()"
     },
     {
@@ -7875,7 +7875,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L160",
       "id": "deployment_authorization_package_sortedjsonvalue",
-      "community": 22,
+      "community": 21,
       "norm_label": "sortedjsonvalue()"
     },
     {
@@ -7884,7 +7884,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L174",
       "id": "deployment_authorization_package_stablestringify",
-      "community": 22,
+      "community": 21,
       "norm_label": "stablestringify()"
     },
     {
@@ -7893,7 +7893,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L178",
       "id": "deployment_authorization_package_sha256digest",
-      "community": 22,
+      "community": 21,
       "norm_label": "sha256digest()"
     },
     {
@@ -7902,7 +7902,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L182",
       "id": "deployment_authorization_package_normalizeknownerror",
-      "community": 22,
+      "community": 21,
       "norm_label": "normalizeknownerror()"
     },
     {
@@ -7911,7 +7911,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L216",
       "id": "deployment_authorization_package_assertstageorder",
-      "community": 22,
+      "community": 21,
       "norm_label": "assertstageorder()"
     },
     {
@@ -7920,7 +7920,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L229",
       "id": "deployment_authorization_package_exactauthorizationreply",
-      "community": 22,
+      "community": 21,
       "norm_label": "exactauthorizationreply()"
     },
     {
@@ -7929,7 +7929,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L233",
       "id": "deployment_authorization_package_builddeploymentauthorizationpackage",
-      "community": 22,
+      "community": 21,
       "norm_label": "builddeploymentauthorizationpackage()"
     },
     {
@@ -7938,7 +7938,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L304",
       "id": "deployment_authorization_package_readjsonfile",
-      "community": 22,
+      "community": 21,
       "norm_label": "readjsonfile()"
     },
     {
@@ -7947,7 +7947,7 @@
       "source_file": "contracts/scripts/deployment-authorization-package.mjs",
       "source_location": "L319",
       "id": "deployment_authorization_package_runcli",
-      "community": 22,
+      "community": 21,
       "norm_label": "runcli()"
     },
     {
@@ -8406,7 +8406,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_check_artifact_consistency_node_test_mjs",
-      "community": 21,
+      "community": 20,
       "norm_label": "check-artifact-consistency.node-test.mjs"
     },
     {
@@ -8415,7 +8415,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L14",
       "id": "check_artifact_consistency_node_test_validbuildinfo",
-      "community": 21,
+      "community": 20,
       "norm_label": "validbuildinfo()"
     },
     {
@@ -8424,7 +8424,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L47",
       "id": "check_artifact_consistency_node_test_validlock",
-      "community": 21,
+      "community": 20,
       "norm_label": "validlock()"
     },
     {
@@ -8433,7 +8433,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L58",
       "id": "check_artifact_consistency_node_test_createfixture",
-      "community": 21,
+      "community": 20,
       "norm_label": "createfixture()"
     },
     {
@@ -8442,7 +8442,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L71",
       "id": "check_artifact_consistency_node_test_verify",
-      "community": 21,
+      "community": 20,
       "norm_label": "verify()"
     },
     {
@@ -8451,7 +8451,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L78",
       "id": "check_artifact_consistency_node_test_mutatejson",
-      "community": 21,
+      "community": 20,
       "norm_label": "mutatejson()"
     },
     {
@@ -8460,7 +8460,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L84",
       "id": "check_artifact_consistency_node_test_withfixture",
-      "community": 21,
+      "community": 20,
       "norm_label": "withfixture()"
     },
     {
@@ -8469,7 +8469,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.node-test.mjs",
       "source_location": "L117",
       "id": "check_artifact_consistency_node_test_get",
-      "community": 21,
+      "community": 20,
       "norm_label": "get()"
     },
     {
@@ -8586,7 +8586,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_validate_deployment_config_mjs",
-      "community": 10,
+      "community": 7,
       "norm_label": "validate-deployment-config.mjs"
     },
     {
@@ -8595,7 +8595,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L18",
       "id": "validate_deployment_config_deploymentconfigvalidationerror",
-      "community": 10,
+      "community": 7,
       "norm_label": "deploymentconfigvalidationerror"
     },
     {
@@ -8604,7 +8604,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L19",
       "id": "validate_deployment_config_deploymentconfigvalidationerror_constructor",
-      "community": 10,
+      "community": 7,
       "norm_label": ".constructor()"
     },
     {
@@ -8613,7 +8613,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L27",
       "id": "validate_deployment_config_fail",
-      "community": 10,
+      "community": 7,
       "norm_label": "fail()"
     },
     {
@@ -8622,7 +8622,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L31",
       "id": "validate_deployment_config_configinvalid",
-      "community": 10,
+      "community": 7,
       "norm_label": "configinvalid()"
     },
     {
@@ -8631,7 +8631,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L35",
       "id": "validate_deployment_config_safereflection",
-      "community": 10,
+      "community": 7,
       "norm_label": "safereflection()"
     },
     {
@@ -8640,7 +8640,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L43",
       "id": "validate_deployment_config_requireexactplaindatarecord",
-      "community": 10,
+      "community": 7,
       "norm_label": "requireexactplaindatarecord()"
     },
     {
@@ -8649,7 +8649,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L86",
       "id": "validate_deployment_config_validateaddress",
-      "community": 10,
+      "community": 7,
       "norm_label": "validateaddress()"
     },
     {
@@ -8658,7 +8658,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L98",
       "id": "validate_deployment_config_validatecode",
-      "community": 10,
+      "community": 7,
       "norm_label": "validatecode()"
     },
     {
@@ -8667,7 +8667,7 @@
       "source_file": "contracts/scripts/validate-deployment-config.mjs",
       "source_location": "L108",
       "id": "validate_deployment_config_validatedeploymentconfig",
-      "community": 10,
+      "community": 7,
       "norm_label": "validatedeploymentconfig()"
     },
     {
@@ -9826,7 +9826,7 @@
       "label": "validInput()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L28",
+      "source_location": "L23",
       "id": "remaining_task_evidence_matrix_node_test_validinput",
       "community": 1,
       "norm_label": "validinput()"
@@ -9835,7 +9835,7 @@
       "label": "taskById()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L60",
+      "source_location": "L55",
       "id": "remaining_task_evidence_matrix_node_test_taskbyid",
       "community": 1,
       "norm_label": "taskbyid()"
@@ -9844,7 +9844,7 @@
       "label": "get()",
       "file_type": "code",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L309",
+      "source_location": "L285",
       "id": "remaining_task_evidence_matrix_node_test_get",
       "community": 1,
       "norm_label": "get()"
@@ -10323,7 +10323,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_check_artifact_consistency_mjs",
-      "community": 21,
+      "community": 20,
       "norm_label": "check-artifact-consistency.mjs"
     },
     {
@@ -10332,7 +10332,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L27",
       "id": "check_artifact_consistency_sortedjsonvalue",
-      "community": 21,
+      "community": 20,
       "norm_label": "sortedjsonvalue()"
     },
     {
@@ -10341,7 +10341,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L41",
       "id": "check_artifact_consistency_stablestringify",
-      "community": 21,
+      "community": 20,
       "norm_label": "stablestringify()"
     },
     {
@@ -10350,7 +10350,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L45",
       "id": "check_artifact_consistency_sha256",
-      "community": 21,
+      "community": 20,
       "norm_label": "sha256()"
     },
     {
@@ -10359,7 +10359,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L49",
       "id": "check_artifact_consistency_assertequal",
-      "community": 21,
+      "community": 20,
       "norm_label": "assertequal()"
     },
     {
@@ -10368,7 +10368,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L55",
       "id": "check_artifact_consistency_assertjsonarrayequal",
-      "community": 21,
+      "community": 20,
       "norm_label": "assertjsonarrayequal()"
     },
     {
@@ -10377,7 +10377,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L61",
       "id": "check_artifact_consistency_assertplainobject",
-      "community": 21,
+      "community": 20,
       "norm_label": "assertplainobject()"
     },
     {
@@ -10386,7 +10386,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L67",
       "id": "check_artifact_consistency_toolingrequestinvalid",
-      "community": 21,
+      "community": 20,
       "norm_label": "toolingrequestinvalid()"
     },
     {
@@ -10395,7 +10395,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L71",
       "id": "check_artifact_consistency_requiretoolingoptionsdescriptors",
-      "community": 21,
+      "community": 20,
       "norm_label": "requiretoolingoptionsdescriptors()"
     },
     {
@@ -10404,7 +10404,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L112",
       "id": "check_artifact_consistency_readtoolingoption",
-      "community": 21,
+      "community": 20,
       "norm_label": "readtoolingoption()"
     },
     {
@@ -10413,7 +10413,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L120",
       "id": "check_artifact_consistency_assertexactkeys",
-      "community": 21,
+      "community": 20,
       "norm_label": "assertexactkeys()"
     },
     {
@@ -10422,7 +10422,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L131",
       "id": "check_artifact_consistency_readrequiredtext",
-      "community": 21,
+      "community": 20,
       "norm_label": "readrequiredtext()"
     },
     {
@@ -10431,7 +10431,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L139",
       "id": "check_artifact_consistency_readrequiredjson",
-      "community": 21,
+      "community": 20,
       "norm_label": "readrequiredjson()"
     },
     {
@@ -10440,7 +10440,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L148",
       "id": "check_artifact_consistency_defaultrunforgeversion",
-      "community": 21,
+      "community": 20,
       "norm_label": "defaultrunforgeversion()"
     },
     {
@@ -10449,7 +10449,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L156",
       "id": "check_artifact_consistency_parseforgeversion",
-      "community": 21,
+      "community": 20,
       "norm_label": "parseforgeversion()"
     },
     {
@@ -10458,7 +10458,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L170",
       "id": "check_artifact_consistency_listbuildinfofiles",
-      "community": 21,
+      "community": 20,
       "norm_label": "listbuildinfofiles()"
     },
     {
@@ -10467,7 +10467,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L187",
       "id": "check_artifact_consistency_verifyartifactconsistency",
-      "community": 21,
+      "community": 20,
       "norm_label": "verifyartifactconsistency()"
     },
     {
@@ -10476,7 +10476,7 @@
       "source_file": "contracts/scripts/check-artifact-consistency.mjs",
       "source_location": "L311",
       "id": "check_artifact_consistency_main",
-      "community": 21,
+      "community": 20,
       "norm_label": "main()"
     },
     {
@@ -10485,7 +10485,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_manifest_node_test_mjs",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployment-manifest.node-test.mjs"
     },
     {
@@ -10494,7 +10494,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L52",
       "id": "deployment_manifest_node_test_artifacthashes",
-      "community": 10,
+      "community": 7,
       "norm_label": "artifacthashes()"
     },
     {
@@ -10503,7 +10503,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L65",
       "id": "deployment_manifest_node_test_deployment",
-      "community": 10,
+      "community": 7,
       "norm_label": "deployment()"
     },
     {
@@ -10512,7 +10512,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L75",
       "id": "deployment_manifest_node_test_corecontract",
-      "community": 10,
+      "community": 7,
       "norm_label": "corecontract()"
     },
     {
@@ -10521,7 +10521,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L92",
       "id": "deployment_manifest_node_test_fundedclone",
-      "community": 10,
+      "community": 7,
       "norm_label": "fundedclone()"
     },
     {
@@ -10530,7 +10530,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L142",
       "id": "deployment_manifest_node_test_validinput",
-      "community": 10,
+      "community": 7,
       "norm_label": "validinput()"
     },
     {
@@ -10539,7 +10539,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L305",
       "id": "deployment_manifest_node_test_expectmanifestvalidationerror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectmanifestvalidationerror()"
     },
     {
@@ -10548,7 +10548,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L318",
       "id": "deployment_manifest_node_test_expectbuildmanifesterror",
-      "community": 10,
+      "community": 7,
       "norm_label": "expectbuildmanifesterror()"
     },
     {
@@ -10557,7 +10557,7 @@
       "source_file": "contracts/scripts/deployment-manifest.node-test.mjs",
       "source_location": "L547",
       "id": "deployment_manifest_node_test_get",
-      "community": 10,
+      "community": 7,
       "norm_label": "get()"
     },
     {
@@ -10611,7 +10611,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L1",
       "id": "contracts_scripts_deployment_authorization_gate_mjs",
-      "community": 9,
+      "community": 10,
       "norm_label": "deployment-authorization-gate.mjs"
     },
     {
@@ -10620,7 +10620,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L17",
       "id": "deployment_authorization_gate_deploymentauthorizationgateerror",
-      "community": 9,
+      "community": 10,
       "norm_label": "deploymentauthorizationgateerror"
     },
     {
@@ -10629,7 +10629,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L18",
       "id": "deployment_authorization_gate_deploymentauthorizationgateerror_constructor",
-      "community": 9,
+      "community": 10,
       "norm_label": ".constructor()"
     },
     {
@@ -10638,7 +10638,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L26",
       "id": "deployment_authorization_gate_fail",
-      "community": 9,
+      "community": 10,
       "norm_label": "fail()"
     },
     {
@@ -10647,7 +10647,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L30",
       "id": "deployment_authorization_gate_isrecord",
-      "community": 9,
+      "community": 10,
       "norm_label": "isrecord()"
     },
     {
@@ -10656,7 +10656,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L34",
       "id": "deployment_authorization_gate_requirerecord",
-      "community": 9,
+      "community": 10,
       "norm_label": "requirerecord()"
     },
     {
@@ -10665,7 +10665,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L41",
       "id": "deployment_authorization_gate_requirearray",
-      "community": 9,
+      "community": 10,
       "norm_label": "requirearray()"
     },
     {
@@ -10674,7 +10674,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L48",
       "id": "deployment_authorization_gate_requirenonemptyarray",
-      "community": 9,
+      "community": 10,
       "norm_label": "requirenonemptyarray()"
     },
     {
@@ -10683,7 +10683,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L56",
       "id": "deployment_authorization_gate_requirenonemptystring",
-      "community": 9,
+      "community": 10,
       "norm_label": "requirenonemptystring()"
     },
     {
@@ -10692,7 +10692,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L63",
       "id": "deployment_authorization_gate_requireboolean",
-      "community": 9,
+      "community": 10,
       "norm_label": "requireboolean()"
     },
     {
@@ -10701,7 +10701,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L70",
       "id": "deployment_authorization_gate_requiretrue",
-      "community": 9,
+      "community": 10,
       "norm_label": "requiretrue()"
     },
     {
@@ -10710,7 +10710,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L77",
       "id": "deployment_authorization_gate_requireinteger",
-      "community": 9,
+      "community": 10,
       "norm_label": "requireinteger()"
     },
     {
@@ -10719,7 +10719,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L84",
       "id": "deployment_authorization_gate_requiredigest",
-      "community": 9,
+      "community": 10,
       "norm_label": "requiredigest()"
     },
     {
@@ -10728,7 +10728,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L91",
       "id": "deployment_authorization_gate_requireisodatetime",
-      "community": 9,
+      "community": 10,
       "norm_label": "requireisodatetime()"
     },
     {
@@ -10737,7 +10737,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L100",
       "id": "deployment_authorization_gate_inputinvalid",
-      "community": 9,
+      "community": 10,
       "norm_label": "inputinvalid()"
     },
     {
@@ -10746,7 +10746,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L104",
       "id": "deployment_authorization_gate_propertypath",
-      "community": 9,
+      "community": 10,
       "norm_label": "propertypath()"
     },
     {
@@ -10755,7 +10755,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L108",
       "id": "deployment_authorization_gate_arrayindexpath",
-      "community": 9,
+      "community": 10,
       "norm_label": "arrayindexpath()"
     },
     {
@@ -10764,7 +10764,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L112",
       "id": "deployment_authorization_gate_isplainjsonrecord",
-      "community": 9,
+      "community": 10,
       "norm_label": "isplainjsonrecord()"
     },
     {
@@ -10773,7 +10773,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L116",
       "id": "deployment_authorization_gate_isarrayindexkey",
-      "community": 9,
+      "community": 10,
       "norm_label": "isarrayindexkey()"
     },
     {
@@ -10782,7 +10782,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L124",
       "id": "deployment_authorization_gate_requiredatadescriptor",
-      "community": 9,
+      "community": 10,
       "norm_label": "requiredatadescriptor()"
     },
     {
@@ -10791,7 +10791,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L137",
       "id": "deployment_authorization_gate_safejsonclonearray",
-      "community": 9,
+      "community": 10,
       "norm_label": "safejsonclonearray()"
     },
     {
@@ -10800,7 +10800,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L158",
       "id": "deployment_authorization_gate_safejsonclonerecord",
-      "community": 9,
+      "community": 10,
       "norm_label": "safejsonclonerecord()"
     },
     {
@@ -10809,7 +10809,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L175",
       "id": "deployment_authorization_gate_safejsonclone",
-      "community": 9,
+      "community": 10,
       "norm_label": "safejsonclone()"
     },
     {
@@ -10818,7 +10818,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L202",
       "id": "deployment_authorization_gate_sortedjsonvalue",
-      "community": 9,
+      "community": 10,
       "norm_label": "sortedjsonvalue()"
     },
     {
@@ -10827,7 +10827,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L216",
       "id": "deployment_authorization_gate_stablestringify",
-      "community": 9,
+      "community": 10,
       "norm_label": "stablestringify()"
     },
     {
@@ -10836,7 +10836,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L220",
       "id": "deployment_authorization_gate_sha256",
-      "community": 9,
+      "community": 10,
       "norm_label": "sha256()"
     },
     {
@@ -10845,7 +10845,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L224",
       "id": "deployment_authorization_gate_clonestable",
-      "community": 9,
+      "community": 10,
       "norm_label": "clonestable()"
     },
     {
@@ -10854,7 +10854,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L228",
       "id": "deployment_authorization_gate_uniquesorted",
-      "community": 9,
+      "community": 10,
       "norm_label": "uniquesorted()"
     },
     {
@@ -10872,7 +10872,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L237",
       "id": "deployment_authorization_gate_requireonlyauthorizationrecordfields",
-      "community": 9,
+      "community": 10,
       "norm_label": "requireonlyauthorizationrecordfields()"
     },
     {
@@ -10881,7 +10881,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L249",
       "id": "deployment_authorization_gate_normalizedrequestbody",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizedrequestbody()"
     },
     {
@@ -10890,7 +10890,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L255",
       "id": "deployment_authorization_gate_digestauthorizationrequest",
-      "community": 9,
+      "community": 10,
       "norm_label": "digestauthorizationrequest()"
     },
     {
@@ -10899,7 +10899,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L260",
       "id": "deployment_authorization_gate_normalizetransactions",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizetransactions()"
     },
     {
@@ -10908,7 +10908,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L269",
       "id": "deployment_authorization_gate_normalizeexpectedaddresses",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizeexpectedaddresses()"
     },
     {
@@ -10917,7 +10917,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L278",
       "id": "deployment_authorization_gate_normalizecoreartifacts",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizecoreartifacts()"
     },
     {
@@ -10926,7 +10926,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L284",
       "id": "deployment_authorization_gate_normalizesourcetransaction",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizesourcetransaction()"
     },
     {
@@ -10935,7 +10935,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L299",
       "id": "deployment_authorization_gate_normalizeroletransaction",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizeroletransaction()"
     },
     {
@@ -10944,7 +10944,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L309",
       "id": "deployment_authorization_gate_normalizestage",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizestage()"
     },
     {
@@ -10953,7 +10953,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L440",
       "id": "deployment_authorization_gate_buildauthorizationrequests",
-      "community": 9,
+      "community": 10,
       "norm_label": "buildauthorizationrequests()"
     },
     {
@@ -10962,7 +10962,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L455",
       "id": "deployment_authorization_gate_normalizerequestforvalidation",
-      "community": 9,
+      "community": 10,
       "norm_label": "normalizerequestforvalidation()"
     },
     {
@@ -10971,7 +10971,7 @@
       "source_file": "contracts/scripts/deployment-authorization-gate.mjs",
       "source_location": "L479",
       "id": "deployment_authorization_gate_validatestageauthorization",
-      "community": 9,
+      "community": 10,
       "norm_label": "validatestageauthorization()"
     },
     {
@@ -20556,7 +20556,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L41",
+      "source_location": "L36",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_remainingtaskevidencematrixerror",
@@ -20568,7 +20568,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L50",
+      "source_location": "L45",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20580,7 +20580,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L54",
+      "source_location": "L49",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_isrecord",
@@ -20592,7 +20592,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L58",
+      "source_location": "L53",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_inspectjsonlike",
@@ -20604,7 +20604,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L116",
+      "source_location": "L111",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_requirerecord",
@@ -20616,7 +20616,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L123",
+      "source_location": "L118",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_requirestring",
@@ -20628,7 +20628,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L130",
+      "source_location": "L125",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_requireinteger",
@@ -20640,7 +20640,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L137",
+      "source_location": "L132",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_bool",
@@ -20652,7 +20652,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L141",
+      "source_location": "L136",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_normalizeopenspec",
@@ -20664,7 +20664,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L173",
+      "source_location": "L168",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_readinessevidence",
@@ -20676,7 +20676,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L196",
+      "source_location": "L191",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_presentevidence",
@@ -20688,7 +20688,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L200",
+      "source_location": "L195",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_maketask",
@@ -20700,7 +20700,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L216",
+      "source_location": "L211",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_buildtasks",
@@ -20712,7 +20712,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L381",
+      "source_location": "L292",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
@@ -20724,7 +20724,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L409",
+      "source_location": "L320",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_mjs",
       "_tgt": "remaining_task_evidence_matrix_runcli",
@@ -20748,7 +20748,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L42",
+      "source_location": "L37",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_remainingtaskevidencematrixerror",
       "_tgt": "remaining_task_evidence_matrix_remainingtaskevidencematrixerror_constructor",
@@ -20760,7 +20760,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L64",
+      "source_location": "L59",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_inspectjsonlike",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20772,7 +20772,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L118",
+      "source_location": "L113",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_requirerecord",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20784,7 +20784,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L125",
+      "source_location": "L120",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_requirestring",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20796,7 +20796,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L132",
+      "source_location": "L127",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_requireinteger",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20808,7 +20808,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L149",
+      "source_location": "L144",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_normalizeopenspec",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20820,7 +20820,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L418",
+      "source_location": "L329",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_runcli",
       "_tgt": "remaining_task_evidence_matrix_fail",
@@ -20832,7 +20832,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L90",
+      "source_location": "L85",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_inspectjsonlike",
       "_tgt": "remaining_task_evidence_matrix_isrecord",
@@ -20844,7 +20844,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L117",
+      "source_location": "L112",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_requirerecord",
       "_tgt": "remaining_task_evidence_matrix_isrecord",
@@ -20856,7 +20856,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L190",
+      "source_location": "L185",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_readinessevidence",
       "_tgt": "remaining_task_evidence_matrix_isrecord",
@@ -20868,19 +20868,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L345",
-      "weight": 1.0,
-      "_src": "remaining_task_evidence_matrix_buildtasks",
-      "_tgt": "remaining_task_evidence_matrix_isrecord",
-      "source": "remaining_task_evidence_matrix_isrecord",
-      "target": "remaining_task_evidence_matrix_buildtasks",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L382",
+      "source_location": "L293",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "_tgt": "remaining_task_evidence_matrix_inspectjsonlike",
@@ -20892,7 +20880,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L142",
+      "source_location": "L137",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_normalizeopenspec",
       "_tgt": "remaining_task_evidence_matrix_requirerecord",
@@ -20904,7 +20892,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L383",
+      "source_location": "L294",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "_tgt": "remaining_task_evidence_matrix_requirerecord",
@@ -20916,7 +20904,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L143",
+      "source_location": "L138",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_normalizeopenspec",
       "_tgt": "remaining_task_evidence_matrix_requirestring",
@@ -20928,7 +20916,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L144",
+      "source_location": "L139",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_normalizeopenspec",
       "_tgt": "remaining_task_evidence_matrix_requireinteger",
@@ -20940,7 +20928,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L178",
+      "source_location": "L173",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_readinessevidence",
       "_tgt": "remaining_task_evidence_matrix_bool",
@@ -20952,7 +20940,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L197",
+      "source_location": "L192",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_presentevidence",
       "_tgt": "remaining_task_evidence_matrix_bool",
@@ -20964,7 +20952,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L329",
+      "source_location": "L266",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildtasks",
       "_tgt": "remaining_task_evidence_matrix_bool",
@@ -20976,7 +20964,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L384",
+      "source_location": "L295",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "_tgt": "remaining_task_evidence_matrix_normalizeopenspec",
@@ -20988,7 +20976,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L386",
+      "source_location": "L297",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "_tgt": "remaining_task_evidence_matrix_readinessevidence",
@@ -21000,7 +20988,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L229",
+      "source_location": "L223",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildtasks",
       "_tgt": "remaining_task_evidence_matrix_presentevidence",
@@ -21012,7 +21000,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L219",
+      "source_location": "L214",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildtasks",
       "_tgt": "remaining_task_evidence_matrix_maketask",
@@ -21024,7 +21012,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L387",
+      "source_location": "L298",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
       "_tgt": "remaining_task_evidence_matrix_buildtasks",
@@ -21036,7 +21024,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.mjs",
-      "source_location": "L420",
+      "source_location": "L331",
       "weight": 1.0,
       "_src": "remaining_task_evidence_matrix_runcli",
       "_tgt": "remaining_task_evidence_matrix_buildremainingtaskevidencematrix",
@@ -40176,7 +40164,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L28",
+      "source_location": "L23",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_node_test_mjs",
       "_tgt": "remaining_task_evidence_matrix_node_test_validinput",
@@ -40188,7 +40176,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L60",
+      "source_location": "L55",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_node_test_mjs",
       "_tgt": "remaining_task_evidence_matrix_node_test_taskbyid",
@@ -40200,7 +40188,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "contracts/scripts/remaining-task-evidence-matrix.node-test.mjs",
-      "source_location": "L309",
+      "source_location": "L285",
       "weight": 1.0,
       "_src": "contracts_scripts_remaining_task_evidence_matrix_node_test_mjs",
       "_tgt": "remaining_task_evidence_matrix_node_test_get",

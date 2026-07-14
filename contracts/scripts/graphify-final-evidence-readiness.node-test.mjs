@@ -27,9 +27,8 @@ test("graphify readiness documents local 14.8 scope and graph report evidence", 
   const { nodes, edges, communities } = currentGraphSummary(graphReport);
 
   for (const phrase of [
-    "14.8 本地 readiness",
-    "不替代真实完成",
-    "14.8 仍未完成",
+    "14.8 本地完成记录",
+    "14.8 已完成",
     "graphify-out/GRAPH_REPORT.md",
     `${nodes} nodes`,
     `${edges} edges`,
@@ -79,7 +78,7 @@ test("graphify readiness includes authorization package and handoff safety scope
   }
 });
 
-test("graphify readiness keeps final address and commit confirmation gated", async () => {
+test("graphify readiness records final address commit and source verification closure", async () => {
   const readiness = await readReadiness();
 
   for (const phrase of [
@@ -89,22 +88,22 @@ test("graphify readiness keeps final address and commit confirmation gated", asy
     "tx hash",
     "block",
     "runtime/code hash",
+    "sourceVerification",
     "不得使用 placeholder",
     "不得 --broadcast",
-    "source verify",
+    "Explorer source/ABI exact-match",
     "role grant/revoke",
-    "真实 manifest 发布",
     "test USDC",
   ]) {
     assert.ok(readiness.includes(phrase), `readiness must mention ${phrase}`);
   }
 });
 
-test("graphify readiness does not mark task 14.8 complete or expose secrets", async () => {
+test("graphify readiness marks task 14.8 complete without exposing secrets", async () => {
   const readiness = await readReadiness();
   const tasks = await readFile(TASKS_PATH, "utf8");
 
-  assert.match(tasks, /- \[ \] 14\.8 /, "14.8 must remain unchecked");
+  assert.match(tasks, /- \[x\] 14\.8 /, "14.8 must be checked");
 
   for (const forbidden of [
     /sk-[A-Za-z0-9_-]{20,}/,

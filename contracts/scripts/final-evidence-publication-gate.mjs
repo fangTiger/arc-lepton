@@ -11,7 +11,7 @@ const ARC_TESTNET_CHAIN_ID = 5042002;
 const STAGE = "final_evidence_publication";
 const GRAPHIFY_SUMMARY = Object.freeze({
   nodes: 1307,
-  edges: 2754,
+  edges: 2753,
   communities: 47,
   reportPath: "graphify-out/GRAPH_REPORT.md",
 });

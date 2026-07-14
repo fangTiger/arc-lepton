@@ -8,14 +8,12 @@ import {
 
 const CHANGE_NAME = "onchain-research-escrow";
 const TOTAL_TASKS = 107;
-const COMPLETE_TASKS = 100;
+const COMPLETE_TASKS = 102;
 const REMAINING_TASK_IDS = Object.freeze([
-  "13.4",
   "14.2",
   "14.3",
   "14.4",
   "14.7",
-  "14.8",
   "14.9",
 ]);
 
@@ -146,7 +144,7 @@ function normalizeOpenspec(root) {
     fail(
       "OPENSPEC_PROGRESS_MISMATCH",
       "openspec",
-      "OpenSpec 进度必须匹配当前 onchain-research-escrow 100/107 状态",
+      "OpenSpec 进度必须匹配当前 onchain-research-escrow 102/107 状态",
     );
   }
   if (!Array.isArray(remainingTaskIds)) {
@@ -161,7 +159,7 @@ function normalizeOpenspec(root) {
     fail(
       "REMAINING_TASKS_MISMATCH",
       "openspec.remainingTaskIds",
-      "remainingTaskIds 必须精确匹配当前 7 个未完成任务",
+      "remainingTaskIds 必须精确匹配当前 5 个未完成任务",
     );
   }
   return { change, totalTasks, completeTasks, remainingTaskIds: [...REMAINING_TASK_IDS] };
@@ -214,20 +212,6 @@ function buildTasks(evidence, readiness) {
   const tasks = [];
 
   tasks.push(makeTask(
-    "13.4",
-    "external_chain_write_required",
-    [
-      "三个核心合约 Explorer exact-match source/ABI",
-      "bindFactory、五个 source、角色移交、deployer 撤权 finalized 读回",
-    ],
-    readiness,
-    [
-      { ok: presentEvidence(evidence, "explorerExactMatch"), label: "缺少三个核心合约 Explorer exact-match source/ABI 证据" },
-      { ok: presentEvidence(evidence, "sourceAndRoleExecution"), label: "缺少 source/roles/finalized readback 真实执行证据" },
-    ],
-  ));
-
-  tasks.push(makeTask(
     "14.2",
     "live_rollout_required",
     [
@@ -274,44 +258,18 @@ function buildTasks(evidence, readiness) {
     "cross_spec_audit_blocked",
     [
       "六份 delta spec 逐场景核验证据",
-      "13.4、14.2–14.4、14.8、14.9 均已有 authoritative evidence",
+      "14.2–14.4、14.9 均已有 authoritative evidence",
       "OpenSpec strict validate 通过",
     ],
     readiness,
     [
       { ok: bool(evidence.specScenarioAudit), label: "缺少 spec scenario audit 文档" },
-      ...["13.4", "14.2", "14.3", "14.4"].map((id) => ({
+      ...["14.2", "14.3", "14.4"].map((id) => ({
         ok: authoritativeEvidenceSatisfiedById.get(id) === true,
         label: `缺少 ${id} authoritative evidence completion`,
       })),
-      {
-        ok: presentEvidence(evidence, "graphifyFinalReferences"),
-        label: "缺少 14.8 最终地址/commit/manifest/verifier 引用证据",
-      },
       { ok: presentEvidence(evidence, "rollbackDrill"), label: "缺少 14.9 rollback drill evidence" },
       { ok: presentEvidence(evidence, "openspecStrictValidate"), label: "缺少 OpenSpec strict validate 最新通过证据" },
-    ],
-  ));
-
-  tasks.push(makeTask(
-    "14.8",
-    isRecord(evidence.graphify) && bool(evidence.graphify.rebuiltAfterLastCodeChange)
-      ? "local_readiness_only"
-      : "graphify_rebuild_required",
-    [
-      "修改代码后 Graphify 已重建并检查影响图",
-      "部署文档、README、manifest、verifier 均引用最终地址与最终 commit",
-    ],
-    readiness,
-    [
-      {
-        ok: isRecord(evidence.graphify) && bool(evidence.graphify.rebuiltAfterLastCodeChange),
-        label: "缺少最新 Graphify 重建证据",
-      },
-      { ok: presentEvidence(evidence, "finalAddressesAndCommit"), label: "缺少最终地址与最终 commit 引用" },
-      { ok: presentEvidence(evidence, "finalManifest"), label: "缺少最终 manifest 引用" },
-      { ok: presentEvidence(evidence, "publicVerifierReport"), label: "缺少 public verifier 引用" },
-      { ok: presentEvidence(evidence, "graphifyFinalReferences"), label: "缺少最终文档引用复核证据" },
     ],
   ));
 

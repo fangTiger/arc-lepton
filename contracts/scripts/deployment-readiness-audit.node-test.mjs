@@ -17,8 +17,8 @@ test("deployment readiness audit records 13.2 authorization boundary and local g
   const audit = await readAudit();
 
   for (const phrase of [
-    "100/107 tasks",
-    "13.1–13.3 已根据用户逐阶段授权",
+    "102/107 tasks",
+    "13.1–13.4 已根据用户逐阶段授权",
     "13.2 只能在 13.1 明确授权后执行",
     "readiness audit",
     "不是授权记录",

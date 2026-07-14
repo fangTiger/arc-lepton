@@ -2,18 +2,18 @@
 
 日期：2026-07-13
 
-范围：OpenSpec change `onchain-research-escrow` 的六份 delta spec。此报告只做本地实现、测试与文档证据核验；本轮不执行新的部署、广播、私钥读取或 test USDC 花费。13.5 smoke 与 13.6 final public verifier 的已保存公开证据作为本报告输入；生产 DB/worker rollout、live E2E 与 rollback 仍 pending。
+范围：OpenSpec change `onchain-research-escrow` 的六份 delta spec。此报告只做本地实现、测试与文档证据核验；本轮不执行新的部署、广播、私钥读取或 test USDC 花费。13.5 smoke、13.6 final public verifier、13.4 Explorer exact-match source/ABI 与 14.8 Graphify/final evidence 的已保存公开证据作为本报告输入；生产 DB/worker rollout、live E2E 与 rollback 仍 pending。
 
 ## 总结论
 
 不建议勾选 14.7，14.7 仍未完成。
 
-当前 OpenSpec 进度为 `100/107 tasks`。13.1–13.3 的逐阶段授权、授权绑定 preflight、核心部署 receipt/block/code hash 已基于现有证据回填完成；13.5 `smoke_usdc_spend` 与 13.6 final public verifier 已完成并有公开本地证据；14.1 文档/runbook 与 14.5 本地回归矩阵也已完成。但六份 spec 仍存在明确 blocked 场景：13.4 的 Explorer exact-match source/ABI 任务闭环仍 pending；14.2–14.4 的生产 DB/worker 切流、真实成功 E2E、真实失败 E2E 未完成；14.7–14.9 仍未完成。只要这些场景仍 blocked，14.7 的“逐场景核验实现和测试”不能声明完成。
+当前 OpenSpec 进度为 `102/107 tasks`。13.1–13.4 的逐阶段授权、授权绑定 preflight、核心部署 receipt/block/code hash、source/role 配置和 Explorer exact-match source/ABI 已基于现有证据回填完成；13.5 `smoke_usdc_spend` 与 13.6 final public verifier 已完成并有公开本地证据；14.1 文档/runbook、14.5 本地回归矩阵和 14.8 Graphify/final evidence 引用复核也已完成。但六份 spec 仍存在明确 blocked 场景：14.2–14.4 的生产 DB/worker 切流、真实成功 E2E、真实失败 E2E 未完成；14.7 与 14.9 仍未完成。只要这些场景仍 blocked，14.7 的“逐场景核验实现和测试”不能声明完成。
 
 | Spec | 场景数 | 本地结论 | 14.7 建议 |
 | --- | ---: | --- | --- |
 | `arc-payment-receipts` | 11 | partial；14.5 本地 direct/legacy regression covered，真实链上 receipt/E2E blocked | 不勾 |
-| `contract-deployment-evidence` | 42 | partial；final manifest/verifier/smoke 与本地文档引用 covered，source exact-match 与 final publication review blocked | 不勾 |
+| `contract-deployment-evidence` | 42 | partial；final manifest/verifier/smoke、Explorer source exact-match 与最终文档引用 covered，live rollout/E2E/rollback 仍 blocked | 不勾 |
 | `onchain-research-escrow` | 55 | partial | 不勾 |
 | `research-agent-engine` | 43 | partial；14.5 本地 mock/history/follow-up regression covered，真实 worker/E2E blocked | 不勾 |
 | `research-daily-quota` | 14 | partial；14.5 本地 quota regression covered，生产切流/E2E blocked | 不勾 |
@@ -37,16 +37,16 @@
 本轮执行/查询：
 
 - `openspec list --specs`：通过，列出现有 specs。
-- `openspec list`：`onchain-research-escrow` 为 `100/107 tasks`，14.7 未完成。
+- `openspec list`：`onchain-research-escrow` 为 `102/107 tasks`，14.7 未完成。
 - `openspec status --change onchain-research-escrow --json`：schema 为 `spec-driven`，repo-local，可编辑根为本项目。
-- `openspec instructions apply --change onchain-research-escrow --json`：上下文文件确认六份 spec；剩余任务为 13.4、14.2–14.4、14.7–14.9。
-- `openspec/changes/onchain-research-escrow/tasks.md`：13.1–13.3、13.5、13.6、14.1、14.5、14.6 为 `[x]`；13.4、14.2–14.4、14.7–14.9 为 `[ ]`。
+- `openspec instructions apply --change onchain-research-escrow --json`：上下文文件确认六份 spec；剩余任务为 14.2–14.4、14.7、14.9。
+- `openspec/changes/onchain-research-escrow/tasks.md`：13.1–13.6、14.1、14.5、14.6、14.8 为 `[x]`；14.2–14.4、14.7、14.9 为 `[ ]`。
 - `rg -c "^#### Scenario" openspec/changes/onchain-research-escrow/specs/*/spec.md`：场景计数分别为 11、42、55、43、14、10。
 - `rg --files | rg '(^|/)deployments/5042002\.json$|(^|/)deployments/'`：发现最终 `deployments/5042002.json`。
 - `openspec validate onchain-research-escrow --strict --no-interactive`：通过，输出 `Change 'onchain-research-escrow' is valid`。
-- `graphify-out/GRAPH_REPORT.md`：当前 Graphify 报告为 `1307 nodes`、`2754 edges`、`47 communities detected`；该报告可作为本地影响图阅读证据，但不替代最终地址/commit/manifest/verifier 的真实发布证据。
-- `node --test contracts/scripts/deployment-readiness-audit.node-test.mjs contracts/scripts/rollout-e2e-readiness.node-test.mjs contracts/scripts/graphify-final-evidence-readiness.node-test.mjs`：12/12 pass，覆盖 13.2、14.2–14.4、14.8 的本地 readiness 边界；这些 readiness 只降低后续授权执行风险，不替代真实外部写入或 E2E。
-- 最新本地复核：`npm run contracts:tooling:test` 486/486 pass，新增覆盖 deployment authorization handoff placeholder boundary、deployment authorization handoff machine-readable safety flags、deployment authorization briefing JSON-like input hygiene、deployment authorization exact reply template、deployment evidence package JSON-like input hygiene、deployment evidence approval marker hygiene、deployment manifest JSON-like input hygiene、deployment authorization gate JSON-like input hygiene、deployment authorization record field hygiene、deployment authorization package JSON-like input hygiene、deployment authorization package exact replies、graphify final evidence authorization safety scope、authorization package misuse safety、deployment readiness authorization package handoff non-authorization safety、deployment readiness predeploy commit staging hazards、predeploy commit scope candidate/exclusion gate、predeploy stoplight deployment blocked gate、predeploy stoplight JSON-like input hygiene、deployment next action checklist authorization boundary、deployment next action checklist exact reply、deployment next action checklist secret hygiene、deployment authorization input gap report、deployment authorization request draft exact schema/secret boundary、deployment write plan freeze local-only digest boundary、deployment write plan freeze null-prototype input hygiene、deployment gate/tooling null-prototype input hygiene、remaining task evidence matrix authority boundary、source role readiness authorization boundary、source role readiness report、smoke spend readiness authorization boundary、smoke evidence verifier JSON-like input hygiene、RPC verifier envelope input hygiene、local smoke runner input/harness getter hygiene、artifact consistency wrapper input getter hygiene、Slither wrapper input getter hygiene、deployment/predeploy CLI streams wrapper input getter hygiene、CLI stream helper wrapper shape hygiene、final evidence publication gate、final public verifier readiness publication boundary、rollout authorization package handoff non-authorization safety、rollback authorization package handoff non-authorization safety 与 rollback drill final public verifier gate、rollback live execution runbook；该复核只证明本地授权交接、authorization package 防误用和 JSON-like 入口扫描 fail-closed、deployment authorization exact reply template 只渲染公开字段且不构成授权记录、deployment next action checklist 输出同字段 exact reply 且仍不构成授权记录、deployment write plan freeze 只冻结三阶段公共写入摘要与 digest 且不构成授权记录、deployment manifest 生成/校验输入扫描 fail-closed、predeploy stoplight 输入扫描 fail-closed、evidence package 公开输入/approval-shaped marker 扫描 fail-closed、authorization gate requestDigest/authorization 输入扫描 fail-closed、authorization 记录字段白名单 fail-closed、local smoke runner 输入 envelope、harness 方法与 optional harness 字段读取不执行 getter、artifact consistency、Slither wrapper 与 deployment/predeploy CLI streams wrapper 输入读取不执行 getter、CLI stream helper wrapper shape hygiene、13.1 逐阶段授权公共输入缺口分类和 request digest draft 生成、13.2 readiness/preflight 授权包负授权边界、13.2 前 clean commit 候选范围分类、本地提交警戒、部署前 stoplight 阻断门禁、下一阶段 checklist 授权边界、剩余任务证据矩阵的 readiness/authoritative evidence 分类、13.4 source/roles/exact-match 本地授权边界、13.5 smoke_usdc_spend/test USDC 花费授权边界、13.6 final public verifier 发布边界、Graphify/final evidence 授权安全影响范围、最终证据发布审查本地门禁、rollout/E2E 授权包负授权边界、rollback live 授权包负授权边界、rollback live 证据门禁、tooling 与文档门禁仍通过；13.1–13.3、13.5、13.6 的真实授权、preflight、deployment、smoke 和 verifier 证据已另存，不替代 13.4 Explorer exact-match、14.2–14.4 真实 rollout/E2E、14.7 spec audit 完成授权、14.8 final docs publication 或 14.9 live rollback。
+- `graphify-out/GRAPH_REPORT.md`：当前 Graphify 报告为 `1307 nodes`、`2753 edges`、`47 communities detected`；该报告可作为本地影响图阅读证据，但不替代最终地址/commit/manifest/verifier 的真实发布证据。
+- `node --test contracts/scripts/deployment-readiness-audit.node-test.mjs contracts/scripts/rollout-e2e-readiness.node-test.mjs contracts/scripts/graphify-final-evidence-readiness.node-test.mjs`：17/17 pass，覆盖 13.2、14.2–14.4、14.8 的本地 readiness/完成边界；这些材料只降低后续授权执行风险，不替代真实 rollout/E2E 或 rollback。
+- 最新本地复核：`npm run contracts:tooling:test` 486/486 pass，新增覆盖 deployment authorization handoff placeholder boundary、deployment authorization handoff machine-readable safety flags、deployment authorization briefing JSON-like input hygiene、deployment authorization exact reply template、deployment evidence package JSON-like input hygiene、deployment evidence approval marker hygiene、deployment manifest JSON-like input hygiene、deployment authorization gate JSON-like input hygiene、deployment authorization record field hygiene、deployment authorization package JSON-like input hygiene、deployment authorization package exact replies、graphify final evidence authorization safety scope、authorization package misuse safety、deployment readiness authorization package handoff non-authorization safety、deployment readiness predeploy commit staging hazards、predeploy commit scope candidate/exclusion gate、predeploy stoplight deployment blocked gate、predeploy stoplight JSON-like input hygiene、deployment next action checklist authorization boundary、deployment next action checklist exact reply、deployment next action checklist secret hygiene、deployment authorization input gap report、deployment authorization request draft exact schema/secret boundary、deployment write plan freeze local-only digest boundary、deployment write plan freeze null-prototype input hygiene、deployment gate/tooling null-prototype input hygiene、remaining task evidence matrix authority boundary、source role readiness authorization boundary、source role readiness report、smoke spend readiness authorization boundary、smoke evidence verifier JSON-like input hygiene、RPC verifier envelope input hygiene、local smoke runner input/harness getter hygiene、artifact consistency wrapper input getter hygiene、Slither wrapper input getter hygiene、deployment/predeploy CLI streams wrapper input getter hygiene、CLI stream helper wrapper shape hygiene、final evidence publication gate、final public verifier readiness publication boundary、rollout authorization package handoff non-authorization safety、rollback authorization package handoff non-authorization safety 与 rollback drill final public verifier gate、rollback live execution runbook；该复核只证明本地授权交接、authorization package 防误用和 JSON-like 入口扫描 fail-closed、deployment authorization exact reply template 只渲染公开字段且不构成授权记录、deployment next action checklist 输出同字段 exact reply 且仍不构成授权记录、deployment write plan freeze 只冻结三阶段公共写入摘要与 digest 且不构成授权记录、deployment manifest 生成/校验输入扫描 fail-closed、predeploy stoplight 输入扫描 fail-closed、evidence package 公开输入/approval-shaped marker 扫描 fail-closed、authorization gate requestDigest/authorization 输入扫描 fail-closed、authorization 记录字段白名单 fail-closed、local smoke runner 输入 envelope、harness 方法与 optional harness 字段读取不执行 getter、artifact consistency、Slither wrapper 与 deployment/predeploy CLI streams wrapper 输入读取不执行 getter、CLI stream helper wrapper shape hygiene、13.1 逐阶段授权公共输入缺口分类和 request digest draft 生成、13.2 readiness/preflight 授权包负授权边界、13.2 前 clean commit 候选范围分类、本地提交警戒、部署前 stoplight 阻断门禁、下一阶段 checklist 授权边界、剩余任务证据矩阵的 readiness/authoritative evidence 分类、13.4 source/roles/exact-match 本地授权边界、13.5 smoke_usdc_spend/test USDC 花费授权边界、13.6 final public verifier 发布边界、Graphify/final evidence 授权安全影响范围、最终证据发布审查本地门禁、rollout/E2E 授权包负授权边界、rollback live 授权包负授权边界、rollback live 证据门禁、tooling 与文档门禁仍通过；13.1–13.6、14.8 的真实授权、preflight、deployment、source verification、smoke、verifier 和 final reference 证据已另存，不替代 14.2–14.4 真实 rollout/E2E、14.7 final spec sweep 或 14.9 live rollback。
 
 新增 readiness 证据：
 
@@ -54,14 +54,14 @@
 - 13.5 test USDC smoke completion：`docs/plans/2026-07-11-onchain-research-escrow-smoke-spend-readiness.md` 与 `contracts/scripts/smoke-spend-readiness.node-test.mjs`。该材料记录 `smoke_usdc_spend` 的独立 test USDC 授权、direct EOA buyer、无 AA/paymaster、approve → createAndFund → activate → settleBatch → close、maxUsdcUnits、nativeDelta18-gas18=budgetUnits6*10^12、六位合约差额、18 位 native/gas、两类 emitter Transfer 去重、buyer/payout/Factory/USDC/Escrow、Escrow `0x00457075A5989Da633410B1F7A92851313177A85` closed、spent=100、budgetRefund=900、escrow USDC=0、payout received 100 和 verifier `failed=[]`。
 - 13.6 final public RPC verifier completion：`docs/plans/2026-07-11-onchain-research-escrow-final-public-verifier-readiness.md` 与 `contracts/scripts/final-public-verifier-readiness.node-test.mjs`。该材料记录独立公开 RPC verifier 只能依赖公开 RPC、权威 USDC 配置和最终 `deployments/5042002.json` manifest 复核 `3 + R`、fundedCloneCount=1、settledCloneCount=1、smoke_usdc_spend、finalized block `51618436`、blockTag `0x313a284`、role graph、deployer 零权限和 source 配置；manifestDigest 为 `2b403150a6564bdf1b754f194de1512a1867e6e3590d5cef54487edac07ddf2d`，verifierStatus 为 `passed`。
 - 14.2–14.4 rollout/E2E readiness：`docs/plans/2026-07-11-onchain-research-escrow-rollout-e2e-readiness.md` 与 `contracts/scripts/rollout-e2e-readiness.node-test.mjs`。该材料列出 DB expand/backfill、durable worker/monitor、funding UI、小流量 `ARC_RESEARCH_SETTLEMENT_BACKEND=escrow`、成功 E2E 和失败 E2E 的证据要求；它不替代真实 rollout、成功 E2E 或失败 E2E。
-- 14.8 Graphify/final evidence readiness：`docs/plans/2026-07-11-onchain-research-escrow-graphify-final-evidence-readiness.md` 与 `contracts/scripts/graphify-final-evidence-readiness.node-test.mjs`。该材料记录当前 Graphify `1307 nodes` / `2754 edges`，并列出 deployment manifest、verifier、smoke、preflight、authorization、README、`docs/contracts`、`contracts/scripts`、`openspec tasks` 的影响检查范围；它不替代最终地址、最终 commit、chainId 5042002、tx hash/block、runtime/code hash 的真实证据。`contracts/scripts/final-evidence-publication-gate.mjs` 进一步把最终 manifest、README、docs/contracts、verifier、Graphify、core address、clone count 和 final evidence flags 的一致性整理成本地 fail-closed gate，但输出只允许请求最终发布审查，不允许发布最终证据或完成 14.8。
+- 14.8 Graphify/final evidence completion：`docs/plans/2026-07-11-onchain-research-escrow-graphify-final-evidence-readiness.md` 与 `contracts/scripts/graphify-final-evidence-readiness.node-test.mjs`。该材料记录当前 Graphify `1307 nodes` / `2753 edges`，并列出 deployment manifest、verifier、smoke、preflight、authorization、README、`docs/contracts`、`contracts/scripts`、`openspec tasks` 的影响检查范围；最终地址、最终 commit、chainId 5042002、tx hash/block、runtime/code hash 和 `sourceVerification` 已在 manifest/docs 中一致引用。`contracts/scripts/final-evidence-publication-gate.mjs` 进一步把最终 manifest、README、docs/contracts、verifier、Graphify、core address、clone count 和 final evidence flags 的一致性整理成本地 fail-closed gate；该门禁不替代 14.2–14.4 live E2E 或 14.9 rollback。
 
 主要既有验证记录：
 
-- `docs/plans/2026-07-11-onchain-research-escrow-verification-sweep.md` 记录 14.6 本地验证矩阵，并追加最新本地复核：`npm run contracts:tooling:test` 486/486、deployment authorization handoff placeholder boundary、deployment authorization handoff machine-readable safety flags、deployment authorization briefing JSON-like input hygiene、deployment authorization exact reply template、deployment evidence package JSON-like input hygiene、deployment evidence approval marker hygiene、deployment manifest JSON-like input hygiene、deployment authorization gate JSON-like input hygiene、deployment authorization record field hygiene、deployment authorization package JSON-like input hygiene、deployment authorization package exact replies、graphify final evidence authorization safety scope、authorization package misuse safety、deployment readiness authorization package handoff non-authorization safety、deployment readiness predeploy commit staging hazards、predeploy commit scope candidate/exclusion gate、predeploy stoplight deployment blocked gate、predeploy stoplight JSON-like input hygiene、deployment next action checklist authorization boundary、deployment next action checklist exact reply、deployment next action checklist secret hygiene、deployment authorization input gap report、deployment authorization request draft exact schema/secret boundary、deployment write plan freeze local-only digest boundary、deployment write plan freeze null-prototype input hygiene、deployment gate/tooling null-prototype input hygiene、remaining task evidence matrix authority boundary、source role readiness authorization boundary、source role readiness report、smoke spend readiness authorization boundary、smoke evidence verifier JSON-like input hygiene、RPC verifier envelope input hygiene、local smoke runner input/harness getter hygiene、artifact consistency wrapper input getter hygiene、Slither wrapper input getter hygiene、deployment/predeploy CLI streams wrapper input getter hygiene、CLI stream helper wrapper shape hygiene、final evidence publication gate、final public verifier readiness publication boundary、rollout authorization package handoff non-authorization safety、rollback authorization package handoff non-authorization safety、rollback drill final public verifier gate、rollback live execution runbook、`npm run contracts:test:unit` 167/167、fuzz 4/4、invariant 6/6、coverage 通过、Slither 通过、`npm test -- --run` 76 files / 485 tests、typecheck/build/migration dry-run/OpenSpec validate/Graphify 重建通过（1307 nodes、2754 edges、47 communities detected）。
+- `docs/plans/2026-07-11-onchain-research-escrow-verification-sweep.md` 记录 14.6 本地验证矩阵，并追加最新本地复核：`npm run contracts:tooling:test` 486/486、deployment authorization handoff placeholder boundary、deployment authorization handoff machine-readable safety flags、deployment authorization briefing JSON-like input hygiene、deployment authorization exact reply template、deployment evidence package JSON-like input hygiene、deployment evidence approval marker hygiene、deployment manifest JSON-like input hygiene、deployment authorization gate JSON-like input hygiene、deployment authorization record field hygiene、deployment authorization package JSON-like input hygiene、deployment authorization package exact replies、graphify final evidence authorization safety scope、authorization package misuse safety、deployment readiness authorization package handoff non-authorization safety、deployment readiness predeploy commit staging hazards、predeploy commit scope candidate/exclusion gate、predeploy stoplight deployment blocked gate、predeploy stoplight JSON-like input hygiene、deployment next action checklist authorization boundary、deployment next action checklist exact reply、deployment next action checklist secret hygiene、deployment authorization input gap report、deployment authorization request draft exact schema/secret boundary、deployment write plan freeze local-only digest boundary、deployment write plan freeze null-prototype input hygiene、deployment gate/tooling null-prototype input hygiene、remaining task evidence matrix authority boundary、source role readiness authorization boundary、source role readiness report、smoke spend readiness authorization boundary、smoke evidence verifier JSON-like input hygiene、RPC verifier envelope input hygiene、local smoke runner input/harness getter hygiene、artifact consistency wrapper input getter hygiene、Slither wrapper input getter hygiene、deployment/predeploy CLI streams wrapper input getter hygiene、CLI stream helper wrapper shape hygiene、final evidence publication gate、final public verifier readiness publication boundary、rollout authorization package handoff non-authorization safety、rollback authorization package handoff non-authorization safety、rollback drill final public verifier gate、rollback live execution runbook、`npm run contracts:test:unit` 167/167、fuzz 4/4、invariant 6/6、coverage 通过、Slither 通过、`npm test -- --run` 76 files / 485 tests、typecheck/build/migration dry-run/OpenSpec validate/Graphify 重建通过（1307 nodes、2753 edges、47 communities detected）。
 - `docs/contracts/onchain-research-escrow.md` 与 `contracts/scripts/deployment-docs.node-test.mjs` 覆盖 14.1 文档/runbook：`3 + R` 拓扑、信任边界、角色、funding UX、worker SLA、部署/回滚/密钥轮换/事故处置、Explorer 证据和“pre-deployment runbook 不等于最终链上证据”的门禁。
 - `docs/plans/2026-07-11-onchain-research-escrow-regression-matrix.md` 覆盖 14.5 本地回归矩阵，目标命令结果为 `Test Files 15 passed (15)`、`Tests 163 passed (163)`。
-- 上述本地记录明确声明：13.1–13.3、13.5/13.6 已有授权/preflight/deployment/smoke/verifier 证据，但不替代 13.4 Explorer exact-match/source 任务关闭、14.2–14.4 的生产 DB/worker 切流、真实成功/失败 E2E，或 14.9 的回滚演练。
+- 上述本地记录明确声明：13.1–13.6、14.8 已有授权/preflight/deployment/source verification/smoke/verifier/final reference 证据，但不替代 14.2–14.4 的生产 DB/worker 切流、真实成功/失败 E2E、14.7 final spec sweep，或 14.9 的回滚演练。
 
 ## Spec: `arc-payment-receipts` — partial
 
@@ -81,7 +81,7 @@ Blocked 场景：
 
 结论：本地实现/测试证据 partial；真实 receipt/Transfer/Explorer/E2E 证据 blocked。
 
-## Spec: `contract-deployment-evidence` — blocked
+## Spec: `contract-deployment-evidence` — partial
 
 本地覆盖的主要场景：
 
@@ -90,20 +90,20 @@ Blocked 场景：
 - RPC verifier/smoke verifier 本地模拟：`contracts/scripts/rpc-deployment-verifier.node-test.mjs`、`contracts/scripts/smoke-evidence-verifier.mjs`、`contracts/scripts/local-smoke-evidence-runner.mjs` 覆盖内置官方 USDC、native emitter、runtime hash、role graph、clone implementation、smoke 身份隔离、native gas 公式和 emitter 去重的本地模拟证据。
 - 14.1 文档门禁：`docs/contracts/onchain-research-escrow.md`、`contracts/scripts/deployment-docs.node-test.mjs` 覆盖部署 runbook、回滚流程、密钥轮换、事故处置、Explorer 证据与 manifest，并明确这是 pre-deployment runbook，不得当作最终链上证据。
 
-Blocked 场景：
+已覆盖或仍 blocked 的场景：
 
-- `核心合约归属于项目 deployer`、`Registry 与 Factory 双向绑定`、`clone 归属于固定 Factory 和 implementation`、`R 只计算非零真实资助 clone`、`单列真实 settlement 数量` 已由 final manifest/verifier/smoke 复核；13.1–13.3 task checkbox 已基于授权/preflight/deployment evidence 关闭，13.4 仍等待 Explorer exact-match/source 任务闭环。
-- `manifest 引用权威 USDC`、`权威依赖链上状态不可复核` 的 finalized 链上复核已由 13.6 public verifier 通过；后续 blocked 在 README/docs/contracts final publication 与 14.8。
-- `ARC 5042002 完整机器可读 manifest` 已生成 `deployments/5042002.json`，并有 final public verifier report；后续 blocked 在最终文档引用一致性和 14.8。
-- `clean commit 与可复现 artifact` 的最终部署来源 blocked：当前工作树包含大量未提交/新增/删除文件，本地 artifact gate 只能证明工具行为，不等于最终 clean commit 部署证据。
-- `核心源码 exact-match 与 clone runtime 验证` blocked：13.4 Explorer exact-match 未执行。
-- `完整角色成员集合与 role-admin 图` 的 finalized 角色读回已由 13.6 public verifier 复核；13.4 checkbox 仍 pending，等待 source/exact-match 任务闭环。
+- `核心合约归属于项目 deployer`、`Registry 与 Factory 双向绑定`、`clone 归属于固定 Factory 和 implementation`、`R 只计算非零真实资助 clone`、`单列真实 settlement 数量` 已由 final manifest/verifier/smoke 复核；13.1–13.4 task checkbox 已基于授权/preflight/deployment/source verification evidence 关闭。
+- `manifest 引用权威 USDC`、`权威依赖链上状态不可复核` 的 finalized 链上复核已由 13.6 public verifier 通过；README/docs/contracts final reference 已由 14.8 关闭。
+- `ARC 5042002 完整机器可读 manifest` 已生成 `deployments/5042002.json`，并有 final public verifier report 与 `sourceVerification` 证据。
+- `clean commit 与可复现 artifact` 的部署来源已固定为 clean deployment commit `7141fae64465f44e4ebc2ce3648787e0b45c54fb`；当前工作树的文档/证据更新属于后续 operator commit，不改变部署输入。
+- `核心源码 exact-match 与 clone runtime 验证` 已由 Arcscan exact-match source/ABI、manifest `sourceVerification`、runtime hash 和 clone implementation readback 覆盖。
+- `完整角色成员集合与 role-admin 图` 的 finalized 角色读回已由 13.6 public verifier 复核，并由 13.4 source/role/exact-match 任务闭环记录。
 - `外部链上写入必须逐阶段取得用户明确授权` 的历史真实授权、preflight 与核心广播证据已回填到 13.1–13.3；新的 source verify、rollout/E2E、rollback 或任何后续外部写入仍不得由本报告授权。
 - `身份隔离的真实 Funded 到关闭 smoke` 场景已由 13.5 direct EOA buyer smoke 和 13.6 verifier 覆盖。
-- `失败即停止发布的证据门禁` 的 final manifest/verifier/smoke 已通过；README/docs/contracts/Graphify final publication 仍由 14.8 gate 约束。
+- `失败即停止发布的证据门禁` 的 final manifest/verifier/smoke/source verification 已通过；README/docs/contracts/Graphify final reference 已由 14.8 gate 复核。
 - `机密、未消费签名与审批证据不得泄露` 本地扫描逻辑 covered，但真实部署/签名产物尚未产生，不能核验真实产物。
 
-结论：本地 tooling covered，但 spec 的可交付核心是外部部署证据；当前整体 blocked。
+结论：部署证据核心已经具备；整体仍 partial 的原因是 production rollout/E2E/rollback 尚未执行，14.7 不能把全部 spec 场景判定为 completely covered。
 
 ## Spec: `onchain-research-escrow` — partial
 
@@ -181,26 +181,23 @@ Blocked 场景：
 
 ## 明确 blocked 清单
 
-以下未完成任务直接阻塞本报告把任何 spec 判定为完全 covered：
+以下未完成任务直接阻塞本报告把任何 spec 判定为 completely covered：
 
-- 13.4：source/role execution 与 finalized role verifier 已有公开证据，但 Explorer exact-match source/ABI 需要向外部 Explorer 发布源码/编译元数据，当前尚缺该外部发布的明确授权和完成证据。
 - 14.2：未先部署 DB expand/backfill、durable worker 与监控，未开启 funding UI，也未小流量切换 `ARC_RESEARCH_SETTLEMENT_BACKEND=escrow`。
 - 14.3：未运行成功 E2E：prepare/quota、非零资助、激活、最多三次 intent、报告先完成、异步真实 USDC settlement、TX feed、close/refund/excess recovery。
 - 14.4：未运行失败 E2E：拒签/账户变化、错误网络、funding_expired、短 TTL、Registry revision 变化、runner/worker 崩溃、RPC 不确定、DB 确认失败和到期退出。
 - 14.7：本报告仍只能给出 partial/blocked 结论，不能勾选自身完成。
-- 14.8：当前本地 Graphify 已重建（`1307 nodes` / `2754 edges` / `47 communities detected`），可作为影响图阅读证据；`final-evidence-publication-gate.mjs` 也已覆盖最终 manifest/docs/verifier/Graphify/core address/count/final evidence flags 的本地一致性门禁。但 README/docs/contracts/final evidence publication 的最终引用复核仍未关闭，因此 14.8 仍未完成，不能勾选。
 - 14.9：未执行回滚演练：停止新 voucher/activation、切回 calldata/mock、验证已 Funded 可取消、已 Active 仍由 durable worker 结算关闭或最终到期退出。
 
 已覆盖但不解除上述阻塞：
 
 - 14.1：`docs/contracts/onchain-research-escrow.md` 与 `contracts/scripts/deployment-docs.node-test.mjs` 已覆盖文档/runbook。
 - 14.5：`docs/plans/2026-07-11-onchain-research-escrow-regression-matrix.md` 已覆盖本地回归矩阵，目标测试 15 files / 163 tests；这不是真实链上 E2E、smoke 或 rollback 演练。
+- 14.8：Graphify 已重建（`1307 nodes` / `2753 edges` / `47 communities detected`），`README.md`、`docs/contracts/onchain-research-escrow.md`、`deployments/5042002.json`、verifier/readiness 文档均引用同一最终地址、commit、manifest/verifier 和 `sourceVerification`。
 
 ## 建议
 
 1. 不勾选 14.7；保持 `tasks.md` 原状。
-2. 先完成或明确豁免 13.4、14.2–14.4、14.8–14.9，否则六份 spec 的 source exact-match、生产切流、E2E、final docs publication 和 rollback 场景无法从 partial/blocked 升级为 covered；14.7 自身在这些阻塞解除前不得勾选。
+2. 先完成或明确豁免 14.2–14.4 与 14.9，否则六份 spec 的生产切流、E2E 和 rollback 场景无法从 partial/blocked 升级为 covered；14.7 自身在这些阻塞解除前不得勾选。
 3. 在真实部署/E2E 完成后重新运行本报告中的核验路径，并追加：
-   - Explorer exact-match URL/状态；
-   - README/docs/contracts/final evidence publication 引用复核；
    - 14.2–14.4 与 14.9 命令、环境、结果和失败/重试记录。
