@@ -1,23 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConnectWalletButton } from '@/components/auth/ConnectWalletButton'
 import { NetworkGuard } from '@/components/auth/NetworkGuard'
 import { Logo } from '@/components/Logo'
-
-type GlobalStats = {
-  totalResearches: number
-  totalCallsAcrossAllUsers: number
-  totalUsdcSpent: string
-  activeAgents: number
-  dailyResearchQuota?: {
-    used: number
-    limit: number
-    remaining: number
-    resetAt: string
-  }
-}
 
 const marketRows = [
   ['NEWS API', 'ONLINE', '12MS', 'text-green'],
@@ -26,50 +12,8 @@ const marketRows = [
   ['USDC BUDGET', 'ARMED', '$25.00', 'text-amber'],
 ]
 
-function DataCell({ label, value, tone = 'text-text-primary' }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="border border-border bg-bg-cell px-3 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.05em] text-amber">{label}</div>
-      <div className={`mt-1 font-mono text-2xl font-semibold tabular-nums leading-none ${tone}`}>{value}</div>
-    </div>
-  )
-}
-
 export default function HomePage() {
   const router = useRouter()
-  const [stats, setStats] = useState<GlobalStats>({
-    totalResearches: 0,
-    totalCallsAcrossAllUsers: 0,
-    totalUsdcSpent: '0',
-    activeAgents: 0,
-    dailyResearchQuota: { used: 0, limit: 100, remaining: 100, resetAt: '' },
-  })
-
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      const res = await fetch('/api/stats/global', { cache: 'no-store' })
-      if (!res.ok || cancelled) return
-      setStats(await res.json())
-    }
-    load().catch(() => {})
-    const timer = window.setInterval(() => load().catch(() => {}), 1000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [])
-
-  const terminalStats = [
-    { label: 'RESEARCHES DONE', value: stats.totalResearches.toLocaleString('en-US'), tone: 'text-text-primary' },
-    { label: 'TOTAL USDC SPENT', value: `$${stats.totalUsdcSpent}`, tone: 'text-green' },
-    { label: 'TOTAL CALLS', value: stats.totalCallsAcrossAllUsers.toLocaleString('en-US'), tone: 'text-cyan' },
-    {
-      label: 'TODAY QUOTA',
-      value: `${stats.dailyResearchQuota?.used ?? 0}/${stats.dailyResearchQuota?.limit ?? 100}`,
-      tone: 'text-amber',
-    },
-  ]
 
   return (
     <main className="min-h-screen bg-bg-base pt-8 pb-8 text-text-primary">
@@ -107,34 +51,10 @@ export default function HomePage() {
             </button>
             <ConnectWalletButton />
           </div>
-
-          <div className="mt-8 border border-border bg-bg-panel p-3">
-            <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.05em]">
-              <span className="text-amber">ACTIVE AGENTS</span>
-              <span className="text-cyan tabular-nums">{stats.activeAgents.toLocaleString('en-US')}</span>
-            </div>
-            <div className="font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
-              RUNNING RESEARCH JOBS RIGHT NOW
-            </div>
-          </div>
         </div>
 
         <aside className="bg-bg-panel px-3 py-4 md:px-4">
-          <div className="mb-3 flex items-center justify-between border-b border-border pb-2 text-[11px] font-semibold uppercase tracking-[0.05em]">
-            <span className="text-amber">LIVE DATA PANEL</span>
-            <span className="flex items-center gap-2 text-cyan">
-              <span className="live-dot" />
-              ONLINE
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {terminalStats.map((stat) => (
-              <DataCell key={stat.label} {...stat} />
-            ))}
-          </div>
-
-          <div className="mt-4 border border-border bg-bg-cell">
+          <div className="border border-border bg-bg-cell">
             <div className="border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.05em] text-amber">
               PROVIDER STATUS
             </div>
@@ -154,7 +74,7 @@ export default function HomePage() {
             <div className="mt-3 space-y-1 font-mono text-[11px] uppercase tracking-[0.05em] text-text-secondary">
               <div>&gt; AGENT/007 QUOTED NEWS API: 0.000024 USDC</div>
               <div>&gt; WHALE TRACE DELTA: +12.42M USDC</div>
-              <div>&gt; {stats.dailyResearchQuota?.used ?? 0}/{stats.dailyResearchQuota?.limit ?? 100} RESEARCHES USED TODAY</div>
+              <div>&gt; PROVIDER ROUTING MATRIX ONLINE</div>
               <div>&gt; RESEARCH PACKET SEALED: BLOCK #1,247,891</div>
               <div className="text-amber">&gt; READY FOR WALLET AUTH_</div>
             </div>

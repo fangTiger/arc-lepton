@@ -33,12 +33,12 @@
 - **THEN** 页面展示账户、总研究数、总调用数、总花费和 research history 表
 
 ### Requirement: 首页实时全局 stats
-系统 SHALL 提供公开全局 stats API，并在首页轮询展示真实数据。
+系统 SHALL 保留公开全局 stats API，但首页 SHALL NOT 展示 totalResearches、totalCallsAcrossAllUsers、totalUsdcSpent、activeAgents 或每日 quota 用量等公开聚合统计。
 
-#### Scenario: 首页 stats 更新
-- **GIVEN** 有 research 和 tx_log 数据
-- **WHEN** 首页每秒轮询 `/api/stats/global`
-- **THEN** stats 面板展示真实 totalResearches、totalCallsAcrossAllUsers、totalUsdcSpent 和 activeAgents
+#### Scenario: 首页隐藏公开聚合 stats
+- **GIVEN** `/api/stats/global` 返回 research 和 tx_log 统计数据
+- **WHEN** 用户打开首页
+- **THEN** 首页不展示 `LIVE DATA PANEL`、totalResearches、totalCallsAcrossAllUsers、totalUsdcSpent、activeAgents 或每日 quota 用量
 
 ### Requirement: Research Follow-up Q&A
 系统 SHALL 在受保护的 research 报告详情页支持基于已有报告追加问答。
@@ -57,3 +57,4 @@
 - **GIVEN** the follow-up UI is visible to the user
 - **WHEN** the user views labels, buttons, placeholders, errors, and generated fallback messages
 - **THEN** all user-facing copy is English
+
